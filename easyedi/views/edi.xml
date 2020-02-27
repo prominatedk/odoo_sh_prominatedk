@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<odoo>
+
+        <record id="action_edi_fields" model="ir.actions.act_window">
+            <field name="name">EDI Custom Fields</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">edi.fields</field>
+            <field name="view_type">form</field>
+            <field name="view_mode">tree,kanban,form</field>
+            <field name="help" type="html">
+              <p class="o_view_nocontent_smiling_face">
+                Edi Custom Fields
+              </p><p>
+                Create your custom edi fields
+              </p>
+            </field>
+        </record>
+
+        <record model="ir.ui.view" id="edi_fields_treeview">
+        <field name="name">EDI Custom Fields</field>
+        <field name="model">edi.fields</field>
+        <field name="arch" type="xml">
+            <tree string="EDI Custom Fields" editable="top">
+                <field name="e_model"/>
+                <field name="e_fieldname"/>
+                <field name="e_fieldtype"/>
+            </tree>
+        </field>
+        </record>
+
+        <record id="view_edi_fields_search" model="ir.ui.view">
+            <field name="name">edi.fields.search</field>
+            <field name="model">edi.fields</field>
+            <field name="arch" type="xml">
+                <search string="EDI Fields">
+                    <field name="e_model" string="Model"/>
+                    <field name="e_fieldname" string="Field Name"/>
+                </search>
+            </field>
+        </record>
+
+		<record model="ir.ui.view" id="base_config_edi_view">
+            <field name="name">res.config.settings.view.form.inherit.easyedi.setup</field>
+            <field name="model">res.config.settings</field>
+            <field name="inherit_id" ref="base_setup.res_config_settings_view_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//div[@name='integration']" position="after">
+                    <h2>EasyEDI</h2>
+                    <div class="row mt16 o_settings_container" id="easyedi_settings">
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_right_pane">
+                                <label string="User" for="userid" class="col-lg-5 o_light_label"/>
+                                <field name="userid"/>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_right_pane">
+                                <label string="Password" for="password" class="col-lg-5 o_light_label"/>
+                                <field name="password" password="True" />
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_left_pane">
+                                <field name="orders_as_draft"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label string="Import orders as draft" for="orders_as_draft" class="col-lg-5 o_light_label"/>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_left_pane">
+                                <field name="link_delivery"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label string="Link deliveries to salesorder" for="link_delivery" class="col-lg-5 o_light_label"/>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_left_pane">
+                                <field name="send_all_orders" />
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label string="Send all orders" for="send_all_orders" class="col-lg-5 o_light_label"/>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_left_pane">
+                                <field name="send_all_desadv" />
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label string="Send all despatch advices" for="send_all_desadv" class="col-lg-5 o_light_label"/>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_left_pane">
+                                <field name="send_all_invoic" />
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label string="Send all invoices" for="send_all_invoic" class="col-lg-5 o_light_label"/>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_left_pane">
+                                <field name="send_all_purchase" />
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label string="Send all purchase orders" for="send_all_purchase" class="col-lg-5 o_light_label"/>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_right_pane">
+                                <label string="Error Email" for="errormail" class="col-lg-5 o_light_label"/>
+                                <field name="errormail"/>
+                            </div>
+                        </div>
+                        <div class="col-xs-12 col-md-6 row mt16" name="edi_fields_link">
+                            <label string="Edit Custom fields" for="edi_fields_link" />
+                            <button type="action" name="%(action_edi_fields)d" icon="fa-cogs"
+                                string="Edit custom list of custom fields for EasyEDI" class="oe_link" />
+                        </div>
+
+                    </div>
+                </xpath>    
+
+                <xpath expr="//div[@name='integration']" position="inside">
+                    <div class="col-xs-12 col-md-6 o_setting_box" title="EasyEDI Settings">
+                        <div class="o_setting_left_pane">
+                            <field name="userid"/>
+                            <field name="password"/>
+                            <field name="orders_as_draft"/>
+                            <field name="link_delivery"/>
+                            <field name="send_all_orders"/>
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <field name="send_all_desadv"/>
+                            <field name="send_all_invoic"/>
+                            <field name="send_all_purchase"/>
+                            <field name="errormail"/>
+                        </div>
+                    </div>
+                    
+                </xpath>
+            </field>
+        </record>
+
+</odoo>
