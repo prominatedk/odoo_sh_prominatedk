@@ -426,7 +426,7 @@ class AccountInvoice(models.Model):
                         vals['time_format'] = time_format
             except Exception as e:
                 print('Generate Payment Json Error: ', str(e))
-        _logger.debug('Transaction vals: %s', vals)
+        _logger.info('Transaction vals: %s', vals)
         return vals
 
     @api.multi
@@ -1022,7 +1022,7 @@ class AccountInvoice(models.Model):
                     utc_datetime = datetime.datetime.utcnow()
                     payment_vals = []
                     for invoice_obj in invoice_details:
-                        _logger.debug('Invoice_id: %s', str(invoice_obj.id))
+                        _logger.info('Invoice_id: %s', str(invoice_obj.id))
                         try:
                             json_vals = self.generate_payment_json(
                                 invoice_obj.id, utc_datetime)
@@ -1087,7 +1087,6 @@ class AccountInvoice(models.Model):
                     raise ValidationError(error_msg)
         except Exception as e:
             error_msg = 'Bank Integration Error: ' + str(e)
-            print(error_msg)
             _logger.debug(str(e))
             raise ValidationError(error_msg)
 
