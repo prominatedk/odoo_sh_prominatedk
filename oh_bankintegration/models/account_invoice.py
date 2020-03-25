@@ -141,164 +141,34 @@ class AccountInvoice(models.Model):
             encodedSignature = base64.b64encode(dig).decode()
             return encodedSignature
         except Exception as e:
-            print('Auth Key Generation Error: ', str(e))
+            _logger.debug('Auth Key Generation Error: %s', str(e))
         return False
 
-    @api.multi
-    def generate_payment_json_old(self, invoice_id):
-        # Scheduler code will be added here
-        set_validate_payment = self.env[
-            'ir.config_parameter'].sudo().get_param('set_validate_payment')
-        if isinstance(set_validate_payment, str):
-            set_validate_payment = ast.literal_eval(set_validate_payment)
-        duedate = None
-        if invoice_id:
-            invoice_model = self.env['account.invoice']
-            payment_invoice = invoice_model.browse(invoice_id)
-            if payment_invoice.payment_duedate:
-                duedate = payment_invoice.payment_duedate
-            elif payment_invoice.date_due:
-                duedate = payment_invoice.date_due
-            if duedate:
-                if duedate < datetime.datetime.today().date():
-                    duedate = datetime.datetime.today().date()
-                pay_date = duedate.strftime("%Y%m%d")
-                paymentDate = duedate.strftime("%Y-%m-%d")
-        if duedate:
-            try:
-                ERP_PROVIDER = self.env[
-                    'ir.config_parameter'].sudo().get_param('erp_provider')
-                utc_datetime = datetime.datetime.utcnow()
-                request_model = self.env['bank.integration.request']
-                request_obj = request_model.create(
-                    {'invoice_id': invoice_id, 'request_datetime': utc_datetime})
-                request_datetime = request_obj.request_datetime
-                request_datetime = request_datetime.strftime(
-                    "%Y-%m-%d %H:%M:%S")
-                request_datetime_obj = datetime.datetime.strptime(
-                    request_datetime, '%Y-%m-%d %H:%M:%S')
-                if not set_validate_payment:
-                    pay_date = request_datetime_obj.strftime("%Y%m%d")
-                    paymentDate = request_datetime_obj.strftime("%Y-%m-%d")
-                now_date = request_datetime_obj.strftime("%Y%m%d%H%M%S")
-                time_format = request_datetime_obj.strftime(
-                    "%Y-%m-%dT%H:%M:%S")
-                invoice_model = self.env['account.invoice']
-                payment_invoice = invoice_model.browse(invoice_id)
-                amount = 0
-                transactions = []
-                vendor_account_number = ''
-                request_obj_vals = {}
-                vendor_account_id = 0
-                customer_account = ''
-                customer_account_id = 0
-                request_id = request_obj.request_id
-                total_request_amount = 0
-                if payment_invoice:
-                    amount = payment_invoice.residual
-                    total_request_amount += amount
-                    vendor_banks = self.env['res.partner.bank'].search(
-                        [('partner_id', '=', payment_invoice.partner_id.id)], order='id', limit=1)
-                    vals = OrderedDict()
-                    paymentId = str(invoice_id)
-                    if payment_invoice.payment_count:
-                        paymentId = paymentId + 'OH' + \
-                            str(payment_invoice.payment_count)
-                    vals['paymentId'] = paymentId
-                    vals['paymentDate'] = paymentDate
-                    vals['amount'] = "%.2f" % amount
-                    vals['currency'] = payment_invoice.currency_id.name
-                    payment_ref = payment_invoice.payment_reference if payment_invoice.payment_reference else payment_invoice.reference
-                    if not payment_ref:
-                        payment_ref = payment_invoice.company_id.name
-                    vals['text'] = payment_invoice.number + \
-                        ' ' + payment_invoice.partner_id.name
-                    creditor_info = OrderedDict()
-                    creditor_info['name'] = payment_invoice.partner_id.name
-                    vals['creditorText'] = payment_ref
-                    vals['urgency'] = 1
-                    if payment_invoice.fik_number:
-                        fik_number = payment_invoice.fik_number
-                        vals['account'] = fik_number
-                        vendor_account_number = fik_number
-                        request_obj_vals.update({'fik_number': fik_number})
-                    elif vendor_banks:
-                        if isinstance(vendor_banks, list):
-                            vendor_bank = vendor_banks[0]
-                        else:
-                            vendor_bank = vendor_banks
-                        if vendor_bank.bankintegration_acc_number:
-                            vendor_account_number = vendor_bank.bankintegration_acc_number
-                        else:
-                            vendor_account_number = vendor_bank.get_bban() if callable(
-                                getattr(vendor_bank, "get_bban", None)) and vendor_bank.acc_type == 'iban' else vendor_bank.sanitized_acc_number
-                        vals['account'] = vendor_account_number
-                        vals['vendor_account'] = vendor_bank.id
-                        vendor_account_id = vendor_bank.id
-                        request_obj_vals.update(
-                            {'vendor_account': vendor_account_id})
-                        if vendor_bank.bank_id and vendor_bank.bank_id.bic:
-                            if not vendor_bank.bankintegration_acc_number:
-                                creditor_info['bic'] = vendor_bank.bank_id.bic
-                                vals['type'] = 11
-
-                    vals['creditor'] = creditor_info
-                    transactions.append(vals)
-
-                    if payment_invoice.payment_journal.bank_account_id.bankintegration_acc_number:
-                        customer_account = payment_invoice.payment_journal.bank_account_id.bankintegration_acc_number
-                    else:
-                        customer_account = payment_invoice.payment_journal.bank_account_id.get_bban() if callable(getattr(
-                            payment_invoice.payment_journal.bank_account_id, "get_bban", None)) and payment_invoice.payment_journal.bank_account_id.acc_type == 'iban' else payment_invoice.payment_journal.bank_account_id.sanitized_acc_number
-                    customer_account_id = payment_invoice.payment_journal.bank_account_id.id
-                    vals['bank_account'] = customer_account_id
-                    request_obj_vals.update(
-                        {'bank_account': customer_account_id, 'payment_id': paymentId})
-
-                    if transactions and total_request_amount:
-                        customer_code = payment_invoice.payment_journal.customer_code
-                        #print('customer_code', customer_code)
-                        auth_vals = OrderedDict()
-                        auth_vals['token'] = hashlib.sha256(
-                            customer_code.encode('utf-8')).hexdigest()
-                        auth_vals['custacc'] = customer_account
-                        auth_vals[
-                            'currency'] = payment_invoice.currency_id.name
-                        auth_vals['reqid'] = request_id
-                        auth_vals['paydate'] = pay_date
-                        auth_vals['amount'] = "%.2f" % amount
-                        auth_vals['credacc'] = vendor_account_number
-                        auth_vals['erp'] = ERP_PROVIDER
-                        auth_vals['payid'] = paymentId
-                        auth_vals['now'] = now_date
-                        request_obj.write(request_obj_vals)
-                        #print('auth_vals', auth_vals)
-                        auth_key = self.generate_auth_key(auth_vals)
-                        if auth_key:
-                            hashed = OrderedDict()
-                            hashed["id"] = paymentId
-                            hashed["hash"] = auth_key
-
-                            auth_dict = OrderedDict()
-                            auth_dict["serviceProvider"] = ERP_PROVIDER
-                            auth_dict["account"] = customer_account
-                            auth_dict["time"] = time_format
-                            auth_dict["requestId"] = request_id
-                            auth_dict["hash"] = [hashed]
-                            #print('auth_dict', auth_dict)
-                            auth_obj = json.dumps(auth_dict)
-                            auth_header = base64.b64encode(
-                                auth_obj.encode()).decode()
-                            #print('Auth Header', auth_header)
-                            # print('-------------------------')
-                            #print('Auth auth_obj', auth_obj)
-                            # print('-------------------------')
-                            #print('Auth transactions', transactions)
-                            return [auth_header, request_id, transactions]
-
-            except Exception as e:
-                print('Generate Payment Json Error: ', str(e))
-        return [False, False, False]
+    def validate_required_fields(self, vals_list):
+        if vals_list:
+            if vals_list.get('paymentId', False) and vals_list.get('paymentDate', False) and vals_list.get('account', False) and vals_list.get('amount', 0) and vals_list.get('creditor', False):
+                return True
+            else:
+                try:
+                    error_msg = ''
+                    invoice_id = vals_list['invoice_id']
+                    invoice_model = self.env['account.invoice']
+                    payment_invoice_obj = invoice_model.browse([invoice_id])
+                    if not vals_list.get('account', False):
+                        error_msg = 'No bankaccount or FIK number'
+                    elif not vals_list.get('paymentId', False):
+                        error_msg = 'No paymentId given'
+                    elif not vals_list.get('paymentDate', False):
+                        error_msg = 'No paymentDate given'
+                    elif not vals_list.get('amount', False):
+                        error_msg = 'No amount given'
+                    elif not vals_list.get('creditor', False):
+                        error_msg = 'No creditor info'
+                    payment_invoice_obj.write(
+                        {'payment_error': error_msg, 'payment_status': PAYMENT_STATUS_CODE['32']})
+                except:
+                    _logger.debug('Some error while generating payment json')
+        return False
 
     @api.multi
     def generate_payment_json(self, invoice_id, utc_datetime):
@@ -308,6 +178,10 @@ class AccountInvoice(models.Model):
             'ir.config_parameter'].sudo().get_param('set_validate_payment')
         ERP_PROVIDER = self.env[
             'ir.config_parameter'].sudo().get_param('erp_provider')
+        use_bban = self.env[
+            'ir.config_parameter'].sudo().get_param('use_bban')
+        if isinstance(use_bban, str):
+            use_bban = ast.literal_eval(use_bban)
         if isinstance(set_validate_payment, str):
             set_validate_payment = ast.literal_eval(set_validate_payment)
         duedate = None
@@ -375,11 +249,15 @@ class AccountInvoice(models.Model):
                         vals['fik_number'] = fik_number
                     elif payment_invoice.partner_bank_id:
                         vals['vendor_account'] = payment_invoice.partner_bank_id.id
-                        customer_account = payment_invoice.bank_account_id.get_bban() if callable(getattr(
-                            payment_invoice.partner_bank_id, "get_bban", None)) and payment_invoice.partner_bank_id.acc_type == 'iban' else payment_invoice.partner_bank_id.sanitized_acc_number
+                        if use_bban:
+                            customer_account = payment_invoice.bank_account_id.get_bban() if callable(getattr(
+                                payment_invoice.partner_bank_id, "get_bban", None)) and payment_invoice.partner_bank_id.acc_type == 'iban' else payment_invoice.partner_bank_id.sanitized_acc_number
+                        else:
+                            customer_account = payment_invoice.partner_bank_id.sanitized_acc_number
                         vals['account'] = customer_account
                         if payment_invoice.partner_bank_id.bank_id.bic:
-                            creditor_info['bic'] = payment_invoice.partner_bank_id.bank_id.bic
+                            creditor_info[
+                                'bic'] = payment_invoice.partner_bank_id.bank_id.bic
                             vals['type'] = 11
                     elif vendor_banks:
                         if isinstance(vendor_banks, list):
@@ -389,8 +267,11 @@ class AccountInvoice(models.Model):
                         if vendor_bank.bankintegration_acc_number:
                             vendor_account_number = vendor_bank.bankintegration_acc_number
                         else:
-                            vendor_account_number = vendor_bank.get_bban() if callable(
-                                getattr(vendor_bank, "get_bban", None)) and vendor_bank.acc_type == 'iban' else vendor_bank.sanitized_acc_number
+                            if use_bban:
+                                vendor_account_number = vendor_bank.get_bban() if callable(
+                                    getattr(vendor_bank, "get_bban", None)) and vendor_bank.acc_type == 'iban' else vendor_bank.sanitized_acc_number
+                            else:
+                                vendor_account_number = vendor_bank.sanitized_acc_number
                         vals['account'] = vendor_account_number
                         vendor_account_id = vendor_bank.id
                         vals['vendor_account'] = vendor_account_id
@@ -404,8 +285,11 @@ class AccountInvoice(models.Model):
                     if payment_invoice.payment_journal.bank_account_id.bankintegration_acc_number:
                         customer_account = payment_invoice.payment_journal.bank_account_id.bankintegration_acc_number
                     else:
-                        customer_account = payment_invoice.payment_journal.bank_account_id.get_bban() if callable(getattr(
-                            payment_invoice.payment_journal.bank_account_id, "get_bban", None)) and payment_invoice.payment_journal.bank_account_id.acc_type == 'iban' else payment_invoice.payment_journal.bank_account_id.sanitized_acc_number
+                        if use_bban:
+                            customer_account = payment_invoice.payment_journal.bank_account_id.get_bban() if callable(getattr(
+                                payment_invoice.payment_journal.bank_account_id, "get_bban", None)) and payment_invoice.payment_journal.bank_account_id.acc_type == 'iban' else payment_invoice.payment_journal.bank_account_id.sanitized_acc_number
+                        else:
+                            customer_account = payment_invoice.payment_journal.bank_account_id.sanitized_acc_number
                     customer_account_id = payment_invoice.payment_journal.bank_account_id.id
                     vals['bank_account'] = customer_account_id
                     vals['custacc'] = customer_account
@@ -424,9 +308,10 @@ class AccountInvoice(models.Model):
                         vals['payid'] = paymentId
                         vals['now'] = now_date
                         vals['time_format'] = time_format
+                    if not self.validate_required_fields(vals):
+                        vals = {}
             except Exception as e:
-                print('Generate Payment Json Error: ', str(e))
-        _logger.info('Transaction vals: %s', vals)
+                _logger.debug('Generate Payment Json Error: %s', str(e))
         return vals
 
     @api.multi
@@ -491,9 +376,8 @@ class AccountInvoice(models.Model):
                 auth_header = base64.b64encode(auth_obj.encode()).decode()
                 return [auth_header, request_id, transactions]
             except Exception as e:
-                print('Generate Payment Json Error: ', str(e))
+                _logger.debug('Generate Payment Json Error: %s', str(e))
         return [False, False, False]
-
 
     # Function to if two float values are same or not
     def isClose(self, a, b, rel_tol=1e-09, abs_tol=0.0):
@@ -548,11 +432,11 @@ class AccountInvoice(models.Model):
                                 partner = invoice_line.partner_id
                                 break
         except Exception as e:
-            print('Partner Exception:', str(e))
+            _logger.debug('Partner Exception: %s', str(e))
         return partner
 
     @api.model
-    def get_bank_statements(self, auth_header, request_id, last_import_date, last_import_balance):
+    def get_bank_statements(self, auth_header, request_id, last_import_date, last_import_balance, is_scheduler=False):
         errors = []
         stmts_data = {}
         transactions = []
@@ -575,7 +459,7 @@ class AccountInvoice(models.Model):
         try:
             next_sequence = int(last_import_sequence)
         except ValueError:
-            print('Previous reference sequence is not a number')
+            _logger.info('Previous reference sequence is not a number')
         last_import_date = last_import_date.strftime('%Y-%m-%d')
         today_date = datetime.datetime.now()
         next_import_date = today_date - datetime.timedelta(days=1)
@@ -645,7 +529,6 @@ class AccountInvoice(models.Model):
                                     'note': note_msg,
                                     'json_log': json.dumps(bank_statement)
                                 }
-                                print(bank_statement)
                                 partner = self.get_partner_id(bank_statement)
                                 if partner:
                                     vals['partner_id'] = partner.id
@@ -687,35 +570,44 @@ class AccountInvoice(models.Model):
                                 else:
                                     error_msg = _('Nothing to import.')
                                     errors.append(error_msg)
-                                    raise ValidationError(error_msg)
+                                    if not is_scheduler:
+                                        raise ValidationError(error_msg)
                             if not break_point:
                                 error_msg = _('Entries not matching.')
                                 errors.append(error_msg)
-                                raise ValidationError(error_msg)
+                                if not is_scheduler:
+                                    raise ValidationError(error_msg)
                         else:
                             error_msg = _('Nothing to import.')
                             errors.append(error_msg)
-                            raise ValidationError(error_msg)
+                            if not is_scheduler:
+                                raise ValidationError(error_msg)
                     else:
                         error_msg = _('Nothing to import.')
                         errors.append(error_msg)
-                        raise ValidationError(error_msg)
+                        if not is_scheduler:
+                            raise ValidationError(error_msg)
                 else:
                     error_msg = _('Request Id is not matching.')
                     errors.append(error_msg)
-                    raise ValidationError(error_msg)
+                    if not is_scheduler:
+                        raise ValidationError(error_msg)
             elif response.status_code == 401:
-                error_msg = _('There was an authentication error when trying to get the bank statements. Please make sure that you bank account number and integration code are correct and try again')
+                error_msg = _(
+                    'There was an authentication error when trying to get the bank statements. Please make sure that you bank account number and integration code are correct and try again')
                 errors.append(error_msg)
             else:
                 # Send email on error
                 error_msg = _(
                     'Something has went wrong. Please try after sometime.')
                 errors.append(error_msg)
-                raise ValidationError(error_msg)
+                if not is_scheduler:
+                    raise ValidationError(error_msg)
         except Exception as e:
-            print('Exception:', str(e))
-            raise ValidationError(error_msg)
+            _logger.debug('Exception: %s', str(e))
+            errors.append(str(e))
+            if not is_scheduler:
+                raise ValidationError(error_msg)
         return stmts_data, errors
 
     @api.multi
@@ -744,7 +636,7 @@ class AccountInvoice(models.Model):
                     response_data = json.loads(
                         response.content.decode('UTF-8'))
                 except Exception as e:
-                    print('Content Error:', str(e))
+                    _logger.debug('Content Error: %s', str(e))
                     response_data = json.loads(response.content)
                 if response_data['requestId'] == str(request_id):
                     entries = response_data['answers']
@@ -799,18 +691,22 @@ class AccountInvoice(models.Model):
                         api_request_obj.write(
                             {'request_status': request_status})
                 except Exception as e:
-                    print(str(e))
-                print('Something has went wrong')
+                    _logger.debug('Email Error: %s', str(e))
+                _logger.info('Something has went wrong')
         except Exception as e:
-            print('Exception:', str(e))
+            _logger.debug('Exception: %s', str(e))
 
     def get_customer_account(self, account_journal_obj):
+        use_bban = self.env[
+            'ir.config_parameter'].sudo().get_param('use_bban')
+        if isinstance(use_bban, str):
+            use_bban = ast.literal_eval(use_bban)
         partner_bank_model = self.env['res.partner.bank']
         if account_journal_obj.bank_account_id.bankintegration_acc_number:
             return account_journal_obj.bank_account_id.bankintegration_acc_number
         else:
             account_number = account_journal_obj.bank_account_id.sanitized_acc_number
-            if partner_bank_model.retrieve_acc_type(account_number) == 'iban':
+            if use_bban and partner_bank_model.retrieve_acc_type(account_number) == 'iban':
                 return account_journal_obj.bank_account_id.get_bban() if callable(getattr(
                     account_journal_obj.bank_account_id, "get_bban", None)) else account_journal_obj.bank_account_id.sanitized_acc_number
             else:
@@ -835,7 +731,7 @@ class AccountInvoice(models.Model):
             if account_journal_obj:
                 customer_code = account_journal_obj.customer_code
             else:
-                print('Integration Code not available')
+                _logger.info('Integration Code not available')
 
             customer_account = self.get_customer_account(account_journal_obj)
             request_datetime_obj = datetime.datetime.now()
@@ -882,7 +778,7 @@ class AccountInvoice(models.Model):
                     auth_obj.encode('ascii')).decode()
                 #print ('encoded headeressssssssssss - ------ ', auth_header)
         except Exception as e:
-            print('Request Error: ', str(e))
+            _logger.debug('Request Error: %s', str(e))
         return auth_header, request_id
 
     @api.multi
@@ -891,6 +787,10 @@ class AccountInvoice(models.Model):
         try:
             ERP_PROVIDER = self.env[
                 'ir.config_parameter'].sudo().get_param('erp_provider')
+            use_bban = self.env[
+                'ir.config_parameter'].sudo().get_param('use_bban')
+            if isinstance(use_bban, str):
+                use_bban = ast.literal_eval(use_bban)
             request_model = self.env['bank.integration.request']
             request_obj = request_model.browse([request_obj_id])
             request_id = request_obj.request_id
@@ -902,13 +802,16 @@ class AccountInvoice(models.Model):
             if account_journal_ids:
                 customer_code = account_journal_ids[0].customer_code
             else:
-                print('Integration Code not available')
+                _logger.info('Integration Code not available')
             if request_obj.bank_account.bankintegration_acc_number:
                 customer_account = request_obj.bank_account.bankintegration_acc_number
             else:
                 try:
-                    customer_account = request_obj.bank_account.get_bban() if callable(getattr(
-                        request_obj.bank_account, "get_bban", None)) else request_obj.bank_account.sanitized_acc_number
+                    if use_bban:
+                        customer_account = request_obj.bank_account.get_bban() if callable(getattr(
+                            request_obj.bank_account, "get_bban", None)) else request_obj.bank_account.sanitized_acc_number
+                    else:
+                        customer_account = request_obj.bank_account.sanitized_acc_number
                 except:
                     customer_account = request_obj.bank_account.sanitized_acc_number
             request_datetime_obj = datetime.datetime.now()
@@ -932,7 +835,7 @@ class AccountInvoice(models.Model):
                 ])
                 auth_key = self.generate_auth_key(auth_vals)
             except Exception as e:
-                print('Encoding Error: ', str(e))
+                _logger.debug('Encoding Error: %s', str(e))
 
             # Code to generate auth header
             if auth_key:
@@ -951,7 +854,7 @@ class AccountInvoice(models.Model):
                 auth_obj = json.dumps(auth_dict)
                 auth_header = base64.b64encode(auth_obj.encode()).decode()
         except Exception as e:
-            print('Request Error: ', str(e))
+            _logger.debug('Request Error: %s', str(e))
         return auth_header, request_id
 
     @api.multi
@@ -989,14 +892,14 @@ class AccountInvoice(models.Model):
                 data=json.dumps(paymnet_dict),
                 headers=headers,
             )
-            print(json.dumps(paymnet_dict), headers, response.__dict__)
+            _logger.info('paymnet_dict: %s', paymnet_dict)
             if response.status_code in [200, 201, 202, 204]:
                 for request_obj in request_objs:
                     request_obj.write({'request_status': 'pending'})
                     account_invoice_obj = account_invoice_model.browse(
                         [request_obj.invoice_id.id])
                     account_invoice_obj.write({'payment_status': 'pending'})
-                print('Payment Request Sent Successfully')
+                _logger.info('Payment Request Sent Successfully')
             else:
                 for request_obj in request_objs:
                     account_invoice_obj = account_invoice_model.browse(
@@ -1004,9 +907,9 @@ class AccountInvoice(models.Model):
                     request_obj.unlink()
                     account_invoice_obj.write(
                         {'payment_status': 'failed', 'payment_error': 'Check bank account number'})
-                print('Err: Something has went wrong')
+                _logger.info('Err: Something has went wrong')
         except Exception as e:
-            print('Make Payment Error: ', str(e))
+            _logger.debug('Make Payment Error: %s', str(e))
 
     @api.multi
     def bankintegration_multi_payments(self, invoice_ids):
@@ -1022,7 +925,6 @@ class AccountInvoice(models.Model):
                     utc_datetime = datetime.datetime.utcnow()
                     payment_vals = []
                     for invoice_obj in invoice_details:
-                        _logger.info('Invoice_id: %s', str(invoice_obj.id))
                         try:
                             json_vals = self.generate_payment_json(
                                 invoice_obj.id, utc_datetime)
@@ -1034,10 +936,12 @@ class AccountInvoice(models.Model):
                             #        auth_header, request_id, transactions)
                         except:
                             pass
+                    _logger.info('payment_vals: %s', payment_vals)
                     if payment_vals:
                         payment_vals.sort(key=lambda x: x['custacc'])
                         transactions_data = []
                         custacc = ''
+                        # Code to make multiple payments per account
                         for payment in payment_vals:
                             if custacc and custacc == payment['custacc']:
                                 transactions_data.append(payment)
@@ -1051,6 +955,7 @@ class AccountInvoice(models.Model):
                             if not custacc:
                                 custacc = payment['custacc']
                                 transactions_data.append(payment)
+                        # If there is only one payment to make - fallback
                         if transactions_data:
                             auth_header, request_id, transactions = self.send_for_payment(
                                 transactions_data)
@@ -1063,7 +968,6 @@ class AccountInvoice(models.Model):
                     raise ValidationError(error_msg)
         except Exception as e:
             error_msg = 'Bank Integration Error: ' + str(e)
-            print(error_msg)
             _logger.debug(str(e))
             raise ValidationError(error_msg)
 
@@ -1106,9 +1010,9 @@ class AccountInvoice(models.Model):
                         self.update_payment_status(
                             auth_header, request_id, request.payment_id)
                 else:
-                    print('Nothing is Pending')
+                    _logger.debug('Nothing is Pending')
             except Exception as e:
-                print('Something Wrong Happened: ', str(e))
+                _logger.debug('Something Wrong Happened: %s', str(e))
         return True
 
     @api.multi
@@ -1147,6 +1051,5 @@ class AccountInvoice(models.Model):
                     invoice_ids = [x.id for x in invoice_details]
                     self.bankintegration_multi_payments(invoice_ids)
         except Exception as e:
-            # print(str(e))
             return False
         return True

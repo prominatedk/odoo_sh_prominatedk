@@ -32,6 +32,7 @@ class ResConfigSettings(models.TransientModel):
         string=_('Use note as label?'), default=False)
     check_payment_status = fields.Boolean(
         string=_('Check payment status on payment.'), default=False)
+    use_bban = fields.Boolean(string=_('Use odoo bban'), default=False)
 
     @api.model
     def get_values(self):
@@ -43,6 +44,7 @@ class ResConfigSettings(models.TransientModel):
         set_validate_payment = get_param('set_validate_payment')
         use_note_msg = get_param('use_note_msg')
         check_payment_status = get_param('check_payment_status')
+        use_bban = get_param('use_bban')
         if isinstance(get_param('set_validate_payment'), str):
             set_validate_payment = ast.literal_eval(
                 get_param('set_validate_payment'))
@@ -52,6 +54,9 @@ class ResConfigSettings(models.TransientModel):
         if isinstance(get_param('check_payment_status'), str):
             check_payment_status = ast.literal_eval(
                 get_param('check_payment_status'))
+        if isinstance(get_param('use_bban'), str):
+            use_bban = ast.literal_eval(
+                get_param('use_bban'))
         res.update(
             payment_margin=int(get_param('payment_margin')),
             autopay=False if get_param('autopay') == 'False' else True,
@@ -65,6 +70,7 @@ class ResConfigSettings(models.TransientModel):
             set_validate_payment=set_validate_payment,
             use_note_msg=use_note_msg,
             check_payment_status=check_payment_status,
+            use_bban=use_bban
         )
         return res
 
@@ -84,5 +90,6 @@ class ResConfigSettings(models.TransientModel):
             set_param('set_validate_payment', repr(self.set_validate_payment))
             set_param('use_note_msg', repr(self.use_note_msg))
             set_param('check_payment_status', repr(self.check_payment_status))
+            set_param('use_bban', repr(self.use_bban))
         except Exception as e:
             print(str(e))

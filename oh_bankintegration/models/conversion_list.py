@@ -5,7 +5,7 @@ from datetime import datetime
 
 class ConversionList(models.Model):
     _name = 'bankintegration.conversion_list'
-    _model = "oh_bankintegration.conversion_list"
+    _model = "bankintegration.conversion_list"
     _description = "Bank Integration Conversion List"
 
     active = fields.Boolean(string='Active')

@@ -109,7 +109,7 @@ class AccountJournal(models.Model):
                 last_import_date, last_import_balance = self.get_last_import_date(
                     journal_id)
                 stmts_data, errors = account_invoice_model.get_bank_statements(
-                    auth_header, request_id, last_import_date, last_import_balance)
+                    auth_header, request_id, last_import_date, last_import_balance, is_scheduler=True)
                 if len(errors) > 0:
                     _logger.error('There were errors during processing of bank statements')
                     for error in errors:
