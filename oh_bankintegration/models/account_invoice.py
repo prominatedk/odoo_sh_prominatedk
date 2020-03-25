@@ -426,6 +426,7 @@ class AccountInvoice(models.Model):
                         vals['time_format'] = time_format
             except Exception as e:
                 print('Generate Payment Json Error: ', str(e))
+        _logger.debug('Transaction vals: %s', vals)
         return vals
 
     @api.multi
@@ -1021,6 +1022,7 @@ class AccountInvoice(models.Model):
                     utc_datetime = datetime.datetime.utcnow()
                     payment_vals = []
                     for invoice_obj in invoice_details:
+                        _logger.debug('Invoice_id: %s', str(invoice_obj.id))
                         try:
                             json_vals = self.generate_payment_json(
                                 invoice_obj.id, utc_datetime)
