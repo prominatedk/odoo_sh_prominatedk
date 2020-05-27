@@ -95,6 +95,7 @@ class AccountJournal(models.Model):
     def bankintegration_statement_auto(self):
         account_invoice_model = self.env['account.invoice']
         erp_key, customer_code = account_invoice_model.get_bankintegration_settings()
+        _logger.info(erp_key,customer_code)
         if erp_key and customer_code:
             journal_ids = self.search(
                 [('bank_statements_source', '=', 'bankintegration_import')])

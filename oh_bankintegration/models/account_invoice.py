@@ -112,6 +112,7 @@ class AccountInvoice(models.Model):
     def get_bankintegration_settings(self):
         erp_key = ''
         customer_code = ''
+        _logger.warn('Getting settings for bankintegration.dk')
         try:
             erp_key = self.env[
                 'ir.config_parameter'].sudo().get_param('bi_api_key')
@@ -120,10 +121,13 @@ class AccountInvoice(models.Model):
             if payment_journal_id:
                 account_model = self.env['account.journal']
                 payment_journal = account_model.browse(int(payment_journal_id))
+                _logger.error(payment_journal)
                 if payment_journal.customer_code:
                     customer_code = payment_journal.customer_code
         except Exception as e:
             _logger.debug('Some Error: %s', str(e))
+        _logger.warn('ERP KEY: {}'.format(erp_key))
+        _logger.warn('CUSTOMER CODE: {}'.format(customer_code))
         return erp_key, customer_code
 
     @api.model
@@ -141,7 +145,7 @@ class AccountInvoice(models.Model):
             encodedSignature = base64.b64encode(dig).decode()
             return encodedSignature
         except Exception as e:
-            _logger.debug('Auth Key Generation Error: %s', str(e))
+            print('Auth Key Generation Error: ', str(e))
         return False
 
     def validate_required_fields(self, vals_list):
@@ -167,7 +171,7 @@ class AccountInvoice(models.Model):
                     payment_invoice_obj.write(
                         {'payment_error': error_msg, 'payment_status': PAYMENT_STATUS_CODE['32']})
                 except:
-                    _logger.debug('Some error while generating payment json')
+                    print('Some error while generating payment json')
         return False
 
     @api.multi
@@ -311,7 +315,7 @@ class AccountInvoice(models.Model):
                     if not self.validate_required_fields(vals):
                         vals = {}
             except Exception as e:
-                _logger.debug('Generate Payment Json Error: %s', str(e))
+                print('Generate Payment Json Error: ', str(e))
         return vals
 
     @api.multi
@@ -376,7 +380,7 @@ class AccountInvoice(models.Model):
                 auth_header = base64.b64encode(auth_obj.encode()).decode()
                 return [auth_header, request_id, transactions]
             except Exception as e:
-                _logger.debug('Generate Payment Json Error: %s', str(e))
+                print('Generate Payment Json Error: ', str(e))
         return [False, False, False]
 
     # Function to if two float values are same or not
@@ -432,7 +436,7 @@ class AccountInvoice(models.Model):
                                 partner = invoice_line.partner_id
                                 break
         except Exception as e:
-            _logger.debug('Partner Exception: %s', str(e))
+            print('Partner Exception:', str(e))
         return partner
 
     @api.model
@@ -459,7 +463,7 @@ class AccountInvoice(models.Model):
         try:
             next_sequence = int(last_import_sequence)
         except ValueError:
-            _logger.info('Previous reference sequence is not a number')
+            print('Previous reference sequence is not a number')
         last_import_date = last_import_date.strftime('%Y-%m-%d')
         today_date = datetime.datetime.now()
         next_import_date = today_date - datetime.timedelta(days=1)
@@ -529,6 +533,7 @@ class AccountInvoice(models.Model):
                                     'note': note_msg,
                                     'json_log': json.dumps(bank_statement)
                                 }
+                                print(bank_statement)
                                 partner = self.get_partner_id(bank_statement)
                                 if partner:
                                     vals['partner_id'] = partner.id
@@ -604,7 +609,7 @@ class AccountInvoice(models.Model):
                 if not is_scheduler:
                     raise ValidationError(error_msg)
         except Exception as e:
-            _logger.debug('Exception: %s', str(e))
+            print('Exception:', str(e))
             errors.append(str(e))
             if not is_scheduler:
                 raise ValidationError(error_msg)
@@ -636,7 +641,7 @@ class AccountInvoice(models.Model):
                     response_data = json.loads(
                         response.content.decode('UTF-8'))
                 except Exception as e:
-                    _logger.debug('Content Error: %s', str(e))
+                    print('Content Error:', str(e))
                     response_data = json.loads(response.content)
                 if response_data['requestId'] == str(request_id):
                     entries = response_data['answers']
@@ -691,10 +696,10 @@ class AccountInvoice(models.Model):
                         api_request_obj.write(
                             {'request_status': request_status})
                 except Exception as e:
-                    _logger.debug('Email Error: %s', str(e))
-                _logger.info('Something has went wrong')
+                    print(str(e))
+                print('Something has went wrong')
         except Exception as e:
-            _logger.debug('Exception: %s', str(e))
+            print('Exception:', str(e))
 
     def get_customer_account(self, account_journal_obj):
         use_bban = self.env[
@@ -731,7 +736,7 @@ class AccountInvoice(models.Model):
             if account_journal_obj:
                 customer_code = account_journal_obj.customer_code
             else:
-                _logger.info('Integration Code not available')
+                print('Integration Code not available')
 
             customer_account = self.get_customer_account(account_journal_obj)
             request_datetime_obj = datetime.datetime.now()
@@ -778,7 +783,7 @@ class AccountInvoice(models.Model):
                     auth_obj.encode('ascii')).decode()
                 #print ('encoded headeressssssssssss - ------ ', auth_header)
         except Exception as e:
-            _logger.debug('Request Error: %s', str(e))
+            print('Request Error: ', str(e))
         return auth_header, request_id
 
     @api.multi
@@ -802,7 +807,7 @@ class AccountInvoice(models.Model):
             if account_journal_ids:
                 customer_code = account_journal_ids[0].customer_code
             else:
-                _logger.info('Integration Code not available')
+                print('Integration Code not available')
             if request_obj.bank_account.bankintegration_acc_number:
                 customer_account = request_obj.bank_account.bankintegration_acc_number
             else:
@@ -835,7 +840,7 @@ class AccountInvoice(models.Model):
                 ])
                 auth_key = self.generate_auth_key(auth_vals)
             except Exception as e:
-                _logger.debug('Encoding Error: %s', str(e))
+                print('Encoding Error: ', str(e))
 
             # Code to generate auth header
             if auth_key:
@@ -854,7 +859,7 @@ class AccountInvoice(models.Model):
                 auth_obj = json.dumps(auth_dict)
                 auth_header = base64.b64encode(auth_obj.encode()).decode()
         except Exception as e:
-            _logger.debug('Request Error: %s', str(e))
+            print('Request Error: ', str(e))
         return auth_header, request_id
 
     @api.multi
@@ -892,14 +897,14 @@ class AccountInvoice(models.Model):
                 data=json.dumps(paymnet_dict),
                 headers=headers,
             )
-            _logger.info('paymnet_dict: %s', paymnet_dict)
+            print(json.dumps(paymnet_dict), headers, response.__dict__)
             if response.status_code in [200, 201, 202, 204]:
                 for request_obj in request_objs:
                     request_obj.write({'request_status': 'pending'})
                     account_invoice_obj = account_invoice_model.browse(
                         [request_obj.invoice_id.id])
                     account_invoice_obj.write({'payment_status': 'pending'})
-                _logger.info('Payment Request Sent Successfully')
+                print('Payment Request Sent Successfully')
             else:
                 for request_obj in request_objs:
                     account_invoice_obj = account_invoice_model.browse(
@@ -907,9 +912,9 @@ class AccountInvoice(models.Model):
                     request_obj.unlink()
                     account_invoice_obj.write(
                         {'payment_status': 'failed', 'payment_error': 'Check bank account number'})
-                _logger.info('Err: Something has went wrong')
+                print('Err: Something has went wrong')
         except Exception as e:
-            _logger.debug('Make Payment Error: %s', str(e))
+            print('Make Payment Error: ', str(e))
 
     @api.multi
     def bankintegration_multi_payments(self, invoice_ids):
@@ -936,7 +941,6 @@ class AccountInvoice(models.Model):
                             #        auth_header, request_id, transactions)
                         except:
                             pass
-                    _logger.info('payment_vals: %s', payment_vals)
                     if payment_vals:
                         payment_vals.sort(key=lambda x: x['custacc'])
                         transactions_data = []
@@ -968,6 +972,7 @@ class AccountInvoice(models.Model):
                     raise ValidationError(error_msg)
         except Exception as e:
             error_msg = 'Bank Integration Error: ' + str(e)
+            print(error_msg)
             _logger.debug(str(e))
             raise ValidationError(error_msg)
 
@@ -991,6 +996,7 @@ class AccountInvoice(models.Model):
                     raise ValidationError(error_msg)
         except Exception as e:
             error_msg = 'Bank Integration Error: ' + str(e)
+            print(error_msg)
             _logger.debug(str(e))
             raise ValidationError(error_msg)
 
@@ -1010,9 +1016,9 @@ class AccountInvoice(models.Model):
                         self.update_payment_status(
                             auth_header, request_id, request.payment_id)
                 else:
-                    _logger.debug('Nothing is Pending')
+                    print('Nothing is Pending')
             except Exception as e:
-                _logger.debug('Something Wrong Happened: %s', str(e))
+                print('Something Wrong Happened: ', str(e))
         return True
 
     @api.multi
@@ -1051,5 +1057,6 @@ class AccountInvoice(models.Model):
                     invoice_ids = [x.id for x in invoice_details]
                     self.bankintegration_multi_payments(invoice_ids)
         except Exception as e:
+            # print(str(e))
             return False
         return True
