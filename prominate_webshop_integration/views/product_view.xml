@@ -1,0 +1,31 @@
+<odoo>
+    <data>
+        <record id="product_form_view_inherit" model="ir.ui.view">
+            <field name="name">product.form.view.inherit</field>
+            <field name="model">product.product</field>
+            <field name="inherit_id" ref="product.product_normal_form_view"/>
+            <field name="arch" type="xml">
+
+                <button name="toggle_active" position="before">
+                    <button class="oe_stat_button" icon="fa-refresh" type="object" name="action_update_webshop_stock">
+                        <div class="o_field_widget o_stat_info">
+                             <span class="o_stat_text">Update Stock</span>
+                        </div>
+                    </button>
+                    <button class="oe_stat_button" icon="fa-signal" type="object" name="action_open_quotations">
+                        <div class="o_field_widget o_stat_info">
+                            <span class="o_stat_value">
+                                <field name="virtual_available_quotation" widget="statinfo" nolabel="1" class="mr4"/>
+                                <field name="uom_name"/>
+                            </span>
+                            <span class="o_stat_text">Virtual</span>
+                        </div>
+                    </button>
+                </button>
+                <field name="categ_id" position="after">
+                    <field name="api_warehouse_id"/>
+                </field>
+            </field>
+        </record>
+    </data>
+</odoo>
