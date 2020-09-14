@@ -35,5 +35,4 @@ class StockPicking(models.Model):
         }
         _logger.info('POST %s (%s)', url, data)
         response = requests.post(url, json=data, headers=headers)
-        if response.get('code') and int(response.get('code')) != 200:
-            _logger.error('API Error! %s', response.json())
+        _logger.info('API response: %s', response.json())
