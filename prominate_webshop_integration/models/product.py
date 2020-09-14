@@ -40,10 +40,9 @@ class ProductProduct(models.Model):
         data = {'amount': int(self.virtual_available_quotation)}
         _logger.info('PUT %s (%s)', url + parameters, data)
         response = requests.put(url + parameters, json=data, headers=headers)
-        if response.get('code') and int(response.get('code')) != 200:
-            _logger.error('API Error! %s', response.json())
+        _logger.info('API response: %s', response.json())
 
     def action_update_webshop_stock_all(self):
-        products = self.env['product.product'].search([])
+        products = self.env['product.product'].search([('api_warehouse_id', '!=', False)])
         for p in products:
             p.action_update_webshop_stock()

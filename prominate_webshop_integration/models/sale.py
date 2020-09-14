@@ -107,11 +107,8 @@ class SaleOrder(models.Model):
         }
         _logger.info('POST %s (%s)', url, data)
         response = requests.post(url, json=data, headers=headers)
-        if response.get('code') and int(response.get('code')) != 200:
-            _logger.error('API Error! %s', response.json())
-            raise ValidationError(_("Error! API error %s") % response.status_code)
-        else:
-            self._send_stock_update(cancel=True)
+        _logger.info('API response: %s', response.json())
+        self._send_stock_update(cancel=True)
 
 
     def _send_stock_update(self, cancel=False):
@@ -135,8 +132,7 @@ class SaleOrder(models.Model):
             data = {'amount': int(amount)}
             _logger.info('PUT %s (%s)', url + parameters, data)
             response = requests.put(url + parameters, json=data, headers=headers)
-            if response.get('code') and int(response.get('code')) != 200:
-                _logger.error('API Error! %s', response.json())
+            _logger.info('API response: %s', response.json())
 
 
 class SaleOrderMail(models.Model):
