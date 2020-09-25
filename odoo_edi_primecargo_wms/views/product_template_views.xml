@@ -1,0 +1,17 @@
+<odoo>
+    <data>
+        <record id="inherited_product_form_view" model="ir.ui.view">
+            <field name="name">product.form.view.inherit</field>
+            <field name="model">product.template</field>
+            <field name="inherit_id" ref="product.product_template_form_view"/>
+            <field name="arch" type="xml">
+                <xpath expr="//button[@name='toggle_active']" position="after">
+                    <button class="oe_stat_button" name="action_use_in_primecargo_wms"
+                        type="object" icon="fa-object-group">
+                        <field name="template_in_primecargo_wms" widget="boolean_button"/>
+                    </button>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

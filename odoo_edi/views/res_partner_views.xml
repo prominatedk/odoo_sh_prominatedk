@@ -1,0 +1,26 @@
+<odoo>
+    <data>
+        <record id="inherited_view_partner_form" model="ir.ui.view">
+            <field name="name">inherited_view_partner_form</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='vat']" position="after">
+                    <field name="gln"/>
+                </xpath>
+                <xpath expr="//page[@name='sales_purchases']" position="after">
+                    <page string="EDI" name="odoo_edi" attrs="{'invisible': [('is_company','=',False),('parent_id','!=',False)]}">
+                        <group name="odoo_edi_enabled">
+                            <field name="odoo_edi_send_enable"/>
+                        </group>
+                    </page>
+                    <page string="EDI" name="odoo_edi_disabled" attrs="{'invisible': ['|',('is_company','=',True),('parent_id','=',False)]}">
+                        <div>
+                            <p>EDI-related settings are managed on <button name="open_commercial_entity" type="object" string="the parent company" class="oe_link"/></p>
+                        </div>
+                    </page>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

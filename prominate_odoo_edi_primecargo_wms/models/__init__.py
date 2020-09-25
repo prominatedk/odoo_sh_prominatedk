@@ -1,0 +1,4 @@
+from . import odoo_edi_primecargo_masterdata
+from . import odoo_edi_primecargo_stock_picking_incoming
+from . import odoo_edi_primecargo_stock_picking_outgoing
+from . import product_template

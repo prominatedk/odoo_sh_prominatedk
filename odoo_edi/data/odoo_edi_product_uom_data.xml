@@ -1,0 +1,857 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        <record id="edi_13" model="odoo_edi.product.uom">
+            <field name="name">13</field>
+            <field name="description">ration</field>
+        </record>
+        <record id="edi_23" model="odoo_edi.product.uom">
+            <field name="name">23</field>
+            <field name="description">gram per cubic centimetre</field>
+        </record>
+        <record id="edi_28" model="odoo_edi.product.uom">
+            <field name="name">28</field>
+            <field name="description">kilogram per square metre</field>
+        </record>
+        <record id="edi_59" model="odoo_edi.product.uom">
+            <field name="name">59</field>
+            <field name="description">part per million</field>
+        </record>
+        <record id="edi_60" model="odoo_edi.product.uom">
+            <field name="name">60</field>
+            <field name="description">percent weight</field>
+        </record>
+        <record id="edi_61" model="odoo_edi.product.uom">
+            <field name="name">61</field>
+            <field name="description">part per billion (US)</field>
+        </record>
+        <record id="edi_2J" model="odoo_edi.product.uom">
+            <field name="name">2J</field>
+            <field name="description">cubic centimetre per second</field>
+        </record>
+        <record id="edi_2W" model="odoo_edi.product.uom">
+            <field name="name">2W</field>
+            <field name="description">bin</field>
+        </record>
+        <record id="edi_2Z" model="odoo_edi.product.uom">
+            <field name="name">2Z</field>
+            <field name="description">millivolt</field>
+        </record>
+        <record id="edi_3H" model="odoo_edi.product.uom">
+            <field name="name">3H</field>
+            <field name="description">kilogram per kilogram of product</field>
+        </record>
+        <record id="edi_4H" model="odoo_edi.product.uom">
+            <field name="name">4H</field>
+            <field name="description">micrometre (micron)</field>
+        </record>
+        <record id="edi_5B" model="odoo_edi.product.uom">
+            <field name="name">5B</field>
+            <field name="description">batch</field>
+        </record>
+        <record id="edi_A18" model="odoo_edi.product.uom">
+            <field name="name">A18</field>
+            <field name="description">becquerel per kilogram</field>
+        </record>
+        <record id="edi_A97" model="odoo_edi.product.uom">
+            <field name="name">A97</field>
+            <field name="description">hectopascal</field>
+        </record>
+        <record id="edi_ACR" model="odoo_edi.product.uom">
+            <field name="name">ACR</field>
+            <field name="description">acre</field>
+        </record>
+        <record id="edi_AM" model="odoo_edi.product.uom">
+            <field name="name">AM</field>
+            <field name="description">ampoule</field>
+        </record>
+        <record id="edi_AMP" model="odoo_edi.product.uom">
+            <field name="name">AMP</field>
+            <field name="description">ampere</field>
+        </record>
+        <record id="edi_ANN" model="odoo_edi.product.uom">
+            <field name="name">ANN</field>
+            <field name="description">year</field>
+        </record>
+        <record id="edi_AS" model="odoo_edi.product.uom">
+            <field name="name">AS</field>
+            <field name="description">assortment</field>
+        </record>
+        <record id="edi_B22" model="odoo_edi.product.uom">
+            <field name="name">B22</field>
+            <field name="description">kiloampere</field>
+        </record>
+        <record id="edi_B25" model="odoo_edi.product.uom">
+            <field name="name">B25</field>
+            <field name="description">kilobecquerel per kilogram</field>
+        </record>
+        <record id="edi_B4" model="odoo_edi.product.uom">
+            <field name="name">B4</field>
+            <field name="description">barrel, imperial</field>
+        </record>
+        <record id="edi_B49" model="odoo_edi.product.uom">
+            <field name="name">B49</field>
+            <field name="description">kiloohm</field>
+        </record>
+        <record id="edi_B9" model="odoo_edi.product.uom">
+            <field name="name">B9</field>
+            <field name="description">batt</field>
+        </record>
+        <record id="edi_B98" model="odoo_edi.product.uom">
+            <field name="name">B98</field>
+            <field name="description">microsecond</field>
+        </record>
+        <record id="edi_BAR" model="odoo_edi.product.uom">
+            <field name="name">BAR</field>
+            <field name="description">bar [unit of pressure]</field>
+        </record>
+        <record id="edi_BB" model="odoo_edi.product.uom">
+            <field name="name">BB</field>
+            <field name="description">Base box</field>
+        </record>
+        <record id="edi_BE" model="odoo_edi.product.uom">
+            <field name="name">BE</field>
+            <field name="description">bundle</field>
+        </record>
+        <record id="edi_BFT" model="odoo_edi.product.uom">
+            <field name="name">BFT</field>
+            <field name="description">board foot</field>
+        </record>
+        <record id="edi_BG" model="odoo_edi.product.uom">
+            <field name="name">BG</field>
+            <field name="description">bag</field>
+        </record>
+        <record id="edi_BJ" model="odoo_edi.product.uom">
+            <field name="name">BJ</field>
+            <field name="description">bucket</field>
+        </record>
+        <record id="edi_BK" model="odoo_edi.product.uom">
+            <field name="name">BK</field>
+            <field name="description">basket</field>
+        </record>
+        <record id="edi_BL" model="odoo_edi.product.uom">
+            <field name="name">BL</field>
+            <field name="description">bale</field>
+        </record>
+        <record id="edi_BO" model="odoo_edi.product.uom">
+            <field name="name">BO</field>
+            <field name="description">bottle</field>
+        </record>
+        <record id="edi_BT" model="odoo_edi.product.uom">
+            <field name="name">BT</field>
+            <field name="description">bolt</field>
+        </record>
+        <record id="edi_BUI" model="odoo_edi.product.uom">
+            <field name="name">BUI</field>
+            <field name="description">bushel (UK)</field>
+        </record>
+        <record id="edi_BX" model="odoo_edi.product.uom">
+            <field name="name">BX</field>
+            <field name="description">box</field>
+        </record>
+        <record id="edi_C15" model="odoo_edi.product.uom">
+            <field name="name">C15</field>
+            <field name="description">millijoule</field>
+        </record>
+        <record id="edi_C16" model="odoo_edi.product.uom">
+            <field name="name">C16</field>
+            <field name="description">millimetre per second</field>
+        </record>
+        <record id="edi_C17" model="odoo_edi.product.uom">
+            <field name="name">C17</field>
+            <field name="description">millimetre squared per second</field>
+        </record>
+        <record id="edi_C18" model="odoo_edi.product.uom">
+            <field name="name">C18</field>
+            <field name="description">millimole</field>
+        </record>
+        <record id="edi_C19" model="odoo_edi.product.uom">
+            <field name="name">C19</field>
+            <field name="description">mole per kilogram</field>
+        </record>
+        <record id="edi_C24" model="odoo_edi.product.uom">
+            <field name="name">C24</field>
+            <field name="description">millipascal second</field>
+        </record>
+        <record id="edi_C26" model="odoo_edi.product.uom">
+            <field name="name">C26</field>
+            <field name="description">millisecond</field>
+        </record>
+        <record id="edi_C29" model="odoo_edi.product.uom">
+            <field name="name">C29</field>
+            <field name="description">millitesla</field>
+        </record>
+        <record id="edi_C31" model="odoo_edi.product.uom">
+            <field name="name">C31</field>
+            <field name="description">milliwatt</field>
+        </record>
+        <record id="edi_C34" model="odoo_edi.product.uom">
+            <field name="name">C34</field>
+            <field name="description">mole</field>
+        </record>
+        <record id="edi_C4" model="odoo_edi.product.uom">
+            <field name="name">C4</field>
+            <field name="description">carload</field>
+        </record>
+        <record id="edi_C45" model="odoo_edi.product.uom">
+            <field name="name">C45</field>
+            <field name="description">nanometre</field>
+        </record>
+        <record id="edi_C47" model="odoo_edi.product.uom">
+            <field name="name">C47</field>
+            <field name="description">nanosecond</field>
+        </record>
+        <record id="edi_C62" model="odoo_edi.product.uom">
+            <field name="name">C62</field>
+            <field name="description">one</field>
+        </record>
+        <record id="edi_C65" model="odoo_edi.product.uom">
+            <field name="name">C65</field>
+            <field name="description">pascal second</field>
+        </record>
+        <record id="edi_C86" model="odoo_edi.product.uom">
+            <field name="name">C86</field>
+            <field name="description">reciprocal cubic metre</field>
+        </record>
+        <record id="edi_C93" model="odoo_edi.product.uom">
+            <field name="name">C93</field>
+            <field name="description">reciprocal square metre</field>
+        </record>
+        <record id="edi_CA" model="odoo_edi.product.uom">
+            <field name="name">CA</field>
+            <field name="description">can</field>
+        </record>
+        <record id="edi_CDL" model="odoo_edi.product.uom">
+            <field name="name">CDL</field>
+            <field name="description">candela</field>
+        </record>
+        <record id="edi_CEL" model="odoo_edi.product.uom">
+            <field name="name">CEL</field>
+            <field name="description">degree Celcius</field>
+        </record>
+        <record id="edi_CEN" model="odoo_edi.product.uom">
+            <field name="name">CEN</field>
+            <field name="description">hundred</field>
+        </record>
+        <record id="edi_CG" model="odoo_edi.product.uom">
+            <field name="name">CG</field>
+            <field name="description">card</field>
+        </record>
+        <record id="edi_CH" model="odoo_edi.product.uom">
+            <field name="name">CH</field>
+            <field name="description">container</field>
+        </record>
+        <record id="edi_CJ" model="odoo_edi.product.uom">
+            <field name="name">CJ</field>
+            <field name="description">cone</field>
+        </record>
+        <record id="edi_CLT" model="odoo_edi.product.uom">
+            <field name="name">CLT</field>
+            <field name="description">centilitre</field>
+        </record>
+        <record id="edi_CMK" model="odoo_edi.product.uom">
+            <field name="name">CMK</field>
+            <field name="description">square centimetre</field>
+        </record>
+        <record id="edi_CMQ" model="odoo_edi.product.uom">
+            <field name="name">CMQ</field>
+            <field name="description">cubic centimetre</field>
+        </record>
+        <record id="edi_CMT" model="odoo_edi.product.uom">
+            <field name="name">CMT</field>
+            <field name="description">centimetre</field>
+        </record>
+        <record id="edi_CR" model="odoo_edi.product.uom">
+            <field name="name">CR</field>
+            <field name="description">crate</field>
+        </record>
+        <record id="edi_CS" model="odoo_edi.product.uom">
+            <field name="name">CS</field>
+            <field name="description">case</field>
+        </record>
+        <record id="edi_CT" model="odoo_edi.product.uom">
+            <field name="name">CT</field>
+            <field name="description">carton</field>
+        </record>
+        <record id="edi_CU" model="odoo_edi.product.uom">
+            <field name="name">CU</field>
+            <field name="description">cup</field>
+        </record>
+        <record id="edi_CV" model="odoo_edi.product.uom">
+            <field name="name">CV</field>
+            <field name="description">cover</field>
+        </record>
+        <record id="edi_CWI" model="odoo_edi.product.uom">
+            <field name="name">CWI</field>
+            <field name="description">hundred weight (UK)</field>
+        </record>
+        <record id="edi_CY" model="odoo_edi.product.uom">
+            <field name="name">CY</field>
+            <field name="description">cylinder</field>
+        </record>
+        <record id="edi_D33" model="odoo_edi.product.uom">
+            <field name="name">D33</field>
+            <field name="description">tesla</field>
+        </record>
+        <record id="edi_D63" model="odoo_edi.product.uom">
+            <field name="name">D63</field>
+            <field name="description">book</field>
+        </record>
+        <record id="edi_D64" model="odoo_edi.product.uom">
+            <field name="name">D64</field>
+            <field name="description">block</field>
+        </record>
+        <record id="edi_D87" model="odoo_edi.product.uom">
+            <field name="name">D87</field>
+            <field name="description">millimole per kilogram</field>
+        </record>
+        <record id="edi_D92" model="odoo_edi.product.uom">
+            <field name="name">D92</field>
+            <field name="description">band</field>
+        </record>
+        <record id="edi_D97" model="odoo_edi.product.uom">
+            <field name="name">D97</field>
+            <field name="description">pallet/unit load</field>
+        </record>
+        <record id="edi_DAY" model="odoo_edi.product.uom">
+            <field name="name">DAY</field>
+            <field name="description">day</field>
+        </record>
+        <record id="edi_DD" model="odoo_edi.product.uom">
+            <field name="name">DD</field>
+            <field name="description">degree [unit of angle]</field>
+        </record>
+        <record id="edi_DI" model="odoo_edi.product.uom">
+            <field name="name">DI</field>
+            <field name="description">dispenser</field>
+        </record>
+        <record id="edi_DLT" model="odoo_edi.product.uom">
+            <field name="name">DLT</field>
+            <field name="description">decilitre</field>
+        </record>
+        <record id="edi_DMQ" model="odoo_edi.product.uom">
+            <field name="name">DMQ</field>
+            <field name="description">cubic decimetre</field>
+        </record>
+        <record id="edi_DMT" model="odoo_edi.product.uom">
+            <field name="name">DMT</field>
+            <field name="description">decimetre</field>
+        </record>
+        <record id="edi_DR" model="odoo_edi.product.uom">
+            <field name="name">DR</field>
+            <field name="description">drum</field>
+        </record>
+        <record id="edi_DS" model="odoo_edi.product.uom">
+            <field name="name">DS</field>
+            <field name="description">display</field>
+        </record>
+        <record id="edi_DZN" model="odoo_edi.product.uom">
+            <field name="name">DZN</field>
+            <field name="description">dozen</field>
+        </record>
+        <record id="edi_EA" model="odoo_edi.product.uom">
+            <field name="name">EA</field>
+            <field name="description">each</field>
+        </record>
+        <record id="edi_EV" model="odoo_edi.product.uom">
+            <field name="name">EV</field>
+            <field name="description">envelope</field>
+        </record>
+        <record id="edi_FAH" model="odoo_edi.product.uom">
+            <field name="name">FAH</field>
+            <field name="description">degree Fahrenheit</field>
+        </record>
+        <record id="edi_FOT" model="odoo_edi.product.uom">
+            <field name="name">FOT</field>
+            <field name="description">foot</field>
+        </record>
+        <record id="edi_FTK" model="odoo_edi.product.uom">
+            <field name="name">FTK</field>
+            <field name="description">square foot</field>
+        </record>
+        <record id="edi_FTQ" model="odoo_edi.product.uom">
+            <field name="name">FTQ</field>
+            <field name="description">cubic foot</field>
+        </record>
+        <record id="edi_GC" model="odoo_edi.product.uom">
+            <field name="name">GC</field>
+            <field name="description">gram per 100 gram</field>
+        </record>
+        <record id="edi_GK" model="odoo_edi.product.uom">
+            <field name="name">GK</field>
+            <field name="description">gram per kilogram</field>
+        </record>
+        <record id="edi_GL" model="odoo_edi.product.uom">
+            <field name="name">GL</field>
+            <field name="description">gram per litre</field>
+        </record>
+        <record id="edi_GLI" model="odoo_edi.product.uom">
+            <field name="name">GLI</field>
+            <field name="description">gallon (UK)</field>
+        </record>
+        <record id="edi_GLL" model="odoo_edi.product.uom">
+            <field name="name">GLL</field>
+            <field name="description">gallon (US)</field>
+        </record>
+        <record id="edi_GM" model="odoo_edi.product.uom">
+            <field name="name">GM</field>
+            <field name="description">gram per square metre</field>
+        </record>
+        <record id="edi_GP" model="odoo_edi.product.uom">
+            <field name="name">GP</field>
+            <field name="description">milligram per cubic metre</field>
+        </record>
+        <record id="edi_GQ" model="odoo_edi.product.uom">
+            <field name="name">GQ</field>
+            <field name="description">microgram per cubic metre</field>
+        </record>
+        <record id="edi_GRM" model="odoo_edi.product.uom">
+            <field name="name">GRM</field>
+            <field name="description">gram</field>
+        </record>
+        <record id="edi_GRO" model="odoo_edi.product.uom">
+            <field name="name">GRO</field>
+            <field name="description">gross</field>
+        </record>
+        <record id="edi_GRT" model="odoo_edi.product.uom">
+            <field name="name">GRT</field>
+            <field name="description">gross register ton</field>
+        </record>
+        <record id="edi_HAR" model="odoo_edi.product.uom">
+            <field name="name">HAR</field>
+            <field name="description">hectare</field>
+        </record>
+        <record id="edi_HGM" model="odoo_edi.product.uom">
+            <field name="name">HGM</field>
+            <field name="description">hectogram</field>
+        </record>
+        <record id="edi_HJ" model="odoo_edi.product.uom">
+            <field name="name">HJ</field>
+            <field name="description">metric horse power</field>
+        </record>
+        <record id="edi_HLT" model="odoo_edi.product.uom">
+            <field name="name">HLT</field>
+            <field name="description">hectolitre</field>
+        </record>
+        <record id="edi_HTZ" model="odoo_edi.product.uom">
+            <field name="name">HTZ</field>
+            <field name="description">hertz</field>
+        </record>
+        <record id="edi_HUR" model="odoo_edi.product.uom">
+            <field name="name">HUR</field>
+            <field name="description">hour</field>
+        </record>
+        <record id="edi_INH" model="odoo_edi.product.uom">
+            <field name="name">INH</field>
+            <field name="description">inch</field>
+        </record>
+        <record id="edi_INK" model="odoo_edi.product.uom">
+            <field name="name">INK</field>
+            <field name="description">square inch</field>
+        </record>
+        <record id="edi_INQ" model="odoo_edi.product.uom">
+            <field name="name">INQ</field>
+            <field name="description">cubic inch</field>
+        </record>
+        <record id="edi_JG" model="odoo_edi.product.uom">
+            <field name="name">JG</field>
+            <field name="description">jug</field>
+        </record>
+        <record id="edi_JOU" model="odoo_edi.product.uom">
+            <field name="name">JOU</field>
+            <field name="description">joule</field>
+        </record>
+        <record id="edi_JR" model="odoo_edi.product.uom">
+            <field name="name">JR</field>
+            <field name="description">jar</field>
+        </record>
+        <record id="edi_KEL" model="odoo_edi.product.uom">
+            <field name="name">KEL</field>
+            <field name="description">kelvin</field>
+        </record>
+        <record id="edi_KG" model="odoo_edi.product.uom">
+            <field name="name">KG</field>
+            <field name="description">keg</field>
+        </record>
+        <record id="edi_KGM" model="odoo_edi.product.uom">
+            <field name="name">KGM</field>
+            <field name="description">kilogram</field>
+        </record>
+        <record id="edi_KGS" model="odoo_edi.product.uom">
+            <field name="name">KGS</field>
+            <field name="description">kilogram per second</field>
+        </record>
+        <record id="edi_KHZ" model="odoo_edi.product.uom">
+            <field name="name">KHZ</field>
+            <field name="description">kilohertz</field>
+        </record>
+        <record id="edi_KJO" model="odoo_edi.product.uom">
+            <field name="name">KJO</field>
+            <field name="description">kilojoule</field>
+        </record>
+        <record id="edi_KMH" model="odoo_edi.product.uom">
+            <field name="name">KMH</field>
+            <field name="description">kilometre per hour</field>
+        </record>
+        <record id="edi_KMK" model="odoo_edi.product.uom">
+            <field name="name">KMK</field>
+            <field name="description">square kilometre</field>
+        </record>
+        <record id="edi_KMQ" model="odoo_edi.product.uom">
+            <field name="name">KMQ</field>
+            <field name="description">kilogram per cubic metre</field>
+        </record>
+        <record id="edi_KT" model="odoo_edi.product.uom">
+            <field name="name">KT</field>
+            <field name="description">kit</field>
+        </record>
+        <record id="edi_KTM" model="odoo_edi.product.uom">
+            <field name="name">KTM</field>
+            <field name="description">kilometre</field>
+        </record>
+        <record id="edi_KVT" model="odoo_edi.product.uom">
+            <field name="name">KVT</field>
+            <field name="description">kilovolt</field>
+        </record>
+        <record id="edi_KWH" model="odoo_edi.product.uom">
+            <field name="name">KWH</field>
+            <field name="description">kilowatt hour</field>
+        </record>
+        <record id="edi_KWT" model="odoo_edi.product.uom">
+            <field name="name">KWT</field>
+            <field name="description">kilowatt</field>
+        </record>
+        <record id="edi_LBR" model="odoo_edi.product.uom">
+            <field name="name">LBR</field>
+            <field name="description">pound</field>
+        </record>
+        <record id="edi_LN" model="odoo_edi.product.uom">
+            <field name="name">LN</field>
+            <field name="description">length</field>
+        </record>
+        <record id="edi_LO" model="odoo_edi.product.uom">
+            <field name="name">LO</field>
+            <field name="description">lot [unit of procurement]</field>
+        </record>
+        <record id="edi_LR" model="odoo_edi.product.uom">
+            <field name="name">LR</field>
+            <field name="description">layer</field>
+        </record>
+        <record id="edi_LS" model="odoo_edi.product.uom">
+            <field name="name">LS</field>
+            <field name="description">lump sum</field>
+        </record>
+        <record id="edi_LTN" model="odoo_edi.product.uom">
+            <field name="name">LTN</field>
+            <field name="description">ton (UK) or long ton (US)</field>
+        </record>
+        <record id="edi_LTR" model="odoo_edi.product.uom">
+            <field name="name">LTR</field>
+            <field name="description">litre</field>
+        </record>
+        <record id="edi_M1" model="odoo_edi.product.uom">
+            <field name="name">M1</field>
+            <field name="description">milligram per litre</field>
+        </record>
+        <record id="edi_MAW" model="odoo_edi.product.uom">
+            <field name="name">MAW</field>
+            <field name="description">megawatt</field>
+        </record>
+        <record id="edi_MBR" model="odoo_edi.product.uom">
+            <field name="name">MBR</field>
+            <field name="description">millibar</field>
+        </record>
+        <record id="edi_MGM" model="odoo_edi.product.uom">
+            <field name="name">MGM</field>
+            <field name="description">milligram</field>
+        </record>
+        <record id="edi_MHZ" model="odoo_edi.product.uom">
+            <field name="name">MHZ</field>
+            <field name="description">megahertz</field>
+        </record>
+        <record id="edi_MIK" model="odoo_edi.product.uom">
+            <field name="name">MIK</field>
+            <field name="description">square mile (statute mile)</field>
+        </record>
+        <record id="edi_MIL" model="odoo_edi.product.uom">
+            <field name="name">MIL</field>
+            <field name="description">thousand</field>
+        </record>
+        <record id="edi_MIN" model="odoo_edi.product.uom">
+            <field name="name">MIN</field>
+            <field name="description">minute [unit of time]</field>
+        </record>
+        <record id="edi_MLT" model="odoo_edi.product.uom">
+            <field name="name">MLT</field>
+            <field name="description">millilitre</field>
+        </record>
+        <record id="edi_MMK" model="odoo_edi.product.uom">
+            <field name="name">MMK</field>
+            <field name="description">square millimetre</field>
+        </record>
+        <record id="edi_MMQ" model="odoo_edi.product.uom">
+            <field name="name">MMQ</field>
+            <field name="description">cubic millimetre</field>
+        </record>
+        <record id="edi_MMT" model="odoo_edi.product.uom">
+            <field name="name">MMT</field>
+            <field name="description">millimetre</field>
+        </record>
+        <record id="edi_MON" model="odoo_edi.product.uom">
+            <field name="name">MON</field>
+            <field name="description">month</field>
+        </record>
+        <record id="edi_MPA" model="odoo_edi.product.uom">
+            <field name="name">MPA</field>
+            <field name="description">megapascal</field>
+        </record>
+        <record id="edi_MQS" model="odoo_edi.product.uom">
+            <field name="name">MQS</field>
+            <field name="description">cubic metre per second</field>
+        </record>
+        <record id="edi_MSK" model="odoo_edi.product.uom">
+            <field name="name">MSK</field>
+            <field name="description">metre per secon squared</field>
+        </record>
+        <record id="edi_MTK" model="odoo_edi.product.uom">
+            <field name="name">MTK</field>
+            <field name="description">square metre</field>
+        </record>
+        <record id="edi_MTQ" model="odoo_edi.product.uom">
+            <field name="name">MTQ</field>
+            <field name="description">cubic metre</field>
+        </record>
+        <record id="edi_MTR" model="odoo_edi.product.uom">
+            <field name="name">MTR</field>
+            <field name="description">metre</field>
+        </record>
+        <record id="edi_MTS" model="odoo_edi.product.uom">
+            <field name="name">MTS</field>
+            <field name="description">metre per second</field>
+        </record>
+        <record id="edi_MWH" model="odoo_edi.product.uom">
+            <field name="name">MWH</field>
+            <field name="description">megawatt hour (1000 kW.h)</field>
+        </record>
+        <record id="edi_NA" model="odoo_edi.product.uom">
+            <field name="name">NA</field>
+            <field name="description">milligram per kilogram</field>
+        </record>
+        <record id="edi_NEW" model="odoo_edi.product.uom">
+            <field name="name">NEW</field>
+            <field name="description">newton</field>
+        </record>
+        <record id="edi_NL" model="odoo_edi.product.uom">
+            <field name="name">NL</field>
+            <field name="description">load</field>
+        </record>
+        <record id="edi_NX" model="odoo_edi.product.uom">
+            <field name="name">NX</field>
+            <field name="description">part per thousand</field>
+        </record>
+        <record id="edi_OHM" model="odoo_edi.product.uom">
+            <field name="name">OHM</field>
+            <field name="description">ohm</field>
+        </record>
+        <record id="edi_ONZ" model="odoo_edi.product.uom">
+            <field name="name">ONZ</field>
+            <field name="description">ounce (avoirdpois)</field>
+        </record>
+        <record id="edi_OZA" model="odoo_edi.product.uom">
+            <field name="name">OZA</field>
+            <field name="description">fluid ounce (US)</field>
+        </record>
+        <record id="edi_P1" model="odoo_edi.product.uom">
+            <field name="name">P1</field>
+            <field name="description">percent</field>
+        </record>
+        <record id="edi_PAL" model="odoo_edi.product.uom">
+            <field name="name">PAL</field>
+            <field name="description">pascal</field>
+        </record>
+        <record id="edi_PF" model="odoo_edi.product.uom">
+            <field name="name">PF</field>
+            <field name="description">pallet (lift)</field>
+        </record>
+        <record id="edi_PK" model="odoo_edi.product.uom">
+            <field name="name">PK</field>
+            <field name="description">pack</field>
+        </record>
+        <record id="edi_PR" model="odoo_edi.product.uom">
+            <field name="name">PR</field>
+            <field name="description">pair</field>
+        </record>
+        <record id="edi_PT" model="odoo_edi.product.uom">
+            <field name="name">PT</field>
+            <field name="description">pint (US)</field>
+        </record>
+        <record id="edi_PU" model="odoo_edi.product.uom">
+            <field name="name">PU</field>
+            <field name="description">tray</field>
+        </record>
+        <record id="edi_PZ" model="odoo_edi.product.uom">
+            <field name="name">PZ</field>
+            <field name="description">peck dry (UK)</field>
+        </record>
+        <record id="edi_QAN" model="odoo_edi.product.uom">
+            <field name="name">QAN</field>
+            <field name="description">quarter (of a year)</field>
+        </record>
+        <record id="edi_QT" model="odoo_edi.product.uom">
+            <field name="name">QT</field>
+            <field name="description">quart (US)</field>
+        </record>
+        <record id="edi_QTI" model="odoo_edi.product.uom">
+            <field name="name">QTI</field>
+            <field name="description">quark (UK)</field>
+        </record>
+        <record id="edi_RA" model="odoo_edi.product.uom">
+            <field name="name">RA</field>
+            <field name="description">rack</field>
+        </record>
+        <record id="edi_RD" model="odoo_edi.product.uom">
+            <field name="name">RD</field>
+            <field name="description">rod</field>
+        </record>
+        <record id="edi_RL" model="odoo_edi.product.uom">
+            <field name="name">RL</field>
+            <field name="description">reel</field>
+        </record>
+        <record id="edi_RM" model="odoo_edi.product.uom">
+            <field name="name">RM</field>
+            <field name="description">ream</field>
+        </record>
+        <record id="edi_RO" model="odoo_edi.product.uom">
+            <field name="name">RO</field>
+            <field name="description">roll</field>
+        </record>
+        <record id="edi_S4" model="odoo_edi.product.uom">
+            <field name="name">S4</field>
+            <field name="description">square metre per second</field>
+        </record>
+        <record id="edi_SA" model="odoo_edi.product.uom">
+            <field name="name">SA</field>
+            <field name="description">sack</field>
+        </record>
+        <record id="edi_SE" model="odoo_edi.product.uom">
+            <field name="name">SE</field>
+            <field name="description">section</field>
+        </record>
+        <record id="edi_SEC" model="odoo_edi.product.uom">
+            <field name="name">SEC</field>
+            <field name="description">second [unit of time]</field>
+        </record>
+        <record id="edi_SET" model="odoo_edi.product.uom">
+            <field name="name">SET</field>
+            <field name="description">set</field>
+        </record>
+        <record id="edi_SG" model="odoo_edi.product.uom">
+            <field name="name">SG</field>
+            <field name="description">segment</field>
+        </record>
+        <record id="edi_SMI" model="odoo_edi.product.uom">
+            <field name="name">SMI</field>
+            <field name="description">mile (statute mile)</field>
+        </record>
+        <record id="edi_SO" model="odoo_edi.product.uom">
+            <field name="name">SO</field>
+            <field name="description">soopl</field>
+        </record>
+        <record id="edi_SR" model="odoo_edi.product.uom">
+            <field name="name">SR</field>
+            <field name="description">strip</field>
+        </record>
+        <record id="edi_ST" model="odoo_edi.product.uom">
+            <field name="name">ST</field>
+            <field name="description">sheet</field>
+        </record>
+        <record id="edi_STN" model="odoo_edi.product.uom">
+            <field name="name">STN</field>
+            <field name="description">ton (US) or short ton (UK/US)</field>
+        </record>
+        <record id="edi_SV" model="odoo_edi.product.uom">
+            <field name="name">SV</field>
+            <field name="description">skid</field>
+        </record>
+        <record id="edi_SX" model="odoo_edi.product.uom">
+            <field name="name">SX</field>
+            <field name="description">shipment</field>
+        </record>
+        <record id="edi_TC" model="odoo_edi.product.uom">
+            <field name="name">TC</field>
+            <field name="description">truckload</field>
+        </record>
+        <record id="edi_TE" model="odoo_edi.product.uom">
+            <field name="name">TE</field>
+            <field name="description">tote</field>
+        </record>
+        <record id="edi_TK" model="odoo_edi.product.uom">
+            <field name="name">TK</field>
+            <field name="description">tank, rectangular</field>
+        </record>
+        <record id="edi_TN" model="odoo_edi.product.uom">
+            <field name="name">TN</field>
+            <field name="description">tin</field>
+        </record>
+        <record id="edi_TNE" model="odoo_edi.product.uom">
+            <field name="name">TNE</field>
+            <field name="description">tonne (metric ton)</field>
+        </record>
+        <record id="edi_TU" model="odoo_edi.product.uom">
+            <field name="name">TU</field>
+            <field name="description">tube</field>
+        </record>
+        <record id="edi_U2" model="odoo_edi.product.uom">
+            <field name="name">U2</field>
+            <field name="description">tablet</field>
+        </record>
+        <record id="edi_VI" model="odoo_edi.product.uom">
+            <field name="name">VI</field>
+            <field name="description">vial</field>
+        </record>
+        <record id="edi_VLT" model="odoo_edi.product.uom">
+            <field name="name">VLT</field>
+            <field name="description">volt</field>
+        </record>
+        <record id="edi_VQ" model="odoo_edi.product.uom">
+            <field name="name">VQ</field>
+            <field name="description">bulk</field>
+        </record>
+        <record id="edi_WEE" model="odoo_edi.product.uom">
+            <field name="name">WEE</field>
+            <field name="description">week</field>
+        </record>
+        <record id="edi_WH" model="odoo_edi.product.uom">
+            <field name="name">WH</field>
+            <field name="description">wheel</field>
+        </record>
+        <record id="edi_WTT" model="odoo_edi.product.uom">
+            <field name="name">WTT</field>
+            <field name="description">watt</field>
+        </record>
+        <record id="edi_YDK" model="odoo_edi.product.uom">
+            <field name="name">YDK</field>
+            <field name="description">square yard</field>
+        </record>
+        <record id="edi_YDQ" model="odoo_edi.product.uom">
+            <field name="name">YDQ</field>
+            <field name="description">cubic yard</field>
+        </record>
+        <record id="edi_YRD" model="odoo_edi.product.uom">
+            <field name="name">YRD</field>
+            <field name="description">yard</field>
+        </record>
+        <record id="edi_Z2" model="odoo_edi.product.uom">
+            <field name="name">Z2</field>
+            <field name="description">chest</field>
+        </record>
+        <record id="edi_Z3" model="odoo_edi.product.uom">
+            <field name="name">Z3</field>
+            <field name="description">cask</field>
+        </record>
+        <record id="edi_AA" model="odoo_edi.product.uom">
+            <field name="name">AA</field>
+            <field name="description">ball</field>
+        </record>
+    </data>
+</odoo>
