@@ -33,7 +33,7 @@
         'views/res_partner_views.xml',
         'data/odoo_edi_product_uom_data.xml',
         'data/odoo_edi_endpoints.xml',
-        'data/uom_uom_data.xml',
+        #'data/uom_uom_data.xml',
         'data/odoo_edi_tax_scheme_data.xml',
         'data/odoo_edi_tax_category_data.xml',
     ],
