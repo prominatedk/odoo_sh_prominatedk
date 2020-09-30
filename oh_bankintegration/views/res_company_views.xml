@@ -1,0 +1,31 @@
+<odoo>
+    <data>
+        <record id="inherit_view_company_form" model="ir.ui.view">
+            <field name="name">res.company.form.inherit.bankintegration</field>
+            <field name="model">res.company</field>
+            <field name="inherit_id" ref="base.view_company_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//notebook" position="inside">
+                    <paage name="oh_bankintegration" string="Bankintegration.dk">
+                        <group>
+                            <group>
+                                <field name="erp_provider" password="True" groups="base.group_no_one"/>
+                                <field name="bi_api_key" password="True" groups="base.group_no_one"/>
+                                <field name="use_extended_import"/>
+                                <field name="check_payment_status"/>
+                                <field name="use_bban"/>
+                            </group>
+                            <group>
+                                <field name="payment_journal"/>
+                                <field name="payment_margin"/>
+                                <field name="autopay"/>
+                                <field name="set_validate_payment"/>
+                                <field name="use_note_msg"/>
+                            </group>
+                        </group>
+                    </paage>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>
