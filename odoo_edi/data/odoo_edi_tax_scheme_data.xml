@@ -1,0 +1,352 @@
+<odoo>
+    <data>
+        <record id="tax_scheme_9" model="odoo_edi.tax.scheme">
+            <field name="code">9</field>
+            <field name="name">Råstofafgift/Sten og grus</field>
+        </record>
+        <record id="tax_scheme_10" model="odoo_edi.tax.scheme">
+            <field name="code">10</field>
+            <field name="name">Affaldsafgift</field>
+        </record>
+        <record id="tax_scheme_11" model="odoo_edi.tax.scheme">
+            <field name="code">11</field>
+            <field name="name">Tilskud til elproduktion</field>
+        </record>
+        <record id="tax_scheme_16" model="odoo_edi.tax.scheme">
+            <field name="code">16</field>
+            <field name="name">Chokolade- og sukkervareafgift</field>
+        </record>
+        <record id="tax_scheme_17" model="odoo_edi.tax.scheme">
+            <field name="code">17</field>
+            <field name="name">Dækningsafgift/Chokolade- og sukkervarer</field>
+        </record>
+        <record id="tax_scheme_18" model="odoo_edi.tax.scheme">
+            <field name="code">18</field>
+            <field name="name">Råstofafgift/Nødder</field>
+        </record>
+        <record id="tax_scheme_19" model="odoo_edi.tax.scheme">
+            <field name="code">19</field>
+            <field name="name">CFC-afgift</field>
+        </record>
+        <record id="tax_scheme_21" model="odoo_edi.tax.scheme">
+            <field name="code">21</field>
+            <field name="name">Elafgift</field>
+        </record>
+        <record id="tax_scheme_21a" model="odoo_edi.tax.scheme">
+            <field name="code">21a</field>
+            <field name="name">Elafgift varme under 4000 kWh</field>
+        </record>
+        <record id="tax_scheme_21b" model="odoo_edi.tax.scheme">
+            <field name="code">21b</field>
+            <field name="name">Elafgift varme over 4000 kWh</field>
+        </record>
+        <record id="tax_scheme_21c" model="odoo_edi.tax.scheme">
+            <field name="code">21c</field>
+            <field name="name">Elafgift varme over/under 4000kWh</field>
+        </record>
+        <record id="tax_scheme_21d" model="odoo_edi.tax.scheme">
+            <field name="code">21d</field>
+            <field name="name">Eldistributionsdidrag</field>
+        </record>
+        <record id="tax_scheme_21e" model="odoo_edi.tax.scheme">
+            <field name="code">21e</field>
+            <field name="name">Eldistributionsbidrag, reduceret</field>
+        </record>
+        <record id="tax_scheme_21f" model="odoo_edi.tax.scheme">
+            <field name="code">21f</field>
+            <field name="name">Elsparebidrag</field>
+        </record>
+        <record id="tax_scheme_24" model="odoo_edi.tax.scheme">
+            <field name="code">24</field>
+            <field name="name">Glødelamper, elektriske sikringer mv</field>
+        </record>
+        <record id="tax_scheme_25" model="odoo_edi.tax.scheme">
+            <field name="code">25</field>
+            <field name="name">Kaffe, kaffeekstrakt/erstatning mv</field>
+        </record>
+        <record id="tax_scheme_27" model="odoo_edi.tax.scheme">
+            <field name="code">27</field>
+            <field name="name">Te og teekstrakter mv</field>
+        </record>
+        <record id="tax_scheme_28" model="odoo_edi.tax.scheme">
+            <field name="code">28</field>
+            <field name="name">Tilskud til CO2-afgift</field>
+        </record>
+        <record id="tax_scheme_30" model="odoo_edi.tax.scheme">
+            <field name="code">30</field>
+            <field name="name">Emballager, stykbaseret</field>
+        </record>
+        <record id="tax_scheme_31" model="odoo_edi.tax.scheme">
+            <field name="code">31</field>
+            <field name="name">Bæreposer</field>
+        </record>
+        <record id="tax_scheme_32" model="odoo_edi.tax.scheme">
+            <field name="code">32</field>
+            <field name="name">Konsumisafgift</field>
+        </record>
+        <record id="tax_scheme_33" model="odoo_edi.tax.scheme">
+            <field name="code">33</field>
+            <field name="name">Kul mv</field>
+        </record>
+        <record id="tax_scheme_39" model="odoo_edi.tax.scheme">
+            <field name="code">39</field>
+            <field name="name">CO2-afgift/Mineralolie mv</field>
+        </record>
+        <record id="tax_scheme_40" model="odoo_edi.tax.scheme">
+            <field name="code">40</field>
+            <field name="name">CO2-afgift/Kul mv</field>
+        </record>
+        <record id="tax_scheme_41" model="odoo_edi.tax.scheme">
+            <field name="code">41</field>
+            <field name="name">CO2-afgift/El</field>
+        </record>
+        <record id="tax_scheme_53" model="odoo_edi.tax.scheme">
+            <field name="code">53</field>
+            <field name="name">Mineralvandsafgift</field>
+        </record>
+        <record id="tax_scheme_54" model="odoo_edi.tax.scheme">
+            <field name="code">54</field>
+            <field name="name">Engangsservice</field>
+        </record>
+        <record id="tax_scheme_56" model="odoo_edi.tax.scheme">
+            <field name="code">56</field>
+            <field name="name">Benzinafgift</field>
+        </record>
+        <record id="tax_scheme_57" model="odoo_edi.tax.scheme">
+            <field name="code">57</field>
+            <field name="name">Mineralolieafgift</field>
+        </record>
+        <record id="tax_scheme_61" model="odoo_edi.tax.scheme">
+            <field name="code">61</field>
+            <field name="name">Gas og flaskeafgift</field>
+        </record>
+        <record id="tax_scheme_61a" model="odoo_edi.tax.scheme">
+            <field name="code">61a</field>
+            <field name="name">Gasafgift</field>
+        </record>
+        <record id="tax_scheme_62" model="odoo_edi.tax.scheme">
+            <field name="code">62</field>
+            <field name="name">Smøreolier, hydraulikolier mv</field>
+        </record>
+        <record id="tax_scheme_63" model="odoo_edi.tax.scheme">
+            <field name="code">63</field>
+            <field name="name">Moms</field>
+        </record>
+        <record id="tax_scheme_68" model="odoo_edi.tax.scheme">
+            <field name="code">68</field>
+            <field name="name">Skadesforsikringsafgift</field>
+        </record>
+        <record id="tax_scheme_70" model="odoo_edi.tax.scheme">
+            <field name="code">70</field>
+            <field name="name">Cigaretter</field>
+        </record>
+        <record id="tax_scheme_71" model="odoo_edi.tax.scheme">
+            <field name="code">71</field>
+            <field name="name">Røgtobak</field>
+        </record>
+        <record id="tax_scheme_72" model="odoo_edi.tax.scheme">
+            <field name="code">72</field>
+            <field name="name">Cigarer, cerutter og cigarillos</field>
+        </record>
+        <record id="tax_scheme_75" model="odoo_edi.tax.scheme">
+            <field name="code">75</field>
+            <field name="name">Vandafgift</field>
+        </record>
+        <record id="tax_scheme_76" model="odoo_edi.tax.scheme">
+            <field name="code">76</field>
+            <field name="name">Vinafgift</field>
+        </record>
+        <record id="tax_scheme_77" model="odoo_edi.tax.scheme">
+            <field name="code">77</field>
+            <field name="name">Ølafgift</field>
+        </record>
+        <record id="tax_scheme_79" model="odoo_edi.tax.scheme">
+            <field name="code">79</field>
+            <field name="name">Import</field>
+        </record>
+        <record id="tax_scheme_85" model="odoo_edi.tax.scheme">
+            <field name="code">85</field>
+            <field name="name">Opløsningsmidler</field>
+        </record>
+        <record id="tax_scheme_86" model="odoo_edi.tax.scheme">
+            <field name="code">86</field>
+            <field name="name">Gebyr på blyakkumulatorer</field>
+        </record>
+        <record id="tax_scheme_87" model="odoo_edi.tax.scheme">
+            <field name="code">87</field>
+            <field name="name">NiCd-batterier</field>
+        </record>
+        <record id="tax_scheme_91" model="odoo_edi.tax.scheme">
+            <field name="code">91</field>
+            <field name="name">Gebyr på dæk</field>
+        </record>
+        <record id="tax_scheme_94" model="odoo_edi.tax.scheme">
+            <field name="code">94</field>
+            <field name="name">Naturgas og bygas</field>
+        </record>
+        <record id="tax_scheme_95" model="odoo_edi.tax.scheme">
+            <field name="code">95</field>
+            <field name="name">Bekæmpelsesmidler, visse</field>
+        </record>
+        <record id="tax_scheme_97" model="odoo_edi.tax.scheme">
+            <field name="code">97</field>
+            <field name="name">Svovlafgift/Mineralolieprodukter</field>
+        </record>
+        <record id="tax_scheme_98" model="odoo_edi.tax.scheme">
+            <field name="code">98</field>
+            <field name="name">Svovlafgift/Stenkun, brunkul og koks</field>
+        </record>
+        <record id="tax_scheme_99" model="odoo_edi.tax.scheme">
+            <field name="code">99</field>
+            <field name="name">Særligt svovlafgift af el</field>
+        </record>
+        <record id="tax_scheme_99a" model="odoo_edi.tax.scheme">
+            <field name="code">99a</field>
+            <field name="name">Svovlafgift, fjernvarme</field>
+        </record>
+        <record id="tax_scheme_100" model="odoo_edi.tax.scheme">
+            <field name="code">100</field>
+            <field name="name">Svovlafgift/træpiller, halm, affald mv</field>
+        </record>
+        <record id="tax_scheme_108" model="odoo_edi.tax.scheme">
+            <field name="code">108</field>
+            <field name="name">Cigaretpapir mv</field>
+        </record>
+        <record id="tax_scheme_109" model="odoo_edi.tax.scheme">
+            <field name="code">109</field>
+            <field name="name">Skrå og snus mv</field>
+        </record>
+        <record id="tax_scheme_110" model="odoo_edi.tax.scheme">
+            <field name="code">110</field>
+            <field name="name">CO2-afgift/Natur- og Bygas</field>
+        </record>
+        <record id="tax_scheme_110a" model="odoo_edi.tax.scheme">
+            <field name="code">110a</field>
+            <field name="name">CO2-afgift Gas</field>
+        </record>
+        <record id="tax_scheme_110b" model="odoo_edi.tax.scheme">
+            <field name="code">110b</field>
+            <field name="name">CO2-afgift Naturgas</field>
+        </record>
+        <record id="tax_scheme_110c" model="odoo_edi.tax.scheme">
+            <field name="code">110c</field>
+            <field name="name">CO2-afgift Bygas</field>
+        </record>
+        <record id="tax_scheme_111" model="odoo_edi.tax.scheme">
+            <field name="code">111</field>
+            <field name="name">CO2-afgift/Auto- og flaskegas</field>
+        </record>
+        <record id="tax_scheme_112" model="odoo_edi.tax.scheme">
+            <field name="code">112</field>
+            <field name="name">Energiafgift</field>
+        </record>
+        <record id="tax_scheme_112a" model="odoo_edi.tax.scheme">
+            <field name="code">112a</field>
+            <field name="name">Energiafgift El</field>
+        </record>
+        <record id="tax_scheme_112b" model="odoo_edi.tax.scheme">
+            <field name="code">112b</field>
+            <field name="name">Energiafgift Naturgas</field>
+        </record>
+        <record id="tax_scheme_112c" model="odoo_edi.tax.scheme">
+            <field name="code">112c</field>
+            <field name="name">Energiafgift Bygas</field>
+        </record>
+        <record id="tax_scheme_112d" model="odoo_edi.tax.scheme">
+            <field name="code">112d</field>
+            <field name="name">Energiafgift Olie</field>
+        </record>
+        <record id="tax_scheme_112e" model="odoo_edi.tax.scheme">
+            <field name="code">112e</field>
+            <field name="name">Energiafgift Kul</field>
+        </record>
+        <record id="tax_scheme_112f" model="odoo_edi.tax.scheme">
+            <field name="code">112f</field>
+            <field name="name">Energiafgift Fjernvarme</field>
+        </record>
+        <record id="tax_scheme_127" model="odoo_edi.tax.scheme">
+            <field name="code">127</field>
+            <field name="name">Spildevandsafgift</field>
+        </record>
+        <record id="tax_scheme_127a" model="odoo_edi.tax.scheme">
+            <field name="code">127a</field>
+            <field name="name">Grundvandsbeskyttelse</field>
+        </record>
+        <record id="tax_scheme_127b" model="odoo_edi.tax.scheme">
+            <field name="code">127b</field>
+            <field name="name">Vandafledningsbidrag rensning</field>
+        </record>
+        <record id="tax_scheme_127c" model="odoo_edi.tax.scheme">
+            <field name="code">127c</field>
+            <field name="name">Vandafledningsbidrag transport</field>
+        </record>
+        <record id="tax_scheme_128" model="odoo_edi.tax.scheme">
+            <field name="code">128</field>
+            <field name="name">Bekæmpelsesmidler, andre</field>
+        </record>
+        <record id="tax_scheme_130" model="odoo_edi.tax.scheme">
+            <field name="code">130</field>
+            <field name="name">EU-handel med visse mineralolieprodukter</field>
+        </record>
+        <record id="tax_scheme_133" model="odoo_edi.tax.scheme">
+            <field name="code">133</field>
+            <field name="name">Svovlafgift/Gas og flaskegas</field>
+        </record>
+        <record id="tax_scheme_134" model="odoo_edi.tax.scheme">
+            <field name="code">134</field>
+            <field name="name">Svovlafgift/Natur- og bygas</field>
+        </record>
+        <record id="tax_scheme_135" model="odoo_edi.tax.scheme">
+            <field name="code">135</field>
+            <field name="name">Svovlafgift/Benzin</field>
+        </record>
+        <record id="tax_scheme_136" model="odoo_edi.tax.scheme">
+            <field name="code">136</field>
+            <field name="name">Kaburatorvækse</field>
+        </record>
+        <record id="tax_scheme_137" model="odoo_edi.tax.scheme">
+            <field name="code">137</field>
+            <field name="name">Antibiotika og vækstfremmere</field>
+        </record>
+        <record id="tax_scheme_138" model="odoo_edi.tax.scheme">
+            <field name="code">138</field>
+            <field name="name">Kvælstof</field>
+        </record>
+        <record id="tax_scheme_139" model="odoo_edi.tax.scheme">
+            <field name="code">139</field>
+            <field name="name">Folier fremstillet af blød PVC</field>
+        </record>
+        <record id="tax_scheme_140" model="odoo_edi.tax.scheme">
+            <field name="code">140</field>
+            <field name="name">Emballager, vægtbaseret</field>
+        </record>
+        <record id="tax_scheme_142" model="odoo_edi.tax.scheme">
+            <field name="code">142</field>
+            <field name="name">PVC og ftalter</field>
+        </record>
+        <record id="tax_scheme_146" model="odoo_edi.tax.scheme">
+            <field name="code">146</field>
+            <field name="name">Drivhusgasser, HFC mm.</field>
+        </record>
+        <record id="tax_scheme_151" model="odoo_edi.tax.scheme">
+            <field name="code">151</field>
+            <field name="name">CO2-afgift/benzin</field>
+        </record>
+        <record id="tax_scheme_152" model="odoo_edi.tax.scheme">
+            <field name="code">152</field>
+            <field name="name">Foderfosfatafgift</field>
+        </record>
+        <record id="tax_scheme_171" model="odoo_edi.tax.scheme">
+            <field name="code">171</field>
+            <field name="name">Fedtafgift</field>
+        </record>
+        <record id="tax_scheme_VAT" model="odoo_edi.tax.scheme">
+            <field name="code">VAT</field>
+            <field name="name">Ingen tekst (kun til international brug)</field>
+        </record>
+        <record id="tax_scheme_0" model="odoo_edi.tax.scheme">
+            <field name="code">0</field>
+            <field name="name">Ingen tekst</field>
+    </record>
+    </data>
+</odoo>

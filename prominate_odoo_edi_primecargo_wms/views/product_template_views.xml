@@ -1,0 +1,17 @@
+<odoo>
+    <data>
+        <record id="inherit_product_template_form_view" model="ir.ui.view">
+            <field name="name">product.template.common.from.add_inner_out_quantity</field>
+            <field name="model">product.template</field>
+            <field name="inherit_id" ref="product.product_template_form_view"/>
+            <field name="arch" type="xml">
+                <xpath expr="//group[@name='inventory']" position="inside">
+                    <group name="primecargo_units">
+                        <field name="primecargo_inner_pack_qty"/>
+                        <field name="primecargo_outer_pack_qty"/>
+                    </group>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

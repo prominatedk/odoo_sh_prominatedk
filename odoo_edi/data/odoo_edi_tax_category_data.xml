@@ -1,0 +1,20 @@
+<odoo>
+    <data>
+        <record id="tax_category_ZeroRated" model="odoo_edi.tax.category">
+            <field name="code">ZeroRated</field>
+            <field name="name">Momsfri</field>
+        </record>
+        <record id="tax_category_StandardRated" model="odoo_edi.tax.category">
+            <field name="code">StandardRated</field>
+            <field name="name">Normal moms</field>
+        </record>
+        <record id="tax_category_ReverseCharge" model="odoo_edi.tax.category">
+            <field name="code">ReverseCharge</field>
+            <field name="name">Omvendt betalingspligt</field>
+        </record>
+        <record id="tax_category_Excise" model="odoo_edi.tax.category">
+            <field name="code">Excise</field>
+            <field name="name">Uspecificerede punktafgifter</field>
+        </record>
+    </data>
+</odoo>

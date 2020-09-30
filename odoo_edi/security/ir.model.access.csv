@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_odoo_edi_endpoint,access_odoo_edi_endpoint,odoo_edi.model_odoo_edi_endpoint,base.group_user,1,0,0,0
+access_odoo_edi_uom,access_odoo_edi_uom,odoo_edi.model_odoo_edi_product_uom,base.group_user,1,0,0,0
+access_odoo_edi_tax_scheme,access_odoo_edi_tax_scheme,odoo_edi.model_odoo_edi_tax_scheme,base.group_user,1,0,0,0
+access_odoo_edi_tax_category,access_odoo_edi_tax_category,odoo_edi.model_odoo_edi_tax_category,base.group_user,1,0,0,0
