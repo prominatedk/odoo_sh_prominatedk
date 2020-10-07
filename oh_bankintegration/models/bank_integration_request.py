@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 import datetime
+from logging import error
+from operator import inv
 import random
 from odoo import fields, api, models, _
 from odoo.exceptions import ValidationError
@@ -116,7 +118,12 @@ class BankIntegrationRequest(models.Model):
 
     def pay_invoice(self, vals, auth_header):
         self.ensure_one()
-        vals['options'] = {
+        _logger.info(vals)
+        payment = OrderedDict([
+            ('requestId', self.request_id),
+            ('transactions', vals),
+        ])
+        payment['options'] = {
             'waitForBankResponse': self.company_id.check_payment_status,
             'checkPaymentStatus': self.company_id.check_payment_status,
             'moveToNextBankDate': True,
@@ -130,20 +137,22 @@ class BankIntegrationRequest(models.Model):
         response = requests.post(
             PAYMENT_API_URL,
             verify=False,
-            json=vals,
+            json=payment,
             headers=headers
         )
         self.response_text = response.text
         if response.status_code in [200, 201, 202, 204]:
             self.request_status = 'pending'
-            self.invoice_ids.write({'payment_status': 'pending'})
+            for invoice in self.invoice_ids:
+                invoice.write({'payment_status': 'pending'})
         else:
             _logger.error(response.text)
             self.request_status = 'failed'
-            self.invoice_ids.write({
-                'payment_status': 'failed',
-                'payment_error': 'There was an error processing the payment. Please check that the payment details are filled correctly'
-            })
+            for invoice in self.invoice_ids:
+                invoice.write({
+                    'payment_status': 'failed',
+                    'payment_error': 'There was an error processing the payment. Please check that the payment details are filled correctly'
+                })
 
         return True
 
@@ -240,20 +249,22 @@ class BankIntegrationRequest(models.Model):
                         'to_date': to_date,
                         'statement': []
                     }
+                    use_last_entry_date_as_statement_date = self.company_id.use_last_entry_date_as_statement_date
+                    bankintegration_transaction_accounting_date = self.company_id.bankintegration_transaction_accounting_date
                     statement = {
                         'name': _('Bank statement from ' + from_date + ' to ' + to_date),
                         'balance_start': current_balance_amount,
                         'balance_end_real': 0,
-                        'date': datetime.datetime.strptime(data['created'].split('T')[0], '%Y-%m-%d'), # Only the date from the timestamp
+                        'date': datetime.datetime.strptime(data['to'].split('T')[0], '%Y-%m-%d') if use_last_entry_date_as_statement_date else datetime.datetime.strptime(data['created'].split('T')[0], '%Y-%m-%d'), # Only the date from the timestamp
                         'transactions': [],
                     }
                     if 'entries' in data:
                         lines = data['entries']
                         for transaction in lines:
                             vals = {
-                                'unique_import_id': transaction['id'],
+                                # 'unique_import_id': transaction['id'],
                                 'name': transaction['advis'][0] if self.company_id.use_note_msg else transaction['text'],
-                                'date': datetime.datetime.strptime(transaction['date']['value'], '%Y-%m-%dT%H:%M:%S'),
+                                'date': datetime.datetime.strptime(transaction['date'][bankintegration_transaction_accounting_date], '%Y-%m-%dT%H:%M:%S'),
                                 'amount': transaction['amount'],
                                 'note': "\n".join(transaction['advis']) if 'advis' in transaction else '',
                                 'json_log': json.dumps(transaction, sort_keys=True, indent=4)
@@ -295,6 +306,11 @@ class BankIntegrationRequest(models.Model):
         response_data = {}
         errors = []
         next_import_date = datetime.datetime.today() - datetime.timedelta(days=1)
+        use_last_entry_date_as_statement_date = self.company_id.use_last_entry_date_as_statement_date
+        # Some users prefer to have the bank statement be on the same date as the last transaction of the statement
+        # This we therefore configure the system to handle by modifying the date where we import from
+        if use_last_entry_date_as_statement_date:
+            last_import_date = last_import_date + datetime.timedelta(days=1)
         use_extended_import = self.company_id.use_extended_import
         bankintegration_api_url = ACCOUNT_STATEMENT_API_URL + \
             str(self.request_id) + '&from=' + \
@@ -359,6 +375,9 @@ class BankIntegrationRequest(models.Model):
                 continue
             # Get the status of any payments that have not yet been processed
             pending_requests = self.search([('company_id', '=', company.id), ('request_status', 'in', [PAYMENT_STATUS_CODE['1'], PAYMENT_STATUS_CODE['2'], PAYMENT_STATUS_CODE['4'], PAYMENT_STATUS_CODE['128']])])
+            if not pending_requests.ids:
+                _logger.warn('No payments to check')
+                continue
             request = self.create({
                 'company_id': company.id
             })
@@ -440,17 +459,24 @@ class BankIntegrationRequest(models.Model):
                 entries = response_data['answers'] or False
                 if entries:
                     for entry in entries:
-                        if entry['paymentId'] in pending_payment_ids:
-                            request.request_status = PAYMENT_STATUS_CODE[str(entry['status'])]
-                            invoice = self.env['account.invoice'].search([('payment_id', '=', entry['paymentId'])], limit=1, order='id desc')
-                            invoice.payment_status = PAYMENT_STATUS_CODE[str(entry['status'])]
-                            invoice.payment_error = ''
-                            if 'errors' in entry:
-                                errors = entry['errors']
-                                invoice.payment_error += "\n".join(["{code}: {text}".format(code=error['code'], text=error['text']) for error in errors])
-                            elif 'warnings' in entry:
-                                warnings = entry['warnings']
-                                invoice.payment_error += "\n".join(["{code}: {text}".format(code=warning['code'], text=warning['text']) for warning in warnings])
+                        invoice = self.env['account.invoice'].search([('payment_id', '=', entry['paymentId'])], limit=1, order='id desc')
+                        if not invoice.id:
+                            _logger.error('The PaymentID {} was not found'.format(entry['paymentId']))
+                            continue
+                        request = self.search([('request_id', '=', invoice.request_id)], limit=1)
+                        if not request.id:
+                            _logger.warn('No request with request ID {} was found. Skipping'.format(invoice.request_id))
+                        request.write({'request_status': PAYMENT_STATUS_CODE[str(entry['status'])]})
+                        vals = {
+                            'payment_status':PAYMENT_STATUS_CODE[str(entry['status'])]
+                        }
+                        if 'errors' in entry:
+                            errors = entry['errors']
+                            vals['payment_error'] = "\n".join(["{code}: {text}".format(code=error['code'] if 'code' in error else '', text=error['text']) for error in errors])
+                        elif 'warnings' in entry:
+                            warnings = entry['warnings']
+                            vals['payment_error'] = "\n".join(["{code}: {text}".format(code=warning['code'] if 'code' in warning else '', text=warning['text']) for warning in warnings])
+                        invoice.write(vals)
                 else:
                     _logger.warn('There were no entries in the data returned from bankintegration.dk')
                 # Allow other modules to work with the returned data, we call this method

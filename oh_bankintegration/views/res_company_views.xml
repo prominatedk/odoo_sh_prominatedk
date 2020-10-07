@@ -12,6 +12,7 @@
                                 <field name="erp_provider" password="True" groups="base.group_no_one"/>
                                 <field name="bi_api_key" password="True" groups="base.group_no_one"/>
                                 <field name="use_extended_import"/>
+                                <field name="use_last_entry_date_as_statement_date"/>
                                 <field name="check_payment_status"/>
                                 <field name="use_bban"/>
                             </group>
@@ -21,6 +22,7 @@
                                 <field name="autopay"/>
                                 <field name="set_validate_payment"/>
                                 <field name="use_note_msg"/>
+                                <field name="bankintegration_transaction_accounting_date"/>
                             </group>
                         </group>
                     </paage>

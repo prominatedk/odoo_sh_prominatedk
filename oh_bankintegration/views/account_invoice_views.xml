@@ -24,10 +24,10 @@
             <field name="arch" type="xml">
                 <xpath expr="//button[@name='action_invoice_draft']" position="after">
                     <field name="payment_status" class="oe_inline" invisible="1" />
-                    <button type="object" name="action_set_payment_again" string="Set for payment again" attrs="{'invisible': [('payment_status', 'not in', ['rejected', 'failed'])]}" />
+                    <button type="object" name="action_reset_bankintegration_payment_status" string="Set for payment again" attrs="{'invisible': [('payment_status', 'not in', ['rejected', 'failed'])]}" />
                 </xpath>
                 <xpath expr="//field[@name='date_due']" position="after">
-                    <field name="state" invisible="1" />
+                    <!-- <field name="state" invisible="1" /> -->
                     <field name="payment_duedate" class="oe_inline" attrs="{'readonly': [('state', '=', 'paid')]}"/>
                     <field name="payment_journal" class="oe_inline" />
                     <field name="payment_reference" class="oe_inline" />

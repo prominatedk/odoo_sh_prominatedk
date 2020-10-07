@@ -23,3 +23,8 @@ class ResConfigSettings(models.TransientModel):
     check_payment_status = fields.Boolean(string=_('Check payment status on payment.'), related='company_id.check_payment_status', readonly=False)
     use_bban = fields.Boolean(string=_('Use odoo bban'), related='company_id.use_bban', readonly=False)
     use_extended_import = fields.Boolean(string=_('Use extended import?'), related='company_id.use_extended_import', readonly=False)
+    use_last_entry_date_as_statement_date = fields.Boolean(related='company_id.use_last_entry_date_as_statement_date', string='Use the date of the last entry as the statement date', help='Checking this will set the date of the bank statement\nto the date of the last transaction in the statement\nThis is normally only used if you wish to have the statement\non the same date as the transactions', readonly=False)
+    bankintegration_transaction_accounting_date = fields.Selection(string='Accounting date for transactions', selection=[
+        ('value', 'Value date'),
+        ('booking', 'Booking date')
+    ], help='Choose which date to use as the accounting date of bankintegration.dk bank statements in Odoo\n [Value date] will use the date where the money is actually deposited/withdrawn from the account\n[Booking date] will use the date on which the bank posts the amount in their book keepting', related='company_id.bankintegration_transaction_accounting_date', readonly=False)

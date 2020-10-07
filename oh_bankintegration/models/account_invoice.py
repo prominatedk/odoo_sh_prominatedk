@@ -31,6 +31,12 @@ PAYMENT_STATUS_CODE = {
 class AccountInvoice(models.Model):
     _inherit = "account.invoice"
 
+    def _default_payment_autopay(self):
+        return self.env.user.company_id.autopay
+
+    def _default_payment_journal(self):
+        return self.env.user.company_id.payment_journal
+
     payment_status = fields.Selection([
         ('created', 'Created'),
         ('pending', 'Pending'),
@@ -43,15 +49,33 @@ class AccountInvoice(models.Model):
     payment_duedate = fields.Date(
         string='Payment date', index=True, help="Due date for payment")
     payment_autopay = fields.Boolean(
-        string='Auto pay', default=False, help="If this is set our scheduler automatic make payment")
+        string='Auto pay', default=_default_payment_autopay, help="If this is set our scheduler automatic make payment")
     payment_journal = fields.Many2one(
-        'account.journal', string='Payment journal', domain=[('type', '=', 'bank')])
+        'account.journal', string='Payment journal', default=_default_payment_journal, domain=[('type', '=', 'bank')])
     payment_reference = fields.Char(string='Payment Reference')
     payment_error = fields.Char(string='Payment Error')
     request_id = fields.Char(string="Request id")
     payment_id = fields.Char(string="Payment id")
-    payment_count = fields.Integer(string="Payment count", default=0)
+    payment_count = fields.Integer(string="Payment count", default=1)
     fik_number = fields.Char(string="FIK Number", default='')
+
+    @api.onchange('date_due')
+    def _onchange_date_due(self):
+        for record in self:
+            if record.date_due:
+                record.payment_duedate = record.date_due + datetime.timedelta(days=record.company_id.payment_margin)
+
+    def action_reset_bankintegration_payment_status(self):
+        self.ensure_one()
+        if self.payment_status not in ['rejected', 'failed']:
+            raise UserError(_('We do not allow resend of an invoice where the previous request has not returned an error or a rejection'))
+        elif self.state != 'open':
+            raise UserError(_('Invoices must be in the open state in order to proceed'))
+        return self.write({
+            'payment_status': False,
+            'payment_error': False,
+            'payment_count': self.payment_count + 1,
+        })
 
     def cron_transfer_bankintegration_payments(self):
         for company in self.env['res.company'].search([]):
@@ -77,7 +101,7 @@ class AccountInvoice(models.Model):
         results = self._generate_bankintegration_transactions(is_scheduler=is_scheduler)
         if len(results) == 0:
             _logger.warn('No payments to make')
-        return False
+            return False
         first_bill = self.browse(results[0][1])
         # Extract the IDs of the vendor bills being paid
         bill_ids = [bill[1] for bill in results]
@@ -108,7 +132,8 @@ class AccountInvoice(models.Model):
             bill = self.browse(bill_id)
             payment_vals = payment[2]
             bill.write({
-                'payment_id': payment_vals['paymentId']
+                'payment_id': payment_vals['paymentId'],
+                'request_id': request.request_id
             })
 
     def _generate_bankintegration_transactions(self, is_scheduler=False):
@@ -127,14 +152,17 @@ class AccountInvoice(models.Model):
 
     def _generate_bankintegration_payment_transaction_data(self, is_scheduler=False):
         self.ensure_one()
-        # NOTE: Payment date is now computed by subtracing the payment margin from the due date
+        # NOTE: Payment date is now computed by subtracing the payment margin from the due date if no payment date is there
         # TODO: It would be a great feature to have configurable urgency per bill, to force same day or immediate payment when necessary. For now we keep version 1.x.x implementation of setting it as 1 = normal payment
+        # Legacy modification. If the invoice was created before the default value of payment_count was set to 1, then it will be 0 and we have to set it as one
+        if self.payment_count == 0:
+            self.write({'payment_count': 1})
         vals = {
             'amount': "%.2f" % self.residual,
             'currency': self.currency_id.name,
             'paymentDate': self.payment_duedate.strftime('%Y-%m-%d') if self.payment_duedate else (self.date_due - datetime.timedelta(days=int(self.company_id.payment_margin))).strftime('%Y-%m-%d'),
             'paydate': self.payment_duedate.strftime('%Y%m%d') if self.payment_duedate else (self.date_due - datetime.timedelta(days=int(self.company_id.payment_margin))).strftime('%Y%m%d'),
-            'paymentId': 'PAY_{bill}_{provider}_{id}'.format(bill=self.number, provider=self.company_id.erp_provider, id=self.id),
+            'paymentId': 'PAY_{bill}_{provider}_{id}_{count}'.format(bill=self.number, provider=self.company_id.erp_provider, id=self.id, count=self.payment_count),
             'text': self.number + ' ' + self.partner_id.display_name,
             'urgency': 1,
             'creditorText': self.payment_reference or self.reference or self.company_id.display_name,

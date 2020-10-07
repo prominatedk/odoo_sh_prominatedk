@@ -54,6 +54,14 @@
                                         <label string="Use extended import?" for="use_extended_import" class="col-lg-5 o_light_label"/>
                                         <field name="use_extended_import" />
                                     </div>
+                                    <div class="row mt16">
+                                        <label for="use_last_entry_date_as_statement_date" class="col-lg-5 o_light_label"/>
+                                        <field name="use_last_entry_date_as_statement_date" />
+                                    </div>
+                                    <div class="row mt16">
+                                        <label for="bankintegration_transaction_accounting_date" class="col-lg-5 o_light_label"/>
+                                        <field name="bankintegration_transaction_accounting_date" />
+                                    </div>
                                 </div>
                             </div>
                         </div>
