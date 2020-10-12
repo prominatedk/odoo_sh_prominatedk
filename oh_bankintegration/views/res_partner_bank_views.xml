@@ -1,9 +1,7 @@
-<?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
-
-        <record id="bankintegration_view_partner_bank_form" model="ir.ui.view">
-            <field name="name">bankintegration.res.partner.bank.form</field>
+        <record id="inherit_view_partner_bank_form" model="ir.ui.view">
+            <field name="name">res.partner.bank.form.bankintegration</field>
             <field name="model">res.partner.bank</field>
             <field name="inherit_id" ref="base.view_partner_bank_form" />
             <field name="arch" type="xml">
