@@ -2,10 +2,10 @@
 <odoo>
     <data>
 
-        <record id="inherit_res_config_settings_view_form" model="ir.ui.view">
-            <field name="name">res.config.settings.view.form.inherit.account.inherit.bankintegration</field>
+        <record id="oh_view_account_config_settings" model="ir.ui.view">
+            <field name="name">bankintegration account settings</field>
             <field name="model">res.config.settings</field>
-            <field name="inherit_id" ref="account.res_config_settings_view_form"/>
+            <field name="inherit_id" ref="account.res_config_settings_view_form" />
             <field name="arch" type="xml">
                 <xpath expr="//div[@id='invoicing_settings']" position="after">
                     <h2>Bankintegration</h2>
@@ -54,12 +54,20 @@
                                         <label string="Use extended import?" for="use_extended_import" class="col-lg-5 o_light_label"/>
                                         <field name="use_extended_import" />
                                     </div>
+                                    <div class="row mt16">
+                                        <div class="col-lg-12">Statement text converting</div>
+                                        <div class="col-lg-12">
+                                            <button type="action" string="Edit text conversion list" name="%(oh_bankintegration.action_bank_conversion_list)d" icon="fa-cogs" class="oe_inline oe_link"/>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+
                     </div>
                 </xpath>    
             </field>    
         </record>
+
     </data>
 </odoo>
