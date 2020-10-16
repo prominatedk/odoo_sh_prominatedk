@@ -27,18 +27,5 @@
                 </field>
             </field>
         </record>
-        <record id="primecargo_product_view_inherit" model="ir.ui.view">
-            <field name="name">primecargo.product.view.inherit</field>
-            <field name="model">product.template</field>
-            <field name="inherit_id" ref="prominate_odoo_edi_primecargo_wms.inherit_product_template_form_view"/>
-            <field name="arch" type="xml">
-                <xpath expr="//group[@name='primecargo_units']" position="after">
-                    <group>
-                        <field name="webshop_price"/>
-                        <field name="webshop_weight"/>
-                    </group>
-                </xpath>
-            </field>
-        </record>
     </data>
 </odoo>

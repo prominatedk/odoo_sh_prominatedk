@@ -9,6 +9,7 @@ class StockPicking(models.Model):
     _inherit = 'stock.picking'
 
     api_order = fields.Boolean(related="sale_id.api_order")
+    integration_tracking_code = fields.Char()
 
     def action_done(self):
         super(StockPicking, self).action_done()
@@ -25,7 +26,7 @@ class StockPicking(models.Model):
             'origin': 'delivery',
             'type': 'success',
             'attributes': {
-                'tracking_code': self.carrier_tracking_ref
+                'tracking_code': self.integration_tracking_code
             }
         }
         headers = {
