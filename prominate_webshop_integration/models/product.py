@@ -5,11 +5,9 @@ _logger = logging.getLogger(__name__)
 
 from odoo import models, fields, api
 
-class ProductProduct(models.Model):
-    _inherit = 'product.product'
+class ProductTemplate(models.Model):
+    _inherit = 'product.template'
 
-    virtual_available_quotation = fields.Float(string="Available Packages", compute="_get_virtual_available_quotation")
-    api_warehouse_id = fields.Many2one('stock.warehouse', help="This is the Odoo warehouse that corresponds to the warehouse used in the webshop")
     webshop_price = fields.Float(string="Webshop pricing", compute="_compute_webshop_price")
     webshop_weight = fields.Float(string="Packaging weight", compute="_compute_webshop_weight")
 
@@ -22,6 +20,14 @@ class ProductProduct(models.Model):
     def _compute_webshop_weight(self):
         for p in self:
             p.webshop_weight = p.weight * p.primecargo_inner_pack_qty
+
+
+
+class ProductProduct(models.Model):
+    _inherit = 'product.product'
+
+    virtual_available_quotation = fields.Float(string="Available Packages", compute="_get_virtual_available_quotation")
+    api_warehouse_id = fields.Many2one('stock.warehouse', help="This is the Odoo warehouse that corresponds to the warehouse used in the webshop")
 
     @api.depends('virtual_available')
     def _get_virtual_available_quotation(self):
