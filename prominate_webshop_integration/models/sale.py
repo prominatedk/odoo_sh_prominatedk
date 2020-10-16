@@ -66,8 +66,8 @@ class SaleOrder(models.Model):
             if not product:
                 raise ValidationError(_("Error! Product %s not found!") % val['variant']['code'])
             vals.append({'product_id': product.id,
-                        'product_uom_qty': val['quantity'],
-                        'price_unit': val['unit_price']})
+                        'product_uom_qty': val['quantity'] * product.primecargo_inner_pack_qty if product.primecargo_inner_pack_qty else val['quantity'],
+                        'price_unit': (val['unit_price'] / 100.0) / product.primecargo_inner_pack_qty if product.primecargo_inner_pack_qty else (val['unit_price'] / 100.0)})
         for val in data['adjustments']:
             if val['type'] == 'shipping':
                 product = self.env['product.product'].search([('default_code', '=', val['code'])])
