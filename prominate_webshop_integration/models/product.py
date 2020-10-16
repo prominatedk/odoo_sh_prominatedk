@@ -8,35 +8,36 @@ from odoo import models, fields, api
 class ProductTemplate(models.Model):
     _inherit = 'product.template'
 
-    webshop_price = fields.Float(string="Webshop pricing", compute="_compute_webshop_price")
-    webshop_weight = fields.Float(string="Packaging weight", compute="_compute_webshop_weight")
+    webshop_price = fields.Float(string="Pricing per unit (Webshop)", compute="_compute_webshop_price")
+    webshop_weight = fields.Float(string="Packaging weight per unit (Webshop)", compute="_compute_webshop_weight")
+    
+    virtual_available_quotation = fields.Float(string="Stock in units (Webshop)", compute="_get_virtual_available_quotation")
 
     @api.depends('list_price')
     def _compute_webshop_price(self):
         for p in self:
-            p.webshop_price = p.list_price * p.primecargo_inner_pack_qty
+            price = p.item.ids.filtered(lambda i: i.pricelist_id.currency_id.name == 'EUR').fixed_price if p.item_ids else p.list_price
+            p.webshop_price = price * p.primecargo_inner_pack_qty
 
     @api.depends('weight')
     def _compute_webshop_weight(self):
         for p in self:
             p.webshop_weight = p.weight * p.primecargo_inner_pack_qty
 
-
-
-class ProductProduct(models.Model):
-    _inherit = 'product.product'
-
-    virtual_available_quotation = fields.Float(string="Available Packages", compute="_get_virtual_available_quotation")
-    api_warehouse_id = fields.Many2one('stock.warehouse', help="This is the Odoo warehouse that corresponds to the warehouse used in the webshop")
-
     @api.depends('virtual_available')
     def _get_virtual_available_quotation(self):
         for product in self:
-            lines = self.env['sale.order.line'].search([('product_id', '=', product.id),('state', '=', 'draft')])
+            lines = self.env['sale.order.line'].search([('product_id', '=', product.product_variant_ids[0].id),('state', '=', 'draft')])
             qty = product.virtual_available
             if lines:
                 qty -= sum(lines.mapped('product_uom_qty'))
             product.virtual_available_quotation = qty / product.primecargo_inner_pack_qty if product.primecargo_inner_pack_qty else qty
+
+class ProductProduct(models.Model):
+    _inherit = 'product.product'
+
+    api_warehouse_id = fields.Many2one('stock.warehouse', help="This is the Odoo warehouse that corresponds to the warehouse used in the webshop")
+
             
     def action_open_quotations(self):
         # TODO: Open all quotations with this specific product
