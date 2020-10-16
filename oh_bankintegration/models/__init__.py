@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
+from . import conversion_list
+from . import res_bank
 from . import res_company
-from . import res_config_settings
-from . import account_bank_statement_import
-from . import account_bank_statement_line
+from . import res_config
+from . import account
+from . import oh_bankintegration_payment
 from . import account_invoice
-from . import account_journal
-from . import bank_integration_request
-from . import res_partner_bank
+from . import account_bank_statement_import
