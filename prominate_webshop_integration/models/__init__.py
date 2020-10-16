@@ -4,3 +4,4 @@ from . import res_config
 from . import res_company
 from . import product
 from . import stock_warehouse
+from . import error_log
