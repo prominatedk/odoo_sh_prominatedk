@@ -16,7 +16,7 @@ class ProductTemplate(models.Model):
     @api.depends('list_price')
     def _compute_webshop_price(self):
         for p in self:
-            price = p.item.ids.filtered(lambda i: i.pricelist_id.currency_id.name == 'EUR').fixed_price if p.item_ids else p.list_price
+            price = p.item_ids.filtered(lambda i: i.pricelist_id.currency_id.name == 'EUR').fixed_price if p.item_ids else p.list_price
             p.webshop_price = price * p.primecargo_inner_pack_qty
 
     @api.depends('weight')
