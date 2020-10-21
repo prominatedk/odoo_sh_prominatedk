@@ -33,9 +33,9 @@ class SaleOrder(models.Model):
     def _parse_json(self, json_file):
         vals = {}
         try:
-            partner = self._get_partner_data(data)
             data = json.loads(json_file.content.decode('utf-8'))
             self.validate_data(data)
+            partner = self._get_partner_data(data)
             vals['integration_code'] = data['channel']['code']
             vals['client_order_ref'] = data['order_number']
             vals['note'] = data['notes']
