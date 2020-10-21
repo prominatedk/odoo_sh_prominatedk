@@ -53,6 +53,8 @@ class SaleOrder(models.Model):
         except json.JSONDecodeError as err:
             self.env['integration.error.log'].create({'msg': _("Error! Could not decode JSON file\n\n%s") % err, 'action': 'odoo_support'})
             raise
+        except ValidationError as err: # ValidationErrors should be handled for each case
+            raise
         except Exception as err:
             self.env['integration.error.log'].create({'msg': _("Error! Undefined error!\n\n%s") % err, 'action': 'odoo_support'})
             raise
@@ -101,13 +103,8 @@ class SaleOrder(models.Model):
                         'price_unit': (val['unit_price'] / 100.0) / product.primecargo_inner_pack_qty if product.primecargo_inner_pack_qty else (val['unit_price'] / 100.0)})
         for val in data['adjustments']:
             if val['type'] == 'shipping':
-                product = self.env['product.product'].search([('default_code', '=', val['code'])])
-                if not product:
-                    self.env['integration.error.log'].create({'msg': _("Error! Product %s not found!") % val['code'], 'action': 'check_product'})
-                    raise ValidationError(_("Error! Product %s not found!") % val['code'])
-                vals.append({'product_id': product.id,
-                             'product_uom_qty': 1,
-                             'price_unit': val['amount']})
+                vals.append({'product_id': self.env.company.webshop_shipping_product_id.id,
+                             'product_uom_qty': 1})
         return vals
 
     @api.model

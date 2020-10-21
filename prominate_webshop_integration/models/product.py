@@ -27,7 +27,8 @@ class ProductTemplate(models.Model):
     @api.depends('virtual_available')
     def _get_virtual_available_quotation(self):
         for product in self:
-            lines = self.env['sale.order.line'].search([('product_id', '=', product.product_variant_ids[0].id),('state', '=', 'draft')])
+            variant_id = product.product_variant_ids[0].id if product.product_variant_ids else product.id
+            lines = self.env['sale.order.line'].search([('product_id', '=', variant_id),('state', '=', 'draft')])
             qty = product.virtual_available
             if lines:
                 qty -= sum(lines.mapped('product_uom_qty'))
