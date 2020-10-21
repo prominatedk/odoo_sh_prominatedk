@@ -100,12 +100,16 @@ class SaleOrder(models.Model):
                 raise ValidationError(_("Error! Product %s not found!") % val['variant']['code'])
             vals.append({'product_id': product.id,
                         'product_uom_qty': val['quantity'] * product.primecargo_inner_pack_qty if product.primecargo_inner_pack_qty else val['quantity'],
-                        'price_unit': (val['unit_price'] / 100.0) / product.primecargo_inner_pack_qty if product.primecargo_inner_pack_qty else (val['unit_price'] / 100.0)})
+                        'price_unit': (val['unit_price'] / 100.0) / product.primecargo_inner_pack_qty if product.primecargo_inner_pack_qty else (val['unit_price'] / 100.0),
+                        'product_uom': product.uom_id.id})
         for val in data['adjustments']:
             if val['type'] == 'shipping':
                 company = self.env['res.company'].browse(self._context.get('company_id'))
-                vals.append({'product_id': company.webshop_shipping_product_id.id,
-                             'product_uom_qty': 1})
+                product = company.webshop_shipping_product_id
+                vals.append({'product_id': product.id,
+                             'product_uom_qty': 1,
+                             'price_unit': product.list_price,
+                             'product_uom': product.uom_id.id})
         return vals
 
     @api.model
