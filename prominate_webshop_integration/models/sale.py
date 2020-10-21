@@ -103,7 +103,8 @@ class SaleOrder(models.Model):
                         'price_unit': (val['unit_price'] / 100.0) / product.primecargo_inner_pack_qty if product.primecargo_inner_pack_qty else (val['unit_price'] / 100.0)})
         for val in data['adjustments']:
             if val['type'] == 'shipping':
-                vals.append({'product_id': self.env.company.webshop_shipping_product_id.id,
+                company = self.env['res.company'].browse(self._context.get('company_id'))
+                vals.append({'product_id': company.webshop_shipping_product_id.id,
                              'product_uom_qty': 1})
         return vals
 
