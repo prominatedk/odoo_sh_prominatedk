@@ -94,7 +94,6 @@ class SaleOrder(models.Model):
 
     def _get_order_items(self, data, partner):
         vals = []
-        OrderLine = self.env['sale.order.line']
         for val in data['items']:
             product = self.env['product.product'].search([('default_code', '=', val['variant']['code'])])
             if not product:
@@ -105,22 +104,21 @@ class SaleOrder(models.Model):
                         'product_uom_qty': quantity,
                         'price_unit': (val['unit_price'] / 100.0) / product.primecargo_inner_pack_qty if product.primecargo_inner_pack_qty else (val['unit_price'] / 100.0),
                         'product_uom': product.uom_id.id,
-                        'name': OrderLine.get_sale_order_line_multiline_description_sale(product.with_context(lang=partner.lang,
-                                                                                                              partner=partner,
-                                                                                                              quantity=quantity,
-                                                                                                              date=fields.Date.today()))})
+                        'name': product.with_context(lang=partner.lang,
+                                                    partner=partner,
+                                                    quantity=quantity,
+                                                    date=fields.Date.today()).get_product_multiline_description_sale()})
         for val in data['adjustments']:
             if val['type'] == 'shipping':
-                company = self.env['res.company'].browse(self._context.get('company_id'))
-                product = company.webshop_shipping_product_id
+                product = self.env['res.company'].search([('webshop_shipping_product_id', '!=', False)], limit=1).webshop_shipping_product_id
                 vals.append({'product_id': product.id,
                              'product_uom_qty': 1.0,
                              'price_unit': product.list_price,
                              'product_uom': product.uom_id.id,
-                             'name': OrderLine.get_sale_order_line_multiline_description_sale(product.with_context(lang=partner.lang,
-                                                                                                                    partner=partner,
-                                                                                                                    quantity=1.0,
-                                                                                                                    date=fields.Date.today()))})
+                             'name': product.with_context(lang=partner.lang,
+                                                        partner=partner,
+                                                        quantity=1.0,
+                                                        date=fields.Date.today()).get_product_multiline_description_sale()})
         return vals
 
     @api.model
