@@ -6,3 +6,4 @@ class ResCompany(models.Model):
     integration_auth_token = fields.Char()
     integration_api_url = fields.Char()
     integration_analytic_account_id = fields.Many2one("account.analytic.account")
+    webshop_shipping_product_id = fields.Many2one('product.product')
