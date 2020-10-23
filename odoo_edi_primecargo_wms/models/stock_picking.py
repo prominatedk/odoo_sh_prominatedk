@@ -24,6 +24,7 @@ class StockPicking(models.Model):
     edi_document_status_message = fields.Text(
         readonly=True, string='EDI Status Details', track_visibility='onchange')
     primecargo_shipping_product_code = fields.Char(string="PrimeCargo Shipping Product", help="Holds the PrimeCargo Shipping Product Code as per agreement with PrimeCargo for this delivery")
+    primecargo_order_hold = fields.Boolean(string='Hold Order at PrimeCargo', help='Check this if the order should not be shipped immediately, but requires manual handling at PrimeCargo')
 
 
     def action_send_primecargo(self):

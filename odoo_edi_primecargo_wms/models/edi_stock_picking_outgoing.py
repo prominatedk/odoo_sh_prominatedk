@@ -30,6 +30,7 @@ class EdiStockPickingOutgoing(models.TransientModel):
                 'shipping_date': document.scheduled_date.strftime("%Y-%m-%d"),
                 'owner_code': document.company_id.primecargo_ownercode,
                 'order_template_code': document.company_id.primecargo_template_code,
+                'order_hold_code': document.primecargo_order_hold,
                 'recipient_name': document.partner_id.display_name,
                 'recipient_address1': document.partner_id.street,
                 'recipient_address2': document.partner_id.street2 or "",

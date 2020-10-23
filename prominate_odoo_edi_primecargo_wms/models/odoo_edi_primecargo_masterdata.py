@@ -8,4 +8,5 @@ class OdooEdiPrimeCargoMasterdata(models.TransientModel):
         doc['variant_area2'] = product.product_tmpl_id.primecargo_outer_pack_qty
         doc['variant_area1'] = product.product_tmpl_id.primecargo_inner_pack_qty
         doc['can_be_returned'] = True
+        doc['use_fifo'] = False
         return doc
