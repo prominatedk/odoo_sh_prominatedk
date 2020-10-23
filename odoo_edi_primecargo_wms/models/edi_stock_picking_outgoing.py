@@ -1,10 +1,11 @@
 import logging
 import requests
+import traceback
 
 _logger = logging.getLogger(__name__)
 
 from odoo import models, fields, api, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import ValidationError, UserError
 from odoo.addons.odoo_edi.models.edi_document import LIVE_API_ROOT, TEST_API_ROOT
 from math import ceil
 
@@ -126,6 +127,17 @@ class EdiStockPickingOutgoing(models.TransientModel):
                                         'location_dest_id': move.picking_id.location_dest_id.id
                                     })]
                                 })
+                    if picking.company_id.primecargo_autovalidate_done:
+                        try:
+                            picking_done = picking.button_validate()
+                            if 'type' in picking_done:
+                                # We have been given an action, which means that one or more moves are not finished
+                                _logger.warn('One or more moves are not finished and therefore we cannot validate the picking {}'.format(picking.name))
+                                continue
+                        except UserError as e:
+                            tb = traceback.format_exc()
+                            _logger.error('Error validating picking {}: {}'.format(picking.name, e))
+                            _logger.error(tb)
                     if carrier_tracking_refs:
                         picking.carrier_tracking_ref = ", ".join(carrier_tracking_refs)
                 headers = {
