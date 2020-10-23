@@ -17,35 +17,39 @@ class SaleOrder(models.Model):
 
     @api.model
     def message_new(self, msg, custom_values=None):
-        company = self.env['res.company'].browse(self._context.get('company_id'))
+        company = self.env['res.company'].browse(custom_values.get('company_id')) if custom_values and custom_values.get('company_id') else False
         json_file = msg.get('attachments')
         if not json_file:
             self.env['integration.error.log'].create({'msg': _("Error! No JSON file attached to mail"), 'action': 'odoo_support'})
             raise ValidationError(_("Error! No JSON file attached to mail"))
-        vals = self._parse_json(json_file[0])
-        vals['api_order'] = True
-        if company and company.integration_analytic_account_id:
-            vals['analytic_account_id'] = company.integration_analytic_account_id.id
+        vals = self._parse_json(json_file[0], company)
 
         return super(SaleOrder, self).message_new(msg, custom_values=vals)
         
 
-    def _parse_json(self, json_file):
+    def _parse_json(self, json_file, company):
         vals = {}
         try:
             data = json.loads(json_file.content.decode('utf-8'))
             self.validate_data(data)
             partners = self._get_partner_data(data)
+            currency = self.env['res.currency'].search([('name', '=', data['currency_code'])])
+            pricelist = self.env['product.pricelist'].search([('currency_id', '=', currency.id)], limit=1)
             vals['integration_code'] = data['channel']['code']
             vals['client_order_ref'] = data['order_number']
             vals['note'] = data['notes']
             vals['name'] = self.env['ir.sequence'].next_by_code('sale.order')
             vals['partner_id'] = partners['partner_id'].id
-            vals['partner_invoice_id'] = partners['partner_invoice_id']
-            vals['partner_shipping_id'] = False
+            vals['partner_invoice_id'] = partners['partner_invoice_id'].id or company.placeholder_partner_id.id
+            vals['partner_shipping_id'] = company.placeholder_partner_id.id
+            vals['pricelist_id'] = pricelist.id
             vals['shipping_info'] = self._note_shipping_info(data['shipments'][0]['recipient_address'])
-            vals['order_line'] = [(0, 0, vals) for vals in self._get_order_items(data, partners['partner_id'])]
-            vals['currency_id'] = self.env['res.currency'].search([('name', '=', data['currency_code'])])
+            vals['billing_info'] = self._note_billing_info(data['billing_address'])
+            vals['order_line'] = [(0, 0, vals) for vals in self._get_order_items(data, partners['partner_id'], company)]
+            vals['currency_id'] = currency.id
+            vals['api_order'] = True
+            if company.integration_analytic_account_id:
+                vals['analytic_account_id'] = company.integration_analytic_account_id.id
 
             return vals
         except KeyError as err:
@@ -68,18 +72,39 @@ class SaleOrder(models.Model):
     # pick the correct shipping address in Odoo
     def _note_shipping_info(self, data):
         return """
-            Shipping Info:
+        <p>
+            Shipping Info:<br/><br/>
 
-            Name....: {0} {1}
-            Address.: {2}
-                      {3}
-                      {4} {5}
-                      {6}
-            Phone...: {7}
+            {0} {1}<br/>
+            {2}<br/>
+            {3}<br/>
+            {4} {5}<br/>
+            {6}<br/><br/>
+            {7}
+        </p>
         """.format(data['first_name'], data['last_name'],
                    data['street'], data['street2'],
                    data['postcode'], data['city'], data['country_code'],
                    data['phone_number'])
+
+    def _note_billing_info(self, data):
+        return """
+        <p>
+            Billing Info:<br/><br/>
+
+            {0} {1}<br/>
+            {8}<br/><br/>
+            {2}<br/>
+            {3}<br/>
+            {4} {5}<br/>
+            {6}<br/><br/>
+            {7}
+        </p>
+        """.format(data['first_name'], data['last_name'],
+                   data['street'], data['street2'],
+                   data['postcode'], data['city'], data['country_code'],
+                   data['phone_number'], data['vatid'])
+
 
     def validate_data(self, data):
         if not data.get('order_number'):
@@ -113,15 +138,15 @@ class SaleOrder(models.Model):
                 'city': shipping['city']
             })
         partners['partner_invoice_id'] = self._get_invoice_address(billing) or partners['partner_id']
-
+        
         return partners
         
     def _get_invoice_address(self, address):
-        existing_address = self.env['res.partner'].search([('vat', '=', address['vatid'])])
-        return existing_address or False
+        existing_address = self.env['res.partner'].search([('vat', '=', address['vatid'])], limit=1)
+        return existing_address.commercial_partner_id if existing_address and existing_address.commercial_partner_id.email else False
 
 
-    def _get_order_items(self, data, partner):
+    def _get_order_items(self, data, partner, company):
         vals = []
         for val in data['items']:
             product = self.env['product.product'].search([('default_code', '=', val['variant']['code'])])
@@ -139,10 +164,10 @@ class SaleOrder(models.Model):
                                                     date=fields.Date.today()).get_product_multiline_description_sale()})
         for val in data['adjustments']:
             if val['type'] == 'shipping':
-                product = self.env['res.company'].search([('webshop_shipping_product_id', '!=', False)], limit=1).webshop_shipping_product_id
+                product = company.webshop_shipping_product_id
                 vals.append({'product_id': product.id,
                              'product_uom_qty': 1.0,
-                             'price_unit': product.list_price,
+                             'price_unit': val['amount'] / 100.0 if 'amount' in val else product.list_price,
                              'product_uom': product.uom_id.id,
                              'name': product.with_context(lang=partner.lang,
                                                         partner=partner,
@@ -155,6 +180,8 @@ class SaleOrder(models.Model):
         res = super(SaleOrder, self).create(vals)
         if res.api_order:
             res._send_stock_update()
+        if vals.get('billing_info'):
+            res.message_post(body=vals['billing_info'])
         if vals.get('shipping_info'):
             res.message_post(body=vals['shipping_info'])
         return res
@@ -182,6 +209,8 @@ class SaleOrder(models.Model):
         _logger.info('POST %s (%s)', url, data)
         response = requests.post(url, json=data, headers=headers)
         _logger.info('API response: %s', response.json())
+        if response.json().get('code') and (response.json()['code'] != '400' or response.json()['code'] != 400):
+            self.env['integration.error.log'].create({'msg': _("Error! Response code %s with message:\n\n%s") % (response.json()['code'], response.json()['message']), 'action': 'odoo_support'})
         self._send_stock_update(cancel=True)
 
 

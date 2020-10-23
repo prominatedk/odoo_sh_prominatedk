@@ -44,6 +44,15 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_left_pane"/>
+                            <div class="o_setting_right_pane">
+                                <span class="o_form_label">Placeholder Partner</span>
+                                <div class="text-muted">
+                                    <field name="placeholder_partner_id"/>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </xpath>
             </field>
