@@ -35,13 +35,16 @@ class SaleOrder(models.Model):
         try:
             data = json.loads(json_file.content.decode('utf-8'))
             self.validate_data(data)
-            partner = self._get_partner_data(data)
+            partners = self._get_partner_data(data)
             vals['integration_code'] = data['channel']['code']
             vals['client_order_ref'] = data['order_number']
             vals['note'] = data['notes']
             vals['name'] = self.env['ir.sequence'].next_by_code('sale.order')
-            vals['partner_id'] = partner.id
-            vals['order_line'] = [(0, 0, vals) for vals in self._get_order_items(data, partner)]
+            vals['partner_id'] = partners['partner_id'].id
+            vals['partner_invoice_id'] = partners['partner_invoice_id']
+            vals['partner_shipping_id'] = False
+            vals['shipping_info'] = self._note_shipping_info(data['shipments'][0]['recipient_address'])
+            vals['order_line'] = [(0, 0, vals) for vals in self._get_order_items(data, partners['partner_id'])]
             vals['currency_id'] = self.env['res.currency'].search([('name', '=', data['currency_code'])])
 
             return vals
@@ -60,6 +63,23 @@ class SaleOrder(models.Model):
             self.env['integration.error.log'].create({'msg': _("Error! Undefined error!\n\n%s") % err, 'action': 'odoo_support'})
             raise
 
+    # Prominate wants the shipping info logged as a note in the activity log
+    # Shipping address is a free text field in the webshop, so it cannot be reliably used to
+    # pick the correct shipping address in Odoo
+    def _note_shipping_info(self, data):
+        return """
+            Shipping Info:
+
+            Name....: {0} {1}
+            Address.: {2}
+                      {3}
+                      {4} {5}
+                      {6}
+            Phone...: {7}
+        """.format(data['first_name'], data['last_name'],
+                   data['street'], data['street2'],
+                   data['postcode'], data['city'], data['country_code'],
+                   data['phone_number'])
 
     def validate_data(self, data):
         if not data.get('order_number'):
@@ -71,26 +91,35 @@ class SaleOrder(models.Model):
             raise ValidationError(_("Error! Could not read currency code in JSON data"))
 
             
-
     def _get_partner_data(self, data):
+        partners = {}
         info = data['customer']
-        address = data['shipments'][0]['recipient_address']
+        shipping = data['shipments'][0]['recipient_address']
+        billing = data['billing_address']
         existing_partner = self.env['res.partner'].search([('email', 'ilike', info['email'])], limit=1)
         if existing_partner:
-            return existing_partner
+            partners['partner_id'] = existing_partner
         else:
-            partner_country = self.env['res.country'].search([('code', 'ilike', address['country_code'])])
-            return self.env['res.partner'].create({
+            partner_country = self.env['res.country'].search([('code', 'ilike', shipping['country_code'])])
+            partners['partner_id'] = self.env['res.partner'].create({
                 'name': info['full_name'],
                 'phone': info['phone_number'],
                 'ref': info['customer_number'],
                 'email': info['email'],
                 'country_id': partner_country.id,
-                'street': address['street'],
-                'street2': address['street2'],
-                'zip:': address['postcode'],
-                'city': address['city']
+                'street': shipping['street'],
+                'street2': shipping['street2'],
+                'zip:': shipping['postcode'],
+                'city': shipping['city']
             })
+        partners['partner_invoice_id'] = self._get_invoice_address(billing) or partners['partner_id']
+
+        return partners
+        
+    def _get_invoice_address(self, address):
+        existing_address = self.env['res.partner'].search([('vat', '=', address['vatid'])])
+        return existing_address or False
+
 
     def _get_order_items(self, data, partner):
         vals = []
@@ -126,6 +155,8 @@ class SaleOrder(models.Model):
         res = super(SaleOrder, self).create(vals)
         if res.api_order:
             res._send_stock_update()
+        if vals.get('shipping_info'):
+            res.message_post(body=vals['shipping_info'])
         return res
 
 
