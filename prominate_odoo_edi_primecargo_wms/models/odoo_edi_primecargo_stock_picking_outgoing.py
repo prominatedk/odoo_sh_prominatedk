@@ -7,4 +7,5 @@ class OdooEdiPrimeCargoStockPickingOutgoing(models.TransientModel):
         prep_line = super(OdooEdiPrimeCargoStockPickingOutgoing, self).prepare_document_lines(line)
         prep_line['variant_area2'] = line.product_id.product_tmpl_id.primecargo_outer_pack_qty
         prep_line['variant_area1'] = line.product_id.product_tmpl_id.primecargo_inner_pack_qty
+        prep_line['use_fifo'] = False
         return prep_line
