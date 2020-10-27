@@ -23,7 +23,7 @@ class StockPicking(models.Model):
     ], string='EDI Status', track_visibility='onchange')
     edi_document_status_message = fields.Text(
         readonly=True, string='EDI Status Details', track_visibility='onchange')
-    primecargo_shipping_product_code = fields.Char(string="PrimeCargo Shipping Product", help="Holds the PrimeCargo Shipping Product Code as per agreement with PrimeCargo for this delivery")
+    primecargo_shipping_product_id = fields.Many2one('product.primecargo.shipping', string="PrimeCargo Shipping Product", help="Contains the PrimeCargo Shipping Product Code as per agreement with PrimeCargo for this delivery")
     primecargo_order_hold = fields.Boolean(string='Hold Order at PrimeCargo', help='Check this if the order should not be shipped immediately, but requires manual handling at PrimeCargo')
 
 

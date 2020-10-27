@@ -10,6 +10,7 @@ CORRECTION_API_ENDPOINT = 'primecargo/stock-corrections/queue/'
 
 class EdiStockCorrection(models.TransientModel):
     _name = 'edi.stock.correction'
+    _description = 'PrimeCargo WMS Stock Correction'
 
     def check_primecargo_stock_corrections(self):
         company = self.env.user.company_id

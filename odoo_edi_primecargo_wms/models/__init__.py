@@ -1,5 +1,6 @@
 from . import edi_masterdata
 from . import masterdata
+from . import product_primecargo_shipping
 from . import product_template
 from . import product_product
 from . import res_company

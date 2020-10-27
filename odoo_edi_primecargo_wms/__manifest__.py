@@ -19,6 +19,7 @@
         'views/res_config_settings_views.xml',
         'views/stock_picking_views.xml',
         'views/res_country_views.xml',
+        'views/product_primecargo_shipping_views.xml',
         'data/ir_cron.xml'
     ],
     "installable": True,
