@@ -45,6 +45,6 @@
                 </p>
             </field>
         </record>
-        <menuitem id="menu_product_primecargo_shipping" action="product_primecargo_shipping_action" name="PrimeCargo Shipping Codes" parent="stock.menu_stock_config_settings" sequence="100" groups="group_stock_manager"/>
+        <menuitem id="menu_product_primecargo_shipping" action="product_primecargo_shipping_action" name="PrimeCargo Shipping Codes" parent="stock.menu_stock_config_settings" sequence="100" groups="stock.group_stock_manager"/>
     </data>
 </odoo>
