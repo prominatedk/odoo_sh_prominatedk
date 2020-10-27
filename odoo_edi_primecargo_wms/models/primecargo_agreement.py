@@ -10,6 +10,7 @@ AGREEMENT_ENDPOINT = "primecargo/agreements/"
 
 class PrimecargoAgreement(models.TransientModel):
     _name = 'primecargo.agreement'
+    _description = 'PrimeCargo WMS Agreement'
 
     def cron_check_credentials(self):
         company = self.env.user.company_id

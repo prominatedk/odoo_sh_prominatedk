@@ -1,0 +1,50 @@
+<odoo>
+    <data>
+        <record id="product_primecargo_shipping_view_tree" model="ir.ui.view">
+            <field name="name">product.primecargo.shipping.tree</field>
+            <field name="model">product.primecargo.shipping</field>
+            <field name="arch" type="xml">
+                <tree string="PrimeCargo Shipping Product Codes">
+                    <field name="name"/>
+                    <field name="code"/>
+                </tree>
+            </field>
+        </record>
+        <record id="product_primecargo_shipping_view_form" model="ir.ui.view">
+            <field name="name">product.primecargo.shipping.form</field>
+            <field name="model">product.primecargo.shipping</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <div class="oe_button_box" name="button_box">
+                            <button name="toggle_active" type="object" class="oe_stat_button" icon="fa-archive">
+                                <field name="active" widget="boolean_button" options="{&quot;terminology&quot;: &quot;archive&quot;}"/>
+                            </button>
+                        </div>
+                        <group>
+                            <field name="name"/>
+                            <field name="code"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+        <record id="product_primecargo_shipping_action" model="ir.actions.act_window">
+            <field name="name">PrimeCargo Shipping Codes</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="res_model">product.primecargo.shipping</field>
+            <field name="view_mode">tree,form</field>
+            <field name="view_type">form</field>
+            <field name="view_id" ref="product_primecargo_shipping_view_tree"/>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Create a new shipping code
+                </p><p>
+                    You must define all the shipping codes used with PrimeCargo
+                    in order for Odoo to know about them and use them
+                </p>
+            </field>
+        </record>
+        <menuitem id="menu_product_primecargo_shipping" action="product_primecargo_shipping_action" name="PrimeCargo Shipping Codes" parent="stock.menu_stock_config_settings" sequence="100" groups="stock.group_stock_manager"/>
+    </data>
+</odoo>
