@@ -25,40 +25,56 @@ class EdiStockPickingOutgoing(models.TransientModel):
         self.send_document(doc, document, OUTGOING_API_ENDPOINT)
 
     def prepare_document(self, document):
-        return {'edi_provider': "primecargo_wms",
-                'order_id': document.name,
-                'shipping_date': document.scheduled_date.strftime("%Y-%m-%d"),
-                'owner_code': document.company_id.primecargo_ownercode,
-                'order_template_code': document.company_id.primecargo_template_code,
-                'order_hold_code': document.primecargo_order_hold,
-                'recipient_name': document.partner_id.display_name if len(document.partner_id.display_name) < 35 else document.partner_id.commercial_partner_id.name,
-                'recipient_address1': document.partner_id.street,
-                'recipient_address2': document.partner_id.street2 or "",
-                'recipient_zipcode': document.partner_id.zip,
-                'recipient_city': document.partner_id.city,
-                'recipient_country': document.partner_id.country_id.code,
-                'recipient_email': document.partner_id.email,
-                'recipient_phone': document.partner_id.phone or document.partner_id.mobile,
-                'recipient_contact_name': document.partner_id.name if len(document.partner_id.display_name) < 35 else '',
-                'shipping_product_code': document.primecargo_shipping_product_id.code or document.company_id.primecargo_shipping_product_id.code,
-                'customer_number': document.partner_id.ref or document.partner_id.id,
-                'salesorderline_set': [self.prepare_document_lines(line) for line in document.move_ids_without_package]}
+        vals = {
+            'edi_provider': "primecargo_wms",
+            'order_id': document.name,
+            'shipping_date': document.scheduled_date.strftime("%Y-%m-%d"),
+            'owner_code': document.company_id.primecargo_ownercode,
+            'order_template_code': document.company_id.primecargo_template_code,
+            'order_hold_code': document.primecargo_order_hold,
+            'recipient_name': document.partner_id.display_name if len(document.partner_id.display_name) < 35 else document.partner_id.commercial_partner_id.name,
+            'recipient_address1': document.partner_id.street,
+            'recipient_address2': document.partner_id.street2 or "",
+            'recipient_zipcode': document.partner_id.zip,
+            'recipient_city': document.partner_id.city,
+            'recipient_country': document.partner_id.country_id.code,
+            'recipient_email': document.partner_id.email,
+            'recipient_phone': document.partner_id.phone or document.partner_id.mobile,
+            'recipient_contact_name': document.partner_id.name if len(document.partner_id.display_name) < 35 else '',
+            'shipping_product_code': document.primecargo_shipping_product_id.code or document.company_id.primecargo_shipping_product_id.code,
+            'customer_number': document.partner_id.ref or document.partner_id.id,
+            'salesorderline_set': [self.prepare_document_lines(line) for line in document.move_ids_without_package]
+            }
+        # If order outside of Europe, then set customs_status = 1
+        europe = self.env.ref('base.europe')
+        if not document.partner_id.country_id.id in europe.country_ids.ids:
+            vals['customs_status'] = 1
+        if document.partner_id.state_id:
+            vals['recipient_state'] = document.partner_id.state_id.code
+
+        return vals
     
     def prepare_document_lines(self, line):
-        prep_line = {'barcode_no': line.product_id.barcode,
-                    'part_number': line.product_id.default_code,
-                    'quantity': line.product_uom_qty, # or quantity_done?
-                    'description': line.product_id.display_name,
-                    'use_fifo': line.product_id.categ_id.property_cost_method == 'fifo',
-                    'property_currency_code': line.sale_line_id.order_id.currency_id.name,
-                    'saleorderlinecustomsinformation_set': [
-                        {
-                            'customs_uom_code': line.product_id.uom_id.edi_product_uom_id.name,
-                            'customs_origin_country': line.product_id.company_id.country_id.iso_code,
-                            'net_weight': ceil(line.weight),
-                            'gross_weight': ceil(line.weight),
-                        }
-                    ],}
+        prep_line = {
+            'barcode_no': line.product_id.barcode,
+            'part_number': line.product_id.default_code,
+            'quantity': line.product_uom_qty, # or quantity_done?
+            'cost_price': line.product_id.standard_price,
+            'cost_currency_code': line.picking_id.company_id.currency_id.code,
+            'sales_price': line.sale_line_id.price_unit,
+            'sales_currency_code': line.sale_line_id.order_id.currency_id.name,
+            'description': line.product_id.display_name,
+            'use_fifo': line.product_id.categ_id.property_cost_method == 'fifo',
+            'property_currency_code': line.sale_line_id.order_id.currency_id.name,
+            'saleorderlinecustomsinformation_set': [
+                {
+                    'customs_uom_code': line.product_id.uom_id.edi_product_uom_id.name,
+                    'customs_origin_country': line.product_id.company_id.country_id.iso_code,
+                    'net_weight': ceil(line.weight),
+                    'gross_weight': ceil(line.weight),
+                }
+            ],
+        }
         if line.product_id.tracking == 'lot':
             prep_line['batch_number'] = line.move_line_ids[0].lot_name
         return prep_line
