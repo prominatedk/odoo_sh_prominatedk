@@ -60,7 +60,7 @@ class EdiStockPickingOutgoing(models.TransientModel):
             'part_number': line.product_id.default_code,
             'quantity': line.product_uom_qty, # or quantity_done?
             'cost_price': line.product_id.standard_price,
-            'cost_currency_code': line.picking_id.company_id.currency_id.code,
+            'cost_currency_code': line.picking_id.company_id.currency_id.name,
             'sales_price': line.sale_line_id.price_unit,
             'sales_currency_code': line.sale_line_id.order_id.currency_id.name,
             'description': line.product_id.display_name,
