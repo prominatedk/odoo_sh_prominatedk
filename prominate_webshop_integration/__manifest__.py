@@ -19,5 +19,5 @@
         'data/ir_cron.xml',
     ],
     "installable": True,
-    "license": "LGPL-3"
+    "license": "OPL-1"
 }

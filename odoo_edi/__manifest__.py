@@ -19,7 +19,7 @@
     # for the full list
     'category': 'Specific Industry Applications',
     'version': '3.0.2',
-    'license': 'LGPL-3',
+    'license': 'OPL-1',
 
     # any module necessary for this one to work correctly
     'depends': ['base', 'base_setup', 'product'],
