@@ -103,6 +103,8 @@ class EdiStockPickingOutgoing(models.TransientModel):
         pending = requests.get((LIVE_API_ROOT if company.edi_mode == 'production' else TEST_API_ROOT) + PENDING_OUTGOING_API, headers=headers)
         for data in pending.json():
             picking = self.env['stock.picking'].search([('edi_document_guid', '=', data['uuid'])])
+            if not picking.id:
+                _logger.error('No picking was found with UUID {}'.format(data['uuid']))
             picking.edi_document_status = data['status']
             picking.edi_document_status_message = data['status_message']
 
