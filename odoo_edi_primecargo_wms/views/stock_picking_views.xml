@@ -24,10 +24,10 @@
                     <div class="alert alert-warning" role="alert" style="margin-bottom:0px;" attrs="{'invisible': ['|','|','|',('primecargo_valid', '!=', True),('edi_document_id', '=', True),('picking_type_code', 'not in', ['incoming', 'outgoing']),('edi_document_status', '!=', 'pending')]}">
                         This document is pending transfer to PrimeCargo
                     </div>
-                    <div class="alert alert-warning" role="alert" style="margin-bottom:0px;" attrs="{'invisible': ['|','|','|',('primecargo_valid', '!=', True),('edi_document_id', '!=', True),('picking_type_code', 'not in', ['incoming', 'outgoing']),('edi_document_status', '!=', 'sent')]}">
+                    <div class="alert alert-info" role="alert" style="margin-bottom:0px;" attrs="{'invisible': ['|','|','|',('primecargo_valid', '!=', True),('edi_document_id', '=', False),('picking_type_code', 'not in', ['incoming', 'outgoing']),('edi_document_status', '!=', 'sent')]}">
                         This document has been sent to PrimeCargo and is awaiting validation
                     </div>
-                    <div class="alert alert-success" role="alert" style="margin-bottom:0px;" attrs="{'invisible': ['|','|','|',('primecargo_valid', '!=', True),('edi_document_id', '!=', True),('picking_type_code', 'not in', ['incoming', 'outgoing']),('edi_document_status', '!=', 'validated')]}">
+                    <div class="alert alert-success" role="alert" style="margin-bottom:0px;" attrs="{'invisible': ['|','|','|',('primecargo_valid', '!=', True),('edi_document_id', '=', False),('picking_type_code', 'not in', ['incoming', 'outgoing']),('edi_document_status', '!=', 'validated')]}">
                         This document has been validated with PrimeCargo
                     </div>
                     <div class="alert alert-danger" role="alert" style="margin-bottom:0px;" attrs="{'invisible': ['|','|',('primecargo_valid', '!=', True),('picking_type_code', 'not in', ['incoming', 'outgoing']),('edi_document_status', 'not in', ['failed_vans', 'failed_internal'])]}">
