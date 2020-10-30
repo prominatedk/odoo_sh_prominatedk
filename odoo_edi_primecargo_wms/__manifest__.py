@@ -2,7 +2,7 @@
     "name": "Primecargo WMS",
     "summary": "Please create a short summary for your new module",
     "description": "Please create an in depth description of your new module",
-    "version": "1.3.8",
+    "version": "1.3.9",
     "category": "Customization",
     "author": "VK Data ApS",
     "website": "https://vkdata.dk",

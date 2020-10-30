@@ -65,8 +65,12 @@ class EdiStockPickingIncoming(models.TransientModel):
             picking = self.env['stock.picking'].search([('edi_document_guid', '=', data['uuid'])])
             if not picking.id:
                 _logger.error('No picking was found with UUID {}'.format(data['uuid']))
+                continue
             picking.edi_document_status = data['status']
             picking.edi_document_status_message = data['status_message']
+            response_update = requests.patch(data['url'], json={'pending':0}, headers=headers)
+            if not response_update.status_code == 200:
+                _logger.warn('Response returned status code {}'.format(response_update.status_code))
 
     def _update_queue(self, company, headers):        
         queue = requests.get((LIVE_API_ROOT if company.edi_mode == 'production' else TEST_API_ROOT) + QUEUE_INCOMING_API, headers=headers)
