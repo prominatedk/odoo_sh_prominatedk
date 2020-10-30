@@ -11,6 +11,7 @@ from math import ceil
 
 
 OUTGOING_API_ENDPOINT = 'primecargo/sales-orders/'
+PENDING_OUTGOING_API = 'primecargo/sales-orders/pending/'
 QUEUE_OUTGOING_API = 'primecargo/sales-order-exports/queue/'
 
 class EdiStockPickingOutgoing(models.TransientModel):
@@ -95,7 +96,15 @@ class EdiStockPickingOutgoing(models.TransientModel):
             company = self.env.user.company_id
             headers = {'Content-Type': 'application/json; charset=utf8',
                         'Authorization': 'Token {0}'.format(company.odoo_edi_token)}
+            self._update_pending(company, headers)
             self._update_queue(company, headers)
+
+    def _update_pending(self, company, headers):
+        pending = requests.get((LIVE_API_ROOT if company.edi_mode == 'production' else TEST_API_ROOT) + PENDING_OUTGOING_API, headers=headers)
+        for data in pending.json():
+            picking = self.env['stock.picking'].search([('edi_document_guid', '=', data['uuid'])])
+            picking.edi_document_status = data['status']
+            picking.edi_document_status_message = data['status_message']
 
     def _update_queue(self, company, headers):
         queue = requests.get((LIVE_API_ROOT if company.edi_mode == 'production' else TEST_API_ROOT) + QUEUE_OUTGOING_API, headers=headers)
