@@ -167,14 +167,18 @@ class SaleOrder(models.Model):
         for val in data['adjustments']:
             if val['type'] == 'shipping':
                 product = self.env['product.product'].search([('webshop_shipping_code', '=', val['code'])], limit=1)
-                vals.append({'product_id': product.id,
-                             'product_uom_qty': 1.0,
-                             'price_unit': val['amount'] / 100.0 if 'amount' in val else product.list_price,
-                             'product_uom': product.uom_id.id,
-                             'name': product.with_context(lang=partner.lang,
-                                                        partner=partner,
-                                                        quantity=1.0,
-                                                        date=fields.Date.today()).get_product_multiline_description_sale()})
+                if not product:
+                    self.env['integration.error.log'].create({'msg': _('Error! Shipping product %s not found!') % val['code'], 'action': 'check_product'})
+                    raise ValidationError(_("Error! Shipping product %s not found!") % val['variant']['code'])
+                else:
+                    vals.append({'product_id': product.id,
+                                'product_uom_qty': 1.0,
+                                'price_unit': val['amount'] / 100.0 if 'amount' in val else product.list_price,
+                                'product_uom': product.uom_id.id,
+                                'name': product.with_context(lang=partner.lang,
+                                                            partner=partner,
+                                                            quantity=1.0,
+                                                            date=fields.Date.today()).get_product_multiline_description_sale()})
         return vals
 
     @api.model
