@@ -10,6 +10,7 @@ class ProductTemplate(models.Model):
 
     webshop_price = fields.Float(string="Pricing per unit (Webshop)", compute="_compute_webshop_price")
     webshop_weight = fields.Float(string="Packaging weight per unit (Webshop)", compute="_compute_webshop_weight")
+    webshop_shipping_code = fields.Char(string="Shipping Code (Webshop)")
     
     virtual_available_quotation = fields.Float(string="Stock in units (Webshop)", compute="_get_virtual_available_quotation")
 

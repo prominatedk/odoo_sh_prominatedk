@@ -24,6 +24,7 @@
                 </button>
                 <field name="categ_id" position="after">
                     <field name="api_warehouse_id"/>
+                    <field name="webshop_shipping_code"/>
                 </field>
             </field>
         </record>

@@ -75,6 +75,7 @@ class SaleOrder(models.Model):
         <p>
             Shipping Info:<br/><br/>
 
+            {8}<br/>
             {0} {1}<br/>
             {2}<br/>
             {3}<br/>
@@ -85,13 +86,14 @@ class SaleOrder(models.Model):
         """.format(data['first_name'], data['last_name'],
                    data['street'], data['street2'],
                    data['postcode'], data['city'], data['country_code'],
-                   data['phone_number'])
+                   data['phone_number'], data['organization'])
 
     def _note_billing_info(self, data):
         return """
         <p>
             Billing Info:<br/><br/>
 
+            {8}<br/>
             {0} {1}<br/>
             {8}<br/><br/>
             {2}<br/>
@@ -103,7 +105,7 @@ class SaleOrder(models.Model):
         """.format(data['first_name'], data['last_name'],
                    data['street'], data['street2'],
                    data['postcode'], data['city'], data['country_code'],
-                   data['phone_number'], data['vatid'])
+                   data['phone_number'], data['vatid'], data['organization'])
 
 
     def validate_data(self, data):
@@ -164,7 +166,7 @@ class SaleOrder(models.Model):
                                                     date=fields.Date.today()).get_product_multiline_description_sale()})
         for val in data['adjustments']:
             if val['type'] == 'shipping':
-                product = company.webshop_shipping_product_id
+                product = self.env['product.product'].search([('webshop_shipping_code', '=', val['code'])], limit=1)
                 vals.append({'product_id': product.id,
                              'product_uom_qty': 1.0,
                              'price_unit': val['amount'] / 100.0 if 'amount' in val else product.list_price,
