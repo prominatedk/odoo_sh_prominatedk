@@ -93,7 +93,7 @@ class SaleOrder(models.Model):
         <p>
             Billing Info:<br/><br/>
 
-            {8}<br/>
+            {9}<br/>
             {0} {1}<br/>
             {8}<br/><br/>
             {2}<br/>
@@ -150,35 +150,37 @@ class SaleOrder(models.Model):
 
     def _get_order_items(self, data, partner, company):
         vals = []
-        for val in data['items']:
-            product = self.env['product.product'].search([('default_code', '=', val['variant']['code'])])
-            if not product:
-                self.env['integration.error.log'].create({'msg': _("Error! Product %s not found!") % val['code'], 'action': 'check_product'})
-                raise ValidationError(_("Error! Product %s not found!") % val['variant']['code'])
-            quantity = val['quantity'] * product.primecargo_inner_pack_qty if product.primecargo_inner_pack_qty else val['quantity']
-            vals.append({'product_id': product.id,
-                        'product_uom_qty': quantity,
-                        'price_unit': (val['unit_price'] / 100.0) / product.primecargo_inner_pack_qty if product.primecargo_inner_pack_qty else (val['unit_price'] / 100.0),
-                        'product_uom': product.uom_id.id,
-                        'name': product.with_context(lang=partner.lang,
-                                                    partner=partner,
-                                                    quantity=quantity,
-                                                    date=fields.Date.today()).get_product_multiline_description_sale()})
-        for val in data['adjustments']:
-            if val['type'] == 'shipping':
-                product = self.env['product.product'].search([('webshop_shipping_code', '=', val['code'])], limit=1)
+        for shipment in data['shipments']:
+            for item in shipment['items']:
+                product = self.env['product.product'].search([('default_code', '=', item['variant']['code'])])
                 if not product:
-                    self.env['integration.error.log'].create({'msg': _('Error! Shipping product %s not found!') % val['code'], 'action': 'check_product'})
-                    raise ValidationError(_("Error! Shipping product %s not found!") % val['variant']['code'])
-                else:
-                    vals.append({'product_id': product.id,
-                                'product_uom_qty': 1.0,
-                                'price_unit': val['amount'] / 100.0 if 'amount' in val else product.list_price,
-                                'product_uom': product.uom_id.id,
-                                'name': product.with_context(lang=partner.lang,
-                                                            partner=partner,
-                                                            quantity=1.0,
-                                                            date=fields.Date.today()).get_product_multiline_description_sale()})
+                    self.env['integration.error.log'].create({'msg': _("Error! Product %s not found!") % item['variant']['code'], 'action': 'check_product'})
+                    raise ValidationError(_("Error! Product %s not found!") % item['variant']['code'])
+                quantity = item['quantity'] * product.primecargo_inner_pack_qty if product.primecargo_inner_pack_qty else item['quantity']
+                vals.append({'product_id': product.id,
+                            'product_uom_qty': quantity,
+                            'price_unit': (item['unit_price'] / 100.0) / product.primecargo_inner_pack_qty if product.primecargo_inner_pack_qty else (item['unit_price'] / 100.0),
+                            'product_uom': product.uom_id.id,
+                            'name': product.with_context(lang=partner.lang,
+                                                        partner=partner,
+                                                        quantity=quantity,
+                                                        date=fields.Date.today()).get_product_multiline_description_sale()})
+            #Shipping product
+            product = self.env['product.product'].search([('webshop_shipping_code', '=', shipment['method']['code'])], limit=1)
+            if not product:
+                self.env['integration.error.log'].create({'msg': _('Error! Shipping product %s not found!') % shipment['method']['code'], 'action': 'check_product'})
+                raise ValidationError(_("Error! Shipping product %s not found!") % shipment['method']['code'])
+            else:
+                shipping_info = list(filter(lambda x: x.get('type') == 'shipping' and x.get('code') == shipment['method']['code'], shipment['adjustments']))
+                amount = shipping_info[0].get('amount', product.list_price) if shipping_info else product.list_price
+                vals.append({'product_id': product.id,
+                            'product_uom_qty': 1.0,
+                            'price_unit': amount / 100,
+                            'product_uom': product.uom_id.id,
+                            'name': product.with_context(lang=partner.lang,
+                                                        partner=partner,
+                                                        quantity=1.0,
+                                                        date=fields.Date.today()).get_product_multiline_description_sale()})
         return vals
 
     @api.model
