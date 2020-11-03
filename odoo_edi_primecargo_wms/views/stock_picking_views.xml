@@ -30,6 +30,9 @@
                     <div class="alert alert-success" role="alert" style="margin-bottom:0px;" attrs="{'invisible': ['|','|','|',('primecargo_valid', '!=', True),('edi_document_id', '=', False),('picking_type_code', 'not in', ['incoming', 'outgoing']),('edi_document_status', '!=', 'validated')]}">
                         This document has been validated with PrimeCargo
                     </div>
+                    <div class="alert alert-success" role="alert" style="margin-bottom:0px;" attrs="{'invisible': ['|','|','|',('primecargo_valid', '!=', True),('edi_document_id', '=', False),('picking_type_code', 'not in', ['incoming', 'outgoing']),('edi_document_status', 'not in', ['recieved', 'processed'])]}">
+                        This document has been processed with PrimeCargo
+                    </div>
                     <div class="alert alert-danger" role="alert" style="margin-bottom:0px;" attrs="{'invisible': ['|','|',('primecargo_valid', '!=', True),('picking_type_code', 'not in', ['incoming', 'outgoing']),('edi_document_status', 'not in', ['failed_vans', 'failed_internal'])]}">
                         This document encountered errors when sending to PrimeCargo
                     </div>
