@@ -17,21 +17,28 @@ class StockPicking(models.Model):
 
     
     def _send_order_shipped(self):
-        fulfillment = self.sale_id.integration_code + '-' + self.sale_id.client_order_ref if self.sale_id.integration_code else self.sale_id.client_order_ref
-        url = self.company_id.integration_api_url + "/order-fulfillments/{0}/messages".format(fulfillment)
-        auth = self.company_id.integration_auth_token
+        ids = self.sale_id.client_order_ref.split(",")
+        for f_id in ids:
+            fulfillment = self.sale_id.integration_code + '-' + f_id if self.sale_id.integration_code else f_id
+            url = self.company_id.integration_api_url + "/order-fulfillments/{0}/messages".format(fulfillment)
+            auth = self.company_id.integration_auth_token
 
-        data = {
+            data = self.get_fulfillment_data()
+            
+            headers = {
+                'Authorization': 'Bearer {0}'.format(auth),
+                'Content-Type': 'application/json'
+            }
+            _logger.info('POST %s (%s)', url, data)
+            response = requests.post(url, json=data, headers=headers)
+            _logger.info('API response: %s', response.json())
+
+
+    def get_fulfillment_data(self):
+        return {
             'origin': 'delivery',
             'type': 'success',
             'attributes': {
                 'tracking_code': self.carrier_tracking_ref
             }
         }
-        headers = {
-            'Authorization': 'Bearer {0}'.format(auth),
-            'Content-Type': 'application/json'
-        }
-        _logger.info('POST %s (%s)', url, data)
-        response = requests.post(url, json=data, headers=headers)
-        _logger.info('API response: %s', response.json())

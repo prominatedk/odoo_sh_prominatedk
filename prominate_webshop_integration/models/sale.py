@@ -35,7 +35,8 @@ class SaleOrder(models.Model):
             partners = self._get_partner_data(data)
             currency = self.env['res.currency'].search([('name', '=', data['currency_code'])])
             pricelist = self.env['product.pricelist'].search([('currency_id', '=', currency.id)], limit=1)
-            vals['integration_code'] = data['channel']['code']
+            ref = ",".join([x["id"].replace(data["channel"]["code"] + "-", "") for x in data["fulfillments"]]) if data.get('fulfillments') else False
+            vals['integration_code'] = ref
             vals['client_order_ref'] = data['order_number']
             vals['note'] = data['notes']
             vals['name'] = self.env['ir.sequence'].next_by_code('sale.order')
@@ -197,29 +198,31 @@ class SaleOrder(models.Model):
 
     def action_cancel(self):
         res = super(SaleOrder, self).action_cancel()
-        if self.api_order and self.integration_code and self.client_order_ref:
+        if self.api_order and self.integration_code:
             self._send_order_cancel()
         return res
 
     def _send_order_cancel(self):
-        fulfillment = self.integration_code + '-' + self.client_order_ref if self.integration_code else self.client_order_ref
-        url = self.company_id.integration_api_url + "/order-fulfillments/{0}/messages".format(fulfillment)
-        auth = self.company_id.integration_auth_token
+        ids = self.integration_code.split(",")
+        for f_id in ids:
+            fulfillment = self.integration_code + '-' + f_id if self.integration_code else f_id
+            url = self.company_id.integration_api_url + "/order-fulfillments/{0}/messages".format(fulfillment)
+            auth = self.company_id.integration_auth_token
 
-        data = {
-            'origin': 'delivery',
-            'type': 'failed'
-        }
-        headers = {
-            'Authorization': 'Bearer {0}'.format(auth),
-            'Content-Type': 'application/json'
-        }
-        _logger.info('POST %s (%s)', url, data)
-        response = requests.post(url, json=data, headers=headers)
-        _logger.info('API response: %s', response.json())
-        if response.json().get('code') and (response.json()['code'] != '400' or response.json()['code'] != 400):
-            self.env['integration.error.log'].create({'msg': _("Error! Response code %s with message:\n\n%s") % (response.json()['code'], response.json()['message']), 'action': 'odoo_support'})
-        self._send_stock_update(cancel=True)
+            data = {
+                'origin': 'delivery',
+                'type': 'failed'
+            }
+            headers = {
+                'Authorization': 'Bearer {0}'.format(auth),
+                'Content-Type': 'application/json'
+            }
+            _logger.info('POST %s (%s)', url, data)
+            response = requests.post(url, json=data, headers=headers)
+            _logger.info('API response: %s', response.text)
+            if response.json().get('code') and (response.json()['code'] != '400' or response.json()['code'] != 400):
+                self.env['integration.error.log'].create({'msg': _("Error! Response code %s with message:\n\n%s") % (response.json()['code'], response.json()['message']), 'action': 'odoo_support'})
+            self._send_stock_update(cancel=True)
 
 
     def _send_stock_update(self, cancel=False):
@@ -234,16 +237,17 @@ class SaleOrder(models.Model):
         products = {}
 
         for line in self.order_line:
-            if products.get(line.product_id.default_code):
-                products[line.product_id.default_code] = func(products[line.product_id.default_code], line.product_uom_qty)
-            else:
-                products[line.product_id.default_code] = func(line.product_id.virtual_available, line.product_uom_qty)
+            if line.product_id.api_warehouse_id:
+                if products.get(line.product_id.default_code):
+                    products[line.product_id.default_code] = func(products[line.product_id.default_code], line.product_uom_qty)
+                else:
+                    products[line.product_id.default_code] = func(line.product_id.virtual_available, line.product_uom_qty)
         for code, amount in products.items():
-            parameters = "/warehouses/{0}/products/{1}/inventory".format(self.warehouse_id.display_name, code)
+            parameters = "/warehouses/{0}/products/{1}/inventory".format(self.warehouse_id.webshop_code, code)
             data = {'amount': int(amount)}
             _logger.info('PUT %s (%s)', url + parameters, data)
             response = requests.put(url + parameters, json=data, headers=headers)
-            _logger.info('API response: %s', response.json())
+            _logger.info('API response: %s', response.text)
 
 
 class SaleOrderMail(models.Model):

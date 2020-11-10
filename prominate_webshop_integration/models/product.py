@@ -30,7 +30,7 @@ class ProductTemplate(models.Model):
         for product in self:
             variant_id = product.product_variant_ids[0].id if product.product_variant_ids else product.id
             lines = self.env['sale.order.line'].search([('product_id', '=', variant_id),('state', '=', 'draft')])
-            qty = product.virtual_available
+            qty = product.qty_available - product.outgoing_qty
             if lines:
                 qty -= sum(lines.mapped('product_uom_qty'))
             product.virtual_available_quotation = qty / product.primecargo_inner_pack_qty if product.primecargo_inner_pack_qty else qty
