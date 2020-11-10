@@ -35,7 +35,7 @@ class SaleOrder(models.Model):
             partners = self._get_partner_data(data)
             currency = self.env['res.currency'].search([('name', '=', data['currency_code'])])
             pricelist = self.env['product.pricelist'].search([('currency_id', '=', currency.id)], limit=1)
-            ref = ",".join([x["id"].replace(data["channel"]["code"] + "-", "") for x in data["fulfillments"]]) if data.get('fulfillments') else False
+            ref = ",".join([x["id"] for x in data["fulfillments"]]) if data.get('fulfillments') else False
             vals['integration_code'] = ref
             vals['client_order_ref'] = data['order_number']
             vals['note'] = data['notes']
@@ -205,8 +205,7 @@ class SaleOrder(models.Model):
     def _send_order_cancel(self):
         ids = self.integration_code.split(",")
         for f_id in ids:
-            fulfillment = self.integration_code + '-' + f_id if self.integration_code else f_id
-            url = self.company_id.integration_api_url + "/order-fulfillments/{0}/messages".format(fulfillment)
+            url = self.company_id.integration_api_url + "/order-fulfillments/{0}/messages".format(f_id)
             auth = self.company_id.integration_auth_token
 
             data = {

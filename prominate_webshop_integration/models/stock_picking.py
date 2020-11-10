@@ -12,19 +12,18 @@ class StockPicking(models.Model):
 
     def action_done(self):
         super(StockPicking, self).action_done()
-        if self.api_order and self.sale_id.integration_code and self.sale_id.client_order_ref:
+        if self.api_order and self.sale_id.integration_code:
             self._send_order_shipped()
 
     
     def _send_order_shipped(self):
-        ids = self.sale_id.client_order_ref.split(",")
+        ids = self.sale_id.integration_code.split(",")
         for f_id in ids:
-            fulfillment = self.sale_id.integration_code + '-' + f_id if self.sale_id.integration_code else f_id
-            url = self.company_id.integration_api_url + "/order-fulfillments/{0}/messages".format(fulfillment)
+            url = self.company_id.integration_api_url + "/order-fulfillments/{0}/messages".format(f_id)
             auth = self.company_id.integration_auth_token
 
             data = self.get_fulfillment_data()
-            
+
             headers = {
                 'Authorization': 'Bearer {0}'.format(auth),
                 'Content-Type': 'application/json'
