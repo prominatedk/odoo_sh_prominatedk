@@ -53,18 +53,30 @@ class EdiStockPickingIncoming(models.TransientModel):
             raise ValidationError(_('Error! Missing lot number for moves'))
 
     def recieve_document(self):
-        company = self.env.user.company_id
-        headers = {'Content-Type': 'application/json; charset=utf8',
-                    'Authorization': 'Token {0}'.format(company.odoo_edi_token)}
-        self._update_pending(company, headers)
-        self._update_queue(company, headers)
+        for company in self.env['res.company'].search([]):
+            if not company.odoo_edi_token:
+                continue
+            if not company.primecargo_username:
+                continue
+            if not company.primecargo_password:
+                continue
+            headers = {'Content-Type': 'application/json; charset=utf8',
+                        'Authorization': 'Token {0}'.format(company.odoo_edi_token)}
+            self._update_pending(company, headers)
+            self._update_queue(company, headers)
 
     def _update_pending(self, company, headers):
         pending = requests.get((LIVE_API_ROOT if company.edi_mode == 'production' else TEST_API_ROOT) + PENDING_INCOMING_API, headers=headers)
         for data in pending.json():
-            picking = self.env['stock.picking'].search([('edi_document_guid', '=', data['uuid'])])
+            picking = self.env['stock.picking'].search([('edi_document_guid', '=', data['uuid']), ('company_id','=', company.id)])
+            if not picking.id:
+                _logger.error('No picking was found with UUID {}'.format(data['uuid']))
+                continue
             picking.edi_document_status = data['status']
             picking.edi_document_status_message = data['status_message']
+            response_update = requests.patch(data['url'], json={'pending':0}, headers=headers)
+            if not response_update.status_code == 200:
+                _logger.warn('Response returned status code {}'.format(response_update.status_code))
 
     def _update_queue(self, company, headers):        
         queue = requests.get((LIVE_API_ROOT if company.edi_mode == 'production' else TEST_API_ROOT) + QUEUE_INCOMING_API, headers=headers)
@@ -72,6 +84,9 @@ class EdiStockPickingIncoming(models.TransientModel):
             for data in queue.json():
                 if data['order_result_message'] == "OK":
                     picking = self.env['stock.picking'].search([('edi_document_guid', '=', data['order_uuid'])])
+                    if not picking.id:
+                        _logger.error('No picking was found with UUID {}'.format(data['order_uuid']))
+                        continue
                     picking.edi_document_id = data['order_id']
                     picking.edi_document_status = data['status']
                     picking.edi_document_status_message = data['status_message']

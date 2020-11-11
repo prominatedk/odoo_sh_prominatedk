@@ -24,6 +24,8 @@ class EdiStockCorrection(models.TransientModel):
                 requests.patch(entry['url'], headers=headers, json={'status':'processed'})
 
     def _create_inventory(self, lines):
+        if not lines:
+            return {}
         new_lines = dict()
         for line in lines:
             if line['part_number'] in new_lines:

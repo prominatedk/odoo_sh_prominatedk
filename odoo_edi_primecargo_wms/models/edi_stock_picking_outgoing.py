@@ -11,6 +11,7 @@ from math import ceil
 
 
 OUTGOING_API_ENDPOINT = 'primecargo/sales-orders/'
+PENDING_OUTGOING_API = 'primecargo/sales-orders/pending/'
 QUEUE_OUTGOING_API = 'primecargo/sales-order-exports/queue/'
 
 class EdiStockPickingOutgoing(models.TransientModel):
@@ -25,39 +26,56 @@ class EdiStockPickingOutgoing(models.TransientModel):
         self.send_document(doc, document, OUTGOING_API_ENDPOINT)
 
     def prepare_document(self, document):
-        return {'edi_provider': "primecargo_wms",
-                'order_id': document.name,
-                'shipping_date': document.scheduled_date.strftime("%Y-%m-%d"),
-                'owner_code': document.company_id.primecargo_ownercode,
-                'order_template_code': document.company_id.primecargo_template_code,
-                'order_hold_code': document.primecargo_order_hold,
-                'recipient_name': document.partner_id.display_name,
-                'recipient_address1': document.partner_id.street,
-                'recipient_address2': document.partner_id.street2 or "",
-                'recipient_zipcode': document.partner_id.zip,
-                'recipient_city': document.partner_id.city,
-                'recipient_country': document.partner_id.country_id.code,
-                'recipient_email': document.partner_id.email,
-                'recipient_phone': document.partner_id.phone or document.partner_id.mobile,
-                'shipping_product_code': document.primecargo_shipping_product_id.code or document.company_id.primecargo_shipping_product_id.code,
-                'customer_number': document.partner_id.ref or document.partner_id.id,
-                'salesorderline_set': [self.prepare_document_lines(line) for line in document.move_ids_without_package]}
+        vals = {
+            'edi_provider': "primecargo_wms",
+            'order_id': document.name,
+            'shipping_date': document.scheduled_date.strftime("%Y-%m-%d"),
+            'owner_code': document.company_id.primecargo_ownercode,
+            'order_template_code': document.company_id.primecargo_template_code,
+            'order_hold_code': document.primecargo_order_hold,
+            'recipient_name': document.partner_id.display_name if len(document.partner_id.display_name) < 35 else document.partner_id.commercial_partner_id.name,
+            'recipient_address1': document.partner_id.street,
+            'recipient_address2': document.partner_id.street2 or "",
+            'recipient_zipcode': document.partner_id.zip,
+            'recipient_city': document.partner_id.city,
+            'recipient_country': document.partner_id.country_id.code,
+            'recipient_email': document.partner_id.email,
+            'recipient_phone': document.partner_id.phone or document.partner_id.mobile,
+            'recipient_contact_name': document.partner_id.name if document.partner_id.parent_id.id else '',
+            'shipping_product_code': document.primecargo_shipping_product_id.code or document.company_id.primecargo_shipping_product_id.code,
+            'customer_number': document.partner_id.ref or document.partner_id.id,
+            'salesorderline_set': [self.prepare_document_lines(line) for line in document.move_ids_without_package]
+            }
+        # If order outside of Europe, then set customs_status = 1
+        europe = self.env.ref('base.europe')
+        if not document.partner_id.country_id.id in europe.country_ids.ids:
+            vals['customs_status'] = 1
+        if document.partner_id.state_id:
+            vals['recipient_state'] = document.partner_id.state_id.code
+
+        return vals
     
     def prepare_document_lines(self, line):
-        prep_line = {'barcode_no': line.product_id.barcode,
-                    'part_number': line.product_id.default_code,
-                    'quantity': line.product_uom_qty, # or quantity_done?
-                    'description': line.product_id.display_name,
-                    'use_fifo': line.product_id.categ_id.property_cost_method == 'fifo',
-                    'property_currency_code': line.sale_line_id.order_id.currency_id.name,
-                    'saleorderlinecustomsinformation_set': [
-                        {
-                            'customs_uom_code': line.product_id.uom_id.edi_product_uom_id.name,
-                            'customs_origin_country': line.product_id.company_id.country_id.iso_code,
-                            'net_weight': ceil(line.weight),
-                            'gross_weight': ceil(line.weight),
-                        }
-                    ],}
+        prep_line = {
+            'barcode_no': line.product_id.barcode,
+            'part_number': line.product_id.default_code,
+            'quantity': line.product_uom_qty, # or quantity_done?
+            'cost_price': line.sale_line_id.purchase_price,
+            'cost_currency_code': line.picking_id.company_id.currency_id.name,
+            'sales_price': line.sale_line_id.price_unit,
+            'sales_currency_code': line.sale_line_id.order_id.currency_id.name,
+            'description': line.product_id.display_name,
+            'use_fifo': line.product_id.categ_id.property_cost_method == 'fifo',
+            'property_currency_code': line.sale_line_id.order_id.currency_id.name,
+            'saleorderlinecustomsinformation_set': [
+                {
+                    'customs_uom_code': line.product_id.uom_id.edi_product_uom_id.name,
+                    'customs_origin_country': line.product_id.company_id.country_id.iso_code,
+                    'net_weight': ceil(line.weight),
+                    'gross_weight': ceil(line.weight),
+                }
+            ],
+        }
         if line.product_id.tracking == 'lot':
             prep_line['batch_number'] = line.move_line_ids[0].lot_name
         return prep_line
@@ -75,10 +93,29 @@ class EdiStockPickingOutgoing(models.TransientModel):
 
     def recieve_document(self):
         for company in self.env['res.company'].search([]):
-            company = self.env.user.company_id
+            if not company.odoo_edi_token:
+                continue
+            if not company.primecargo_username:
+                continue
+            if not company.primecargo_password:
+                continue
             headers = {'Content-Type': 'application/json; charset=utf8',
                         'Authorization': 'Token {0}'.format(company.odoo_edi_token)}
+            self._update_pending(company, headers)
             self._update_queue(company, headers)
+
+    def _update_pending(self, company, headers):
+        pending = requests.get((LIVE_API_ROOT if company.edi_mode == 'production' else TEST_API_ROOT) + PENDING_OUTGOING_API, headers=headers)
+        for data in pending.json():
+            picking = self.env['stock.picking'].search([('edi_document_guid', '=', data['uuid']), ('company_id','=', company.id)])
+            if not picking.id:
+                _logger.error('No picking was found with UUID {}'.format(data['uuid']))
+                continue
+            picking.edi_document_status = data['status']
+            picking.edi_document_status_message = data['status_message']
+            response_update = requests.patch(data['url'], json={'pending':0}, headers=headers)
+            if not response_update.status_code == 200:
+                _logger.warn('Response returned status code {}'.format(response_update.status_code))
 
     def _update_queue(self, company, headers):
         queue = requests.get((LIVE_API_ROOT if company.edi_mode == 'production' else TEST_API_ROOT) + QUEUE_OUTGOING_API, headers=headers)
@@ -87,6 +124,9 @@ class EdiStockPickingOutgoing(models.TransientModel):
             for data in queue.json():
                 if data['order_result_message'] == "OK":
                     picking = self.env['stock.picking'].search([('edi_document_guid', '=', data['order_uuid'])])
+                    if not picking.id:
+                        _logger.error('No picking was found with UUID {}'.format(data['uuid']))
+                        continue
                     picking.edi_document_id = data['order_id']
                     picking.edi_document_status = data['status']
                     picking.edi_document_status_message = data['status_message']
