@@ -34,6 +34,7 @@ class StockPicking(models.Model):
 
 
     def get_fulfillment_data(self):
+        self.ensure_one()
         return {
             'origin': 'delivery',
             'type': 'success',
