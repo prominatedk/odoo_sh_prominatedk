@@ -2,7 +2,7 @@
     "name": "Customization of PrimeCargo WMS for Prominate webshop",
     "summary": "Customization of data flowing from the PrimeCargo WMS integration into Odoo in order for certain data to flow to the webshop",
     "description": "Customization of data flowing from the PrimeCargo WMS integration into Odoo in order for certain data to flow to the webshop",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "category": "Customization",
     "author": "VK Data ApS",
     "website": "https://vkdata.dk",
