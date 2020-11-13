@@ -83,7 +83,7 @@ class EdiStockPickingIncoming(models.TransientModel):
         if len(queue.json()) > 0:
             for data in queue.json():
                 if data['order_result_message'] == "OK":
-                    picking = self.env['stock.picking'].search([('edi_document_guid', '=', data['order_uuid'])])
+                    picking = self.env['stock.picking'].search([('edi_document_guid', '=', data['order_uuid']), ('picking_type_code', '=', 'outgoing')], limit=1)
                     if not picking.id:
                         _logger.error('No picking was found with UUID {}'.format(data['order_uuid']))
                         continue
