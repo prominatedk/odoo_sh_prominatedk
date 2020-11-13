@@ -14,7 +14,7 @@
                     <field name="primecargo_valid" invisible="1"/>
                 </xpath>
                 <xpath expr="//notebook" position="inside">
-                    <paage name="odoo_edi_stock_picking" string="EDI">
+                    <page name="odoo_edi_stock_picking" string="EDI">
                         <group>
                             <group>
                                 <field name="edi_document_id"/>
