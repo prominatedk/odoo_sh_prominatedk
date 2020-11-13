@@ -41,7 +41,7 @@ class EdiStockPickingOutgoing(models.TransientModel):
             'recipient_country': document.partner_id.country_id.code,
             'recipient_email': document.partner_id.email,
             'recipient_phone': document.partner_id.phone or document.partner_id.mobile,
-            'recipient_contact_name': document.partner_id.name if len(document.partner_id.display_name) < 35 else '',
+            'recipient_contact_name': document.partner_id.name if document.partner_id.parent_id.id else '',
             'shipping_product_code': document.primecargo_shipping_product_id.code or document.company_id.primecargo_shipping_product_id.code,
             'customer_number': document.partner_id.ref or document.partner_id.id,
             'salesorderline_set': [self.prepare_document_lines(line) for line in document.move_ids_without_package]
