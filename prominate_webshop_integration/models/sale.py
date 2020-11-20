@@ -30,8 +30,8 @@ class SaleOrder(models.Model):
     def _parse_json(self, json_file, company):
         vals = {}
         try:
-            _logger.info(json_file.content.decode('mac_latin2'))
-            data = json.loads(json_file.content.decode('latin-1'))
+            _logger.info(json_file.content)
+            data = json.loads(json_file.content)
             self.validate_data(data)
             partners = self._get_partner_data(data)
             currency = self.env['res.currency'].search([('name', '=', data['currency_code'])])
