@@ -2,6 +2,7 @@ import json
 import requests
 import operator
 import logging
+import chardet
 
 _logger = logging.getLogger(__name__)
 
@@ -30,7 +31,7 @@ class SaleOrder(models.Model):
     def _parse_json(self, json_file, company):
         vals = {}
         try:
-            _logger.info(json_file.content.decode('cp1252'))
+            _logger.info(chardet.detect(json_file.content))
             data = json.loads(json_file.content.decode('latin-1'))
             self.validate_data(data)
             partners = self._get_partner_data(data)
