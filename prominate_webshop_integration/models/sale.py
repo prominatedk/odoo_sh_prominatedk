@@ -42,7 +42,7 @@ class SaleOrder(models.Model):
             vals['note'] = data['notes']
             vals['name'] = self.env['ir.sequence'].next_by_code('sale.order')
             vals['partner_id'] = partners['partner_id'].id
-            vals['partner_invoice_id'] = partners['partner_invoice_id'].id or company.placeholder_partner_id.id
+            vals['partner_invoice_id'] = partners['partner_invoice_id'] or company.placeholder_partner_id.id
             vals['partner_shipping_id'] = company.placeholder_partner_id.id
             vals['pricelist_id'] = pricelist.id
             vals['shipping_info'] = self._note_shipping_info(data['shipments'][0]['recipient_address'])
@@ -141,13 +141,13 @@ class SaleOrder(models.Model):
                 'zip:': shipping['postcode'],
                 'city': shipping['city']
             })
-        partners['partner_invoice_id'] = self._get_invoice_address(billing) or partners['partner_id']
+        partners['partner_invoice_id'] = self._get_invoice_address(billing)
         
         return partners
         
     def _get_invoice_address(self, address):
         existing_address = self.env['res.partner'].search([('vat', '=', address['vatid'])], limit=1)
-        return existing_address.commercial_partner_id if existing_address and existing_address.commercial_partner_id.email else False
+        return existing_address.commercial_partner_id.id if existing_address and existing_address.commercial_partner_id.email else False
 
 
     def _get_order_items(self, data, partner, company):
@@ -238,10 +238,11 @@ class SaleOrder(models.Model):
 
         for line in self.order_line:
             if line.product_id.api_warehouse_id:
+                line_qty_pack = line.product_uom_qty / line.product_id.primecargo_inner_pack_qty
                 if products.get(line.product_id.default_code):
-                    products[line.product_id.default_code] = func(products[line.product_id.default_code], line.product_uom_qty)
+                    products[line.product_id.default_code] = func(products[line.product_id.default_code], line_qty_pack)
                 else:
-                    products[line.product_id.default_code] = func(line.product_id.virtual_available, line.product_uom_qty)
+                    products[line.product_id.default_code] = func(line.product_id.virtual_available_quotation, line_qty_pack)
         for code, amount in products.items():
             parameters = "/warehouses/{0}/products/{1}/inventory".format(self.warehouse_id.webshop_code, code)
             data = {'amount': int(amount)}
