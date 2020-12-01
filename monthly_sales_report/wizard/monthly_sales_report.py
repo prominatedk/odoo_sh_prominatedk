@@ -124,7 +124,7 @@ class MonthlySalesReport(models.TransientModel):
             shipment = self.env['stock.picking'].search([('origin', '=', item.name)])
             shipdates = []
             for i in shipment:
-                shipdates.append(shipment.scheduled_date.strftime("%m/%d/%Y"))
+                shipdates.append(i.scheduled_date.strftime("%m/%d/%Y"))
             shipdate = ",".join(shipdates)
             sheet.write(j, 16, shipdate, table_body)
             sheet.write(j, 17, item.currency_id.name, table_body)
