@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="monthly_sales_report_wizard" model="ir.ui.view">
+        <field name="name">Monthly Sales Report</field>
+        <field name="model">monthly.sales.report</field>
+        <field name="arch" type="xml">
+            <form string="Monthly Sales Report">
+                <group class="oe_title">
+                    <field name="date_from" required="True"/>
+                </group>
+                <group class="oe_title">
+                    <field name="date_to"/>
+                </group>
+                <footer>
+                    <button name="print_report_xls" string="Print XLS" type="object" default_focus="1" class="eo_highlight"/>
+                    <button string="Cancel" class="btn btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    <record id="monthly_sales_report_wizard_action" model="ir.actions.act_window">
+        <field name="name">Monthly Sales Reports</field>
+        <field name="res_model">monthly.sales.report</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="view_id" ref="monthly_sales_report_wizard"/>
+    </record>
+
+    <record id="monthly_sales_report_xls_output_view" model="ir.ui.view">
+        <field name="name">Excel Output</field>
+        <field name="model">monthly.sales.report.excel</field>
+        <field name="arch" type="xml">
+            <form string="Monthly Sales Report ">
+                <separator colspan="4" string="Please save file as .xls excel format"/>
+                <field name="name" invisible="1"/>
+                <field name="xls_output" filename='name'/>
+                <footer>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <menuitem id="monthly_sales_report_wizard_menu" name="Monthly Sales Report" groups="base.group_user" action="monthly_sales_report_wizard_action" parent="sale.menu_sale_report"/>
+</odoo>
