@@ -222,27 +222,24 @@ class SaleOrder(models.Model):
             _logger.info('API response: %s', response.text)
             if response.json().get('code') and (response.json()['code'] != '400' or response.json()['code'] != 400):
                 self.env['integration.error.log'].create({'msg': _("Error! Response code %s with message:\n\n%s") % (response.json()['code'], response.json()['message']), 'action': 'odoo_support'})
-            self._send_stock_update(cancel=True)
+            self._send_stock_update()
 
 
-    def _send_stock_update(self, cancel=False):
+    def _send_stock_update(self):
         url = self.company_id.integration_api_url
         auth = self.company_id.integration_auth_token
         headers = {
             'Authorization': 'Bearer {0}'.format(auth),
             'Content-Type': 'application/json'
         }
-        
-        func = operator.add if cancel else operator.sub # Add values to webshop stock if order is cancelled
         products = {}
 
         for line in self.order_line:
             if line.product_id.api_warehouse_id:
-                line_qty_pack = line.product_uom_qty / line.product_id.primecargo_inner_pack_qty
                 if products.get(line.product_id.default_code):
-                    products[line.product_id.default_code] = func(products[line.product_id.default_code], line_qty_pack)
+                    continue
                 else:
-                    products[line.product_id.default_code] = func(line.product_id.virtual_available_quotation, line_qty_pack)
+                    products[line.product_id.default_code] = line.product_id.virtual_available_quotation
         for code, amount in products.items():
             parameters = "/warehouses/{0}/products/{1}/inventory".format(self.warehouse_id.webshop_code, code)
             data = {'amount': int(amount)}
