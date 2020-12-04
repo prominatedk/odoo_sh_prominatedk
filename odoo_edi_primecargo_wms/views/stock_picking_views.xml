@@ -29,7 +29,7 @@
                 </xpath>
                 <xpath expr="//button[@name='action_toggle_is_locked']" position="before">
                     <button name="action_send_primecargo"
-                        type="object" string="Send to PrimeCargo" attrs="{'invisible': [('primecargo_valid', '=', False),('edi_document_status', 'not in', [False, 'failed_internal', 'failed_vans'])]}"/>
+                        type="object" string="Send to PrimeCargo" attrs="{'invisible': ['|', ('primecargo_valid', '=', False),('edi_document_status', 'not in', [False, 'failed_internal', 'failed_vans'])]}"/>
                 </xpath>
                 <xpath expr="//sheet" position="before">
                     <div class="alert alert-warning" role="alert" style="margin-bottom:0px;" attrs="{'invisible': ['|','|','|',('primecargo_valid', '!=', True),('edi_document_id', '!=', False),('picking_type_code', 'not in', ['incoming', 'outgoing']),('edi_document_status', '!=', 'pending')]}">
