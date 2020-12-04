@@ -107,7 +107,7 @@ class EdiStockPickingOutgoing(models.TransientModel):
     def _update_pending(self, company, headers):
         pending = requests.get((LIVE_API_ROOT if company.edi_mode == 'production' else TEST_API_ROOT) + PENDING_OUTGOING_API, headers=headers)
         for data in pending.json():
-            picking = self.env['stock.picking'].search([('edi_document_guid', '=', data['uuid']), ('company_id','=', company.id)])
+            picking = self.env['stock.picking'].search([('edi_document_guid', '=', data['uuid']), ('company_id','=', company.id), ('picking_type_code', '=', 'outgoing')], limit=1)
             if not picking.id:
                 _logger.error('No picking was found with UUID {}'.format(data['uuid']))
                 continue
@@ -123,7 +123,7 @@ class EdiStockPickingOutgoing(models.TransientModel):
         if len(queue.json()) > 0:
             for data in queue.json():
                 if data['order_result_message'] == "OK":
-                    picking = self.env['stock.picking'].search([('edi_document_guid', '=', data['order_uuid'])])
+                    picking = self.env['stock.picking'].search([('edi_document_guid', '=', data['order_uuid']), ('picking_type_code', '=', 'outgoing')], limit=1)
                     if not picking.id:
                         _logger.error('No picking was found with UUID {}'.format(data['uuid']))
                         continue

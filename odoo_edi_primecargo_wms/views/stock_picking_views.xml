@@ -13,6 +13,20 @@
                     <field name="picking_type_code" invisible="1"/>
                     <field name="primecargo_valid" invisible="1"/>
                 </xpath>
+                <xpath expr="//notebook" position="inside">
+                    <page name="odoo_edi_stock_picking" string="EDI">
+                        <group>
+                            <group>
+                                <field name="edi_document_id"/>
+                                <field name="edi_document_guid"/>
+                            </group>
+                            <group>
+                                <field name="edi_document_status"/>
+                                <field name="edi_document_status_message"/>
+                            </group>
+                        </group>
+                    </page>
+                </xpath>
                 <xpath expr="//button[@name='action_toggle_is_locked']" position="before">
                     <button name="action_send_primecargo"
                         type="object" string="Send to PrimeCargo" attrs="{'invisible': [('primecargo_valid', '=', False),('edi_document_status', 'not in', [False, 'failed_internal', 'failed_vans'])]}"/>
