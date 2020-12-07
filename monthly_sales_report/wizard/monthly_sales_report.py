@@ -78,12 +78,16 @@ class MonthlySalesReport(models.TransientModel):
                 sheet.write(j, 1, item.order_id.name, table_body)
                 sheet.write(j, 2, item.product_id.x_studio_field_vdINR, table_body)
                 sheet.write(j, 3, '', table_body)
-                if item.order_id.partner_id.parent_id:
+                if item.order_id.partner_id.parent_id and item.order_id.partner_id.parent_id.country_id.name:
                     sheet.write(j, 4, item.order_id.partner_id.parent_id.name + ' ' +
                                 item.order_id.partner_id.parent_id.country_id.name, table_body)
-                else:
+                elif item.order_id.partner_id.parent_id:
+                    sheet.write(j, 4, item.order_id.partner_id.parent_id.name, table_body)
+                elif item.order_id.partner_id.country_id.name:
                     sheet.write(j, 4, item.order_id.partner_id.name + ' ' + item.order_id.partner_id.country_id.name,
                                 table_body)
+                else:
+                    sheet.write(j, 4, item.order_id.partner_id.name, table_body)
                 sheet.write(j, 5, '', table_body)
                 sheet.write(j, 6, '', table_body)
                 if item.order_id.partner_id.mobile:
