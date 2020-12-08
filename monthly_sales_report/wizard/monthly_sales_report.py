@@ -18,7 +18,7 @@ class MonthlySalesReport(models.TransientModel):
         table_header = workbook.add_format({'font_size': 12, 'bold': True})
         table_body = workbook.add_format({'font_size': 12})
         table_body1 = workbook.add_format({'font_size': 12, 'align': 'right', 'bold': True})
-        table_date = workbook.add_format({'font_size': 12, 'num_format': 'dd/mm/yyyy'})
+        table_date = workbook.add_format({'font_size': 12, 'num_format': 'dd-mm-yyyy'})
         table_acc = workbook.add_format({'font_size': 12, 'num_format': '#,##0.00'})
 
         data = self.env['sale.order'].search([('date_order', '>=', self.date_from),
@@ -78,16 +78,19 @@ class MonthlySalesReport(models.TransientModel):
                 sheet.write(j, 1, item.order_id.name, table_body)
                 sheet.write(j, 2, item.product_id.x_studio_field_vdINR, table_body)
                 sheet.write(j, 3, '', table_body)
+                project_string = str(item.product_id.x_studio_field_vdINR)
+                project_codes = project_string.split('_', 1)
+                project_code = project_codes[0]
                 if item.order_id.partner_id.parent_id and item.order_id.partner_id.parent_id.country_id.name:
-                    sheet.write(j, 4, str(item.product_id.x_studio_field_vdINR) + ' ' +
+                    sheet.write(j, 4, project_code + ' ' +
                                 str(item.order_id.partner_id.parent_id.country_id.name), table_body)
                 elif item.order_id.partner_id.parent_id:
-                    sheet.write(j, 4, str(item.product_id.x_studio_field_vdINR), table_body)
+                    sheet.write(j, 4, project_code, table_body)
                 elif item.order_id.partner_id.country_id.name:
-                    sheet.write(j, 4, str(item.product_id.x_studio_field_vdINR) + ' ' +
+                    sheet.write(j, 4, project_code + ' ' +
                                 str(item.order_id.partner_id.country_id.name), table_body)
                 else:
-                    sheet.write(j, 4, str(item.product_id.x_studio_field_vdINR), table_body)
+                    sheet.write(j, 4, project_code, table_body)
                 sheet.write(j, 5, '', table_body)
                 sheet.write(j, 6, '', table_body)
                 if item.order_id.partner_id.mobile:
