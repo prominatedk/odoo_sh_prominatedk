@@ -19,7 +19,7 @@ class MonthlySalesReport(models.TransientModel):
         table_body = workbook.add_format({'font_size': 12})
         table_body1 = workbook.add_format({'font_size': 12, 'align': 'right', 'bold': True})
         table_date = workbook.add_format({'font_size': 12, 'num_format': 'dd/mm/yyyy'})
-        table_acc = workbook.add_format({'font_size': 12, 'num_format': '#,#'})
+        table_acc = workbook.add_format({'font_size': 12, 'num_format': '#,##0.00'})
 
         data = self.env['sale.order'].search([('date_order', '>=', self.date_from),
                                               ('date_order', '<=', self.date_to),
@@ -79,15 +79,15 @@ class MonthlySalesReport(models.TransientModel):
                 sheet.write(j, 2, item.product_id.x_studio_field_vdINR, table_body)
                 sheet.write(j, 3, '', table_body)
                 if item.order_id.partner_id.parent_id and item.order_id.partner_id.parent_id.country_id.name:
-                    sheet.write(j, 4, item.order_id.partner_id.parent_id.name + ' ' +
-                                item.order_id.partner_id.parent_id.country_id.name, table_body)
+                    sheet.write(j, 4, str(item.product_id.x_studio_field_vdINR) + ' ' +
+                                str(item.order_id.partner_id.parent_id.country_id.name), table_body)
                 elif item.order_id.partner_id.parent_id:
-                    sheet.write(j, 4, item.order_id.partner_id.parent_id.name, table_body)
+                    sheet.write(j, 4, str(item.product_id.x_studio_field_vdINR), table_body)
                 elif item.order_id.partner_id.country_id.name:
-                    sheet.write(j, 4, item.order_id.partner_id.name + ' ' + item.order_id.partner_id.country_id.name,
-                                table_body)
+                    sheet.write(j, 4, str(item.product_id.x_studio_field_vdINR) + ' ' +
+                                str(item.order_id.partner_id.country_id.name), table_body)
                 else:
-                    sheet.write(j, 4, item.order_id.partner_id.name, table_body)
+                    sheet.write(j, 4, str(item.product_id.x_studio_field_vdINR), table_body)
                 sheet.write(j, 5, '', table_body)
                 sheet.write(j, 6, '', table_body)
                 if item.order_id.partner_id.mobile:
@@ -108,7 +108,8 @@ class MonthlySalesReport(models.TransientModel):
                 shipment = self.env['stock.picking'].search([('origin', '=', item.order_id.name)])
                 shipdates = []
                 for i in shipment:
-                    shipdates.append(i.scheduled_date.strftime("%m/%d/%Y"))
+                    if i.scheduled_date:
+                        shipdates.append(i.scheduled_date.strftime("%d/%m/%Y"))
                 shipdate = ",".join(shipdates)
                 sheet.write(j, 16, shipdate, table_body)
                 sheet.write(j, 17, item.order_id.currency_id.name, table_body)
@@ -121,7 +122,8 @@ class MonthlySalesReport(models.TransientModel):
                 invoice_dates = []
                 invoice_amounts = []
                 for lines in invoices:
-                    invoice_dates.append(str(lines.date_invoice))
+                    if lines.date_invoice:
+                        invoice_dates.append(lines.date_invoice.strftime("%d/%m/%Y"))
                     invoice_amounts.append(str(lines.amount_total))
                 invoice_date = ",".join(invoice_dates)
                 invoice_amount = ",".join(invoice_amounts)
@@ -129,14 +131,19 @@ class MonthlySalesReport(models.TransientModel):
                     sheet.write(j, 23, invoice_date, table_date)
                 else:
                     sheet.write(j, 23, '', table_date)
-                sheet.write(j, 24, invoice_amount, table_body)
+                sheet.write(j, 24, item.price_total, table_acc)
                 sheet.write(j, 25, '', table_body)
                 sheet.write(j, 26, item.product_id.default_code, table_body)
-                sheet.write(j, 27, item.product_id.categ_id.parent_id.name, table_body)
+                if item.product_id.categ_id.name:
+                    try:
+                        int(item.product_id.categ_id.name[:2])
+                        sheet.write(j, 27, item.product_id.categ_id.name[3:], table_body)
+                    except ValueError:
+                        sheet.write(j, 27, item.product_id.categ_id.name, table_body)
                 sheet.write(j, 28, item.product_id.name, table_body)
-                sheet.write(j, 29, item.product_id.categ_id.name, table_body)
+                sheet.write(j, 29, item.product_id.x_studio_field_Mj7AZ, table_body)
                 sheet.write(j, 30, item.price_unit, table_acc)
-                sheet.write(j, 31, item.product_uom_qty, table_body)
+                sheet.write(j, 31, item.product_uom_qty, table_acc)
                 sheet.write(j, 32, item.product_id.x_studio_field_hqRIw, table_body)
                 sheet.write(j, 33, item.product_id.x_studio_field_cA6I2, table_body)
                 sheet.write(j, 34, item.price_total, table_acc)
