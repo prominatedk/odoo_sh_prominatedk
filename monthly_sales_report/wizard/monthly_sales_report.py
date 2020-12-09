@@ -74,7 +74,7 @@ class MonthlySalesReport(models.TransientModel):
         j = 1
 
         for item in data.mapped('order_line'):
-            if item.product_id.default_code not in ['1099', '1098', '1097', '1096', '1095']:
+            if item.product_id.default_code not in ['1099', '1098', '1097', '1096', '1095'] and item.product_id:
                 sheet.write(j, 0, '', table_body)
                 sheet.write(j, 1, item.order_id.name, table_body)
                 sheet.write(j, 2, item.product_id.x_studio_field_vdINR, table_body)
@@ -162,7 +162,8 @@ class MonthlySalesReport(models.TransientModel):
                 for lines in invoices:
                     refunds = self.env['account.invoice'].search([('origin', '=', lines.number),
                                                                   ('type', '=', 'out_refund')], limit=1)
-                    credit_notes.append(str(refunds.number))
+                    if refunds:
+                        credit_notes.append(str(refunds.number))
                 credit_note = ", ".join(credit_notes)
                 if credit_note:
                     sheet.write(j, 42, credit_note, table_body)
