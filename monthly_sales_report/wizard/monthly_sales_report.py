@@ -21,8 +21,8 @@ class MonthlySalesReport(models.TransientModel):
         table_date = workbook.add_format({'font_size': 12, 'num_format': 'dd-mm-yyyy'})
         table_acc = workbook.add_format({'font_size': 12, 'num_format': '#,##0.00'})
 
-        data = self.env['sale.order'].search([('date_order', '>=', self.date_from),
-                                              ('date_order', '<=', self.date_to),
+        data = self.env['sale.order'].search([('confirmation_date', '>=', self.date_from),
+                                              ('confirmation_date', '<=', self.date_to),
                                               ('state', '=', 'sale')], order="date_order")
 
         sheet = workbook.add_worksheet('Monthly Sales Report')
@@ -69,6 +69,7 @@ class MonthlySalesReport(models.TransientModel):
         sheet.write('AN1', 'SLA_PROBLEM', table_header)
         sheet.write('AO1', 'ORDER_TYPE', table_header)
         sheet.write('AP1', 'PRODUCT_BRAND', table_header)
+        sheet.write('AQ1', 'CREDIT_NOTES', table_header)
 
         j = 1
 
@@ -106,13 +107,13 @@ class MonthlySalesReport(models.TransientModel):
                 sheet.write(j, 11, item.order_id.partner_id.country_id.code, table_body)
                 sheet.write(j, 12, '', table_body)
                 sheet.write(j, 13, '', table_body)
-                sheet.write(j, 14, item.order_id.date_order, table_date)
+                sheet.write(j, 14, item.order_id.confirmation_date, table_date)
                 sheet.write(j, 15, item.order_id.partner_id.country_id.code, table_body)
                 shipment = self.env['stock.picking'].search([('origin', '=', item.order_id.name)])
                 shipdates = []
                 for i in shipment:
                     if i.scheduled_date:
-                        shipdates.append(i.scheduled_date.strftime("%d/%m/%Y"))
+                        shipdates.append(i.scheduled_date.strftime("%d-%m-%Y"))
                 shipdate = ",".join(shipdates)
                 sheet.write(j, 16, shipdate, table_body)
                 sheet.write(j, 17, item.order_id.currency_id.name, table_body)
@@ -126,10 +127,10 @@ class MonthlySalesReport(models.TransientModel):
                 invoice_amounts = []
                 for lines in invoices:
                     if lines.date_invoice:
-                        invoice_dates.append(lines.date_invoice.strftime("%d/%m/%Y"))
+                        invoice_dates.append(lines.date_invoice.strftime("%d-%m-%Y"))
                     invoice_amounts.append(str(lines.amount_total))
-                invoice_date = ",".join(invoice_dates)
-                invoice_amount = ",".join(invoice_amounts)
+                invoice_date = ", ".join(invoice_dates)
+                invoice_amount = ", ".join(invoice_amounts)
                 if len(invoice_dates) > 0:
                     sheet.write(j, 23, invoice_date, table_date)
                 else:
@@ -157,6 +158,16 @@ class MonthlySalesReport(models.TransientModel):
                 sheet.write(j, 39, '', table_body)
                 sheet.write(j, 40, '', table_body)
                 sheet.write(j, 41, '', table_body)
+                credit_notes = []
+                for lines in invoices:
+                    refunds = self.env['account.invoice'].search([('origin', '=', lines.number),
+                                                                  ('type', '=', 'out_refund')], limit=1)
+                    credit_notes.append(str(refunds.number))
+                credit_note = ", ".join(credit_notes)
+                if credit_note:
+                    sheet.write(j, 42, credit_note, table_body)
+                else:
+                    sheet.write(j, 42, '', table_body)
 
                 j += 1
 
