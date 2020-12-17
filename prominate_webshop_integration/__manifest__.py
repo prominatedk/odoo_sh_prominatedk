@@ -2,7 +2,7 @@
     "name": "Prominate Webshop Integration",
     "summary": "Stock Syncronization",
     "description": "This module syncronizes the stock quantities between Odoo and the webshop",
-    "version": "1.9.9",
+    "version": "1.9.10",
     "category": "E-Commerce",
     "author": "VK Data ApS",
     "website": "https://vkdata.dk",
