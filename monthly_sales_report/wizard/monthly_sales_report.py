@@ -89,7 +89,7 @@ class MonthlySalesReport(models.TransientModel):
                 if item.invoice_id.partner_id.parent_id and item.invoice_id.partner_id.parent_id.country_id.name:
                     sheet.write(j, 4, project_code + ' ' +
                                 str(item.invoice_id.partner_id.parent_id.country_id.name), table_body)
-                elif item.order_id.partner_id.parent_id:
+                elif item.invoice_id.partner_id.parent_id:
                     sheet.write(j, 4, project_code, table_body)
                 elif item.invoice_id.partner_id.country_id.name:
                     sheet.write(j, 4, project_code + ' ' +
