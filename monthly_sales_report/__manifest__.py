@@ -6,10 +6,11 @@
     'author': "Nisus Solutions (Pvt) Ltd",
     'website': "http://www.nisus.lk",
     'category': 'Sales',
-    'version': '1.0.3',
-    'depends': ['sale'],
+    'version': '1.0.5',
+    'depends': ['sale', 'account'],
     'data': [
         'wizard/monthly_sales_report_view.xml',
+        'views/res_partner_views.xml',
     ],
     'demo': [],
 }
