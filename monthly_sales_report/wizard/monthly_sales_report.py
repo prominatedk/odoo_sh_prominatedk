@@ -121,7 +121,7 @@ class MonthlySalesReport(models.TransientModel):
                         if i.scheduled_date:
                             shipdates.append(i.scheduled_date.strftime("%d-%m-%Y"))
                     shipdate = ",".join(shipdates)
-                sheet.write(j, 16, shipdate, table_body)
+                    sheet.write(j, 16, shipdate, table_body)
                 sheet.write(j, 17, item.invoice_id.currency_id.name, table_body)
                 sheet.write(j, 18, item.invoice_id.partner_shipping_id.name, table_body)
                 sheet.write(j, 19, '', table_body)
@@ -129,7 +129,7 @@ class MonthlySalesReport(models.TransientModel):
                 sheet.write(j, 21, item.invoice_id.partner_shipping_id.city, table_body)
                 sheet.write(j, 22, item.invoice_id.partner_shipping_id.country_id.code, table_body)
                 sheet.write(j, 23, item.invoice_id.date_invoice, table_date)
-                sheet.write(j, 24, item.price_total, table_acc)
+                sheet.write(j, 24, item.price_subtotal, table_acc)
                 sheet.write(j, 25, '', table_body)
                 sheet.write(j, 26, item.product_id.default_code, table_body)
                 if item.product_id.categ_id.name:
