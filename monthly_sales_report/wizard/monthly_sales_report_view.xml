@@ -11,6 +11,9 @@
                 <group class="oe_title">
                     <field name="date_to"/>
                 </group>
+                <group class="oe_title">
+                    <field name="currency_id"/>
+                </group>
                 <footer>
                     <button name="print_report_xls" string="Print XLS" type="object" default_focus="1" class="eo_highlight"/>
                     <button string="Cancel" class="btn btn-secondary" special="cancel"/>
@@ -42,5 +45,6 @@
         </field>
     </record>
 
-    <menuitem id="monthly_sales_report_wizard_menu" name="Monthly Sales Report" groups="base.group_user" action="monthly_sales_report_wizard_action" parent="sale.menu_sale_report"/>
+    <menuitem id="monthly_sales_report_wizard_menu" name="Monthly Sales Report" groups="base.group_user"
+              action="monthly_sales_report_wizard_action" parent="sale.menu_sale_report"/>
 </odoo>
