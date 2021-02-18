@@ -112,7 +112,8 @@ class MonthlySalesReport(models.TransientModel):
                 sheet.write(j, 11, item.invoice_id.partner_id.country_id.code, table_body)
                 sheet.write(j, 12, '', table_body)
                 sheet.write(j, 13, '', table_body)
-                sheet.write(j, 14, item.invoice_id.date_invoice, table_date)
+                if item.mapped('sale_line_ids'):
+                    sheet.write(j, 14, item.mapped('sale_line_ids')[0].order_id.confirmation_date.date(), table_date)
                 sheet.write(j, 15, item.invoice_id.partner_id.country_id.code, table_body)
                 if item.invoice_id.origin:
                     shipment = self.env['stock.picking'].search([('origin', '=', item.invoice_id.origin)])
