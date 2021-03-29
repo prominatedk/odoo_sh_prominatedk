@@ -8,7 +8,7 @@ _logger = logging.getLogger(__name__)
 class AccountJournal(models.Model):
     _inherit = "account.journal"
 
-    customer_code = fields.Char(string='Integration Code', help="Please provide Integration Code for bankintegration.")
+    bankintegration_integration_code = fields.Char(string='Integration Code', help="Please provide Integration Code for bankintegration.", oldname='customer_code')
 
     def _get_oh_bank_statements_available_import_formats(self):
         return [('bankintegration_import', _('Auto import from bankintegration'))]
@@ -22,7 +22,7 @@ class AccountJournal(models.Model):
         
     def has_valid_bankintegration_config(self):
         self.ensure_one()
-        if not self.customer_code:
+        if not self.bankintegration_integration_code:
             _logger.error('Journal {journal} in company {company} cannot be processed as the integration code for bankintegration.dk is missing'.format(journal=self.name, company=self.company_id.display_name))
             return False
         if not self.bank_id.id:
@@ -71,7 +71,7 @@ class AccountJournal(models.Model):
             if not company.has_valid_bankintegration_config():
                 continue
             # Process all journals in the company, where bankintegration has been set as the source
-            for journal in self.env['account.journal'].search([('type', '=', 'bank'), ('company_id', '=', company.id), ('bank_statements_source', '=', 'bankintegration_import'), ('customer_code','!=', False)]):
+            for journal in self.env['account.journal'].search([('type', '=', 'bank'), ('company_id', '=', company.id), ('bank_statements_source', '=', 'bankintegration_import'), ('bankintegration_integration_code','!=', False)]):
                 # Validate if we should process the specific account.journal entry
                 if not journal.has_valid_bankintegration_config():
                     continue
@@ -108,7 +108,7 @@ class AccountJournal(models.Model):
                 raise UserError(_('Journal %s for company %s could not be processed as the ERP provider and Bankintegration.dk API key are not defined' % (record.name, record.company_id.display_name)))
             # Validate if we should process the specific account.journal entry
             if not record.has_valid_bankintegration_config():
-                raise UserError(_('The configuration of the journal %s is not valid for use with bankintegration.dk. Please check that your integration code and bank account details are correctly configured'))
+                raise UserError(_('The configuration of the journal %s is not valid for use with bankintegration.dk. Please check that your integration code and bank account details are correctly configured' % (record.name,)))
             BankIntegrationRequest = self.env['bank.integration.request']
             AccountBankStatementImport = self.env['account.bank.statement.import']
             last_bank_statement = record._get_last_bank_statement()
@@ -151,7 +151,7 @@ class AccountJournal(models.Model):
                 continue
             AccountInvoice = self.env['account.invoice']
             # Process all vendor bills in the company, which are to be paid using bankintegration today
-            for journal in self.env['account.journal'].search([('type', '=', 'bank'), ('company_id', '=', company.id), ('bank_statements_source', '=', 'bankintegration_import'), ('customer_code','!=', False)]):
+            for journal in self.env['account.journal'].search([('type', '=', 'bank'), ('company_id', '=', company.id), ('bank_statements_source', '=', 'bankintegration_import'), ('bankintegration_integration_code','!=', False)]):
                 # Validate if we can even process payments out of the payment journal configured on the company
                 if not journal.has_valid_bankintegration_config():
                     _logger.error('The journal {} is not properly configured for bankintgration. Skipping all payments using this journal'.format(journal.name))

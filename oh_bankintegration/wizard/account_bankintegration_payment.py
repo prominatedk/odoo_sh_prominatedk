@@ -16,12 +16,26 @@ class AccountBankintegrationPayment(models.TransientModel):
 
     def action_pay_with_bankintegration(self):
         self.ensure_one()
-        if any([record.payment_status in ['created', 'pending', 'accepted', 'success', 'rejected', 'failed', 'not_found'] for record in self.invoice_ids]):
+        if any([record.bankintegration_payment_status in ['created', 'pending', 'accepted', 'success', 'rejected', 'failed', 'not_found'] for record in self.invoice_ids]):
             raise UserError(_('One or more of the selected invoices are already under payment with bankintegration'))
         
         if any([record.state != 'open' for record in self.invoice_ids]):
             raise UserError(_('One or more of the selected invoices has not yet been validated'))
 
-        self.invoice_ids._pay_with_bankintegration(is_scheduler=False)
+        if not all([record.bankintegration_payment_journal_id.id == self.invoice_ids[0].bankintegration_payment_journal_id.id for record in self.invoice_ids]):
+            # We have mixed journals
+            journals = []
+            # Fetch all journals
+            # NOTE: The double loop below might not necessarily be the best solution as it will have performance issues on larger datasets
+            for record in self.invoice_ids:
+                if not record.bankintegration_payment_journal_id in journals:
+                    journals.append(record.bankintegration_payment_journal_id)
+            for journal in journals:
+                invoices = self.invoice_ids.filtered(lambda x: x.bankintegration_payment_journal_id.id == journal.id)
+                invoices._pay_with_bankintegration(journal, is_scheduler=False)
+
+        else:
+            # All invoices have the same journal. Process the entire recordset at once
+            self.invoice_ids._pay_with_bankintegration(self.invoice_ids[0].bankintegration_payment_journal_id, is_scheduler=False)
 
         return {}

@@ -9,19 +9,19 @@
                     <paage name="oh_bankintegration" string="Bankintegration.dk">
                         <group>
                             <group>
-                                <field name="erp_provider" password="True" groups="base.group_no_one"/>
-                                <field name="bi_api_key" password="True" groups="base.group_no_one"/>
-                                <field name="use_extended_import"/>
-                                <field name="use_last_entry_date_as_statement_date"/>
-                                <field name="check_payment_status"/>
-                                <field name="use_bban"/>
+                                <field name="bankintegration_erp_provider" password="True" groups="base.group_no_one"/>
+                                <field name="bankintegration_provider_api_key" password="True" groups="base.group_no_one"/>
+                                <field name="bankintegration_extended_import_format"/>
+                                <field name="bankintegration_last_entry_date_as_statement_date"/>
+                                <field name="bankintegration_check_payment_status"/>
+                                <field name="bankintegration_use_odoo_bban"/>
                             </group>
                             <group>
-                                <field name="payment_journal"/>
-                                <field name="payment_margin"/>
-                                <field name="autopay"/>
-                                <field name="set_validate_payment"/>
-                                <field name="use_note_msg"/>
+                                <field name="bankintegration_payment_journal_id"/>
+                                <field name="bankintegration_payment_margin"/>
+                                <field name="bankintegration_autopay"/>
+                                <field name="bankintegration_send_on_validate"/>
+                                <field name="bankintegration_statement_note_as_label"/>
                                 <field name="bankintegration_transaction_accounting_date"/>
                             </group>
                         </group>
