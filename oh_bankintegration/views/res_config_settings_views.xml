@@ -15,48 +15,48 @@
                             <div class="o_setting_right_pane">
                                 <div class="content-group">
                                     <div class="row mt16">
-                                        <label string="Payment margin" for="payment_margin" class="col-lg-5 o_light_label"/>
-                                        <field name="payment_margin"/>
+                                        <label string="Payment margin" for="bankintegration_payment_margin" class="col-lg-5 o_light_label"/>
+                                        <field name="bankintegration_payment_margin"/>
                                     </div>
                                     <div class="row mt16">
-                                        <label string="Default autopay" for="autopay" class="col-lg-5 o_light_label"/>
-                                        <field name="autopay" />
+                                        <label string="Default autopay" for="bankintegration_autopay" class="col-lg-5 o_light_label"/>
+                                        <field name="bankintegration_autopay" />
                                     </div>
                                     <div class="row mt16">
-                                        <label string="Use default bban" for="use_bban" class="col-lg-5 o_light_label"/>
-                                        <field name="use_bban" />
+                                        <label string="Use default bban" for="bankintegration_use_odoo_bban" class="col-lg-5 o_light_label"/>
+                                        <field name="bankintegration_use_odoo_bban" />
                                     </div>
                                     <div class="row mt16">
-                                        <label string="Set for payment after validate?" for="set_validate_payment" class="col-lg-5 o_light_label"/>
-                                        <field name="set_validate_payment" />
+                                        <label string="Set for payment after validate?" for="bankintegration_send_on_validate" class="col-lg-5 o_light_label"/>
+                                        <field name="bankintegration_send_on_validate" />
                                     </div>
                                     <div class="row mt16">
-                                        <label string="Default payment journal" for="payment_journal" class="col-lg-5 o_light_label"/>
-                                        <field name="payment_journal" />
+                                        <label string="Default payment journal" for="bankintegration_payment_journal_id" class="col-lg-5 o_light_label"/>
+                                        <field name="bankintegration_payment_journal_id" />
                                     </div>
                                     <div class="row mt16">
-                                        <label string="ERP Provider" for="erp_provider" class="col-lg-5 o_light_label"/>
-                                        <field name="erp_provider" password="True" />
+                                        <label string="ERP Provider" for="bankintegration_erp_provider" class="col-lg-5 o_light_label"/>
+                                        <field name="bankintegration_erp_provider" password="True" />
                                     </div>
                                     <div class="row mt16">
-                                        <label string="API Key" for="bi_api_key" class="col-lg-5 o_light_label"/>
-                                        <field name="bi_api_key" password="True" />
+                                        <label string="API Key" for="bankintegration_provider_api_key" class="col-lg-5 o_light_label"/>
+                                        <field name="bankintegration_provider_api_key" password="True" />
                                     </div>
                                     <div class="row mt16">
-                                        <label string="Use note as label?" for="use_note_msg" class="col-lg-5 o_light_label"/>
-                                        <field name="use_note_msg" />
+                                        <label string="Use note as label?" for="bankintegration_statement_note_as_label" class="col-lg-5 o_light_label"/>
+                                        <field name="bankintegration_statement_note_as_label" />
                                     </div>
                                     <div class="row mt16">
-                                        <label string="Check payment status on payment" for="check_payment_status" class="col-lg-5 o_light_label"/>
-                                        <field name="check_payment_status" />
+                                        <label string="Check payment status on payment" for="bankintegration_check_payment_status" class="col-lg-5 o_light_label"/>
+                                        <field name="bankintegration_check_payment_status" />
                                     </div>
                                     <div class="row mt16">
-                                        <label string="Use extended import?" for="use_extended_import" class="col-lg-5 o_light_label"/>
-                                        <field name="use_extended_import" />
+                                        <label string="Use extended import?" for="bankintegration_extended_import_format" class="col-lg-5 o_light_label"/>
+                                        <field name="bankintegration_extended_import_format" />
                                     </div>
                                     <div class="row mt16">
-                                        <label for="use_last_entry_date_as_statement_date" class="col-lg-5 o_light_label"/>
-                                        <field name="use_last_entry_date_as_statement_date" />
+                                        <label for="bankintegration_last_entry_date_as_statement_date" class="col-lg-5 o_light_label"/>
+                                        <field name="bankintegration_last_entry_date_as_statement_date" />
                                     </div>
                                     <div class="row mt16">
                                         <label for="bankintegration_transaction_accounting_date" class="col-lg-5 o_light_label"/>

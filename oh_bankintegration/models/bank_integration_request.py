@@ -66,17 +66,17 @@ class BankIntegrationRequest(models.Model):
             # Get value to use as account number from journal
             acc_number = self.journal_id.get_bankintegration_acc_number()
             # Get integration code for the specific bank account
-            customer_code = self.journal_id.customer_code
+            bankintegration_integration_code = self.journal_id.bankintegration_integration_code
 
             if not acc_number:
                 _logger.error('The account number could not be found')
                 return False
-            if not customer_code:
+            if not bankintegration_integration_code:
                 _logger.error('The integration code for the journal on the bills could not be found')
                 return False
 
             auth_dict = OrderedDict([
-                ("serviceProvider", self.company_id.erp_provider),
+                ("serviceProvider", self.company_id.bankintegration_erp_provider),
                 ("account", acc_number),
                 ("time", self.request_date.strftime("%Y-%m-%dT%H:%M:%S")),
                 ("requestId", self.request_id),
@@ -85,14 +85,14 @@ class BankIntegrationRequest(models.Model):
 
             for payment in payment_vals:
                 auth_vals = OrderedDict([
-                    ('token', sha256(str(customer_code).encode('utf-8')).hexdigest()),
+                    ('token', sha256(str(bankintegration_integration_code).encode('utf-8')).hexdigest()),
                     ('custacc', acc_number),
                     ('currency', payment['currency']),
                     ('reqid', self.request_id),
                     ('paydate', payment.pop('paydate', '')),
                     ('amount', payment['amount']),
                     ('credacc', payment['account']),
-                    ('erp', self.company_id.erp_provider),
+                    ('erp', self.company_id.bankintegration_erp_provider),
                     ('payid', payment['paymentId']),
                     ('now', self.request_date.strftime("%Y%m%d%H%M%S")),
                 ])
@@ -123,8 +123,8 @@ class BankIntegrationRequest(models.Model):
             ('transactions', vals),
         ])
         payment['options'] = {
-            'waitForBankResponse': self.company_id.check_payment_status,
-            'checkPaymentStatus': self.company_id.check_payment_status,
+            'waitForBankResponse': self.company_id.bankintegration_check_payment_status,
+            'checkPaymentStatus': self.company_id.bankintegration_check_payment_status,
             'moveToNextBankDate': True,
             'useIban': False,
             'skipDuplicateCheck': False
@@ -147,8 +147,8 @@ class BankIntegrationRequest(models.Model):
                 payment_id = payment_data['paymentId'].split('_')
                 invoice = self.env['account.invoice'].search([('id', '=', payment_id[3])], limit=1, order='id desc')
                 if invoice.id:
-                    invoice.write({'payment_status': 'pending'})
-            if self.company_id.check_payment_status:
+                    invoice.write({'bankintegration_payment_status': 'pending'})
+            if self.company_id.bankintegration_check_payment_status:
                 response_data = response.json()
                 if 'answers' in response_data:
                     entries = response_data['answers']
@@ -161,8 +161,8 @@ class BankIntegrationRequest(models.Model):
             self.request_status = 'failed'
             for invoice in self.invoice_ids:
                 invoice.write({
-                    'payment_status': 'failed',
-                    'payment_error': 'There was an error processing the payment. Please check that the payment details are filled correctly'
+                    'bankintegration_payment_status': 'failed',
+                    'bankintegration_payment_error': 'There was an error processing the payment. Please check that the payment details are filled correctly'
                 })
 
         return True
@@ -174,30 +174,30 @@ class BankIntegrationRequest(models.Model):
             # Get value to use as account number from journal
             acc_number = self.journal_id.get_bankintegration_acc_number()
             # Get integration code for the specific bank account
-            customer_code = self.journal_id.customer_code
+            bankintegration_integration_code = self.journal_id.bankintegration_integration_code
             
             auth_vals = OrderedDict([
-                ('token', sha256(str(customer_code).encode('utf-8')).hexdigest()),
+                ('token', sha256(str(bankintegration_integration_code).encode('utf-8')).hexdigest()),
                 ('custacc', acc_number),
                 ('currency', ''),
                 ('reqid', self.request_id),
                 ('paydate', ''),
                 ('amount', ''),
                 ('credacc', ''),
-                ('erp', self.company_id.erp_provider),
-                ('payid', self.payment_id or self.request_id),
+                ('erp', self.company_id.bankintegration_erp_provider),
+                ('payid', self.bankintegration_payment_id or self.request_id),
                 ('now', self.request_date.strftime("%Y%m%d%H%M%S")),
             ])
             auth_key = self.generate_auth_key(auth_vals)
             if auth_key:
                 auth_dict = OrderedDict([
-                    ("serviceProvider", self.company_id.erp_provider),
+                    ("serviceProvider", self.company_id.bankintegration_erp_provider),
                     ("account", acc_number),
                     ("time", self.request_date.strftime("%Y-%m-%dT%H:%M:%S")),
                     ("requestId", self.request_id),
                     ("hash", [
                         OrderedDict([
-                            ("id", self.payment_id or self.request_id),
+                            ("id", self.bankintegration_payment_id or self.request_id),
                             ("hash", auth_key)
                         ])
                     ]),
@@ -215,7 +215,7 @@ class BankIntegrationRequest(models.Model):
 
     def generate_auth_key(self, auth_vals_dict):
         try:
-            erp_key = self.company_id.bi_api_key
+            erp_key = self.company_id.bankintegration_provider_api_key
             payload_raw = "#".join(str(v) for v in auth_vals_dict.values())
             erp_uuid = uuid.UUID(hex=erp_key)
             map_arr = array.array('B', erp_uuid.bytes_le)
@@ -300,13 +300,13 @@ class BankIntegrationRequest(models.Model):
                         'to_date': to_date,
                         'statement': []
                     }
-                    use_last_entry_date_as_statement_date = self.company_id.use_last_entry_date_as_statement_date
+                    bankintegration_last_entry_date_as_statement_date = self.company_id.bankintegration_last_entry_date_as_statement_date
                     bankintegration_transaction_accounting_date = self.company_id.bankintegration_transaction_accounting_date
                     statement = {
                         'name': _('Bank statement from ' + from_date + ' to ' + to_date),
                         'balance_start': current_balance_amount,
                         'balance_end_real': 0,
-                        'date': datetime.datetime.strptime(data['to'].split('T')[0], '%Y-%m-%d') if use_last_entry_date_as_statement_date else datetime.datetime.strptime(data['created'].split('T')[0], '%Y-%m-%d'), # Only the date from the timestamp
+                        'date': datetime.datetime.strptime(data['to'].split('T')[0], '%Y-%m-%d') if bankintegration_last_entry_date_as_statement_date else datetime.datetime.strptime(data['created'].split('T')[0], '%Y-%m-%d'), # Only the date from the timestamp
                         'transactions': [],
                     }
                     if 'entries' in data:
@@ -314,7 +314,7 @@ class BankIntegrationRequest(models.Model):
                         for transaction in lines:
                             vals = {
                                 'unique_import_id': "{account}_{id}".format(id=transaction['id'], account=data['account']),
-                                'name': transaction['advis'][0] if self.company_id.use_note_msg else transaction['text'],
+                                'name': transaction['advis'][0] if self.company_id.bankintegration_statement_note_as_label else transaction['text'],
                                 'date': datetime.datetime.strptime(transaction['date'][bankintegration_transaction_accounting_date], '%Y-%m-%dT%H:%M:%S'),
                                 'amount': transaction['amount'],
                                 'note': "\n".join(transaction['advis']) if 'advis' in transaction else '',
@@ -358,16 +358,16 @@ class BankIntegrationRequest(models.Model):
         response_data = {}
         errors = []
         next_import_date = datetime.datetime.today() - datetime.timedelta(days=1)
-        use_last_entry_date_as_statement_date = self.company_id.use_last_entry_date_as_statement_date
+        bankintegration_last_entry_date_as_statement_date = self.company_id.bankintegration_last_entry_date_as_statement_date
         # Some users prefer to have the bank statement be on the same date as the last transaction of the statement
         # This we therefore configure the system to handle by modifying the date where we import from
-        if use_last_entry_date_as_statement_date:
+        if bankintegration_last_entry_date_as_statement_date:
             last_import_date = last_import_date + datetime.timedelta(days=1)
-        use_extended_import = self.company_id.use_extended_import
+        bankintegration_extended_import_format = self.company_id.bankintegration_extended_import_format
         bankintegration_api_url = ACCOUNT_STATEMENT_API_URL + \
             str(self.request_id) + '&from=' + \
             last_import_date.strftime('%Y-%m-%d') + '&to=' + next_import_date.strftime('%Y-%m-%d')
-        if use_extended_import:
+        if bankintegration_extended_import_format:
             bankintegration_api_url = bankintegration_api_url + '&type=Full'
         try:
             headers = {
@@ -386,7 +386,7 @@ class BankIntegrationRequest(models.Model):
                 entries = response_data['entries']
                 for entry in entries:
                     entry.update({'payment_type': entry['type']})
-                    if use_extended_import:
+                    if bankintegration_extended_import_format:
                         entry.update(entry['amounts'])
                         del entry['amounts']
                     else:
@@ -424,7 +424,7 @@ class BankIntegrationRequest(models.Model):
             if not company.has_valid_bankintegration_config():
                 continue
             # Validate if we can even process payments out of the payment journal configured on the company
-            if not company.payment_journal.has_valid_bankintegration_config():
+            if not company.bankintegration_payment_journal_id.has_valid_bankintegration_config():
                 continue
             # Get the status of any payments that have not yet been processed
             pending_requests = self.search([('company_id', '=', company.id), ('request_status', 'in', [PAYMENT_STATUS_CODE['1'], PAYMENT_STATUS_CODE['2'], PAYMENT_STATUS_CODE['4'], PAYMENT_STATUS_CODE['128']])])
@@ -444,26 +444,26 @@ class BankIntegrationRequest(models.Model):
     def get_payment_status_token(self):
         try:
             # Get value to use as account number from journal
-            acc_number = self.company_id.payment_journal.get_bankintegration_acc_number()
+            acc_number = self.company_id.bankintegration_payment_journal_id.get_bankintegration_acc_number()
             # Get integration code for the specific bank account
-            customer_code = self.company_id.payment_journal.customer_code
+            bankintegration_integration_code = self.company_id.bankintegration_payment_journal_id.bankintegration_integration_code
             
             auth_vals = OrderedDict([
-                ('token', sha256(str(customer_code).encode('utf-8')).hexdigest()),
+                ('token', sha256(str(bankintegration_integration_code).encode('utf-8')).hexdigest()),
                 ('custacc', acc_number),
                 ('currency', ''),
                 ('reqid', self.request_id),
                 ('paydate', ''),
                 ('amount', ''),
                 ('credacc', ''),
-                ('erp', self.company_id.erp_provider),
+                ('erp', self.company_id.bankintegration_erp_provider),
                 ('payid', self.request_id),
                 ('now', self.request_date.strftime("%Y%m%d%H%M%S")),
             ])
             auth_key = self.generate_auth_key(auth_vals)
             if auth_key:
                 auth_dict = OrderedDict([
-                    ("serviceProvider", self.company_id.erp_provider),
+                    ("serviceProvider", self.company_id.bankintegration_erp_provider),
                     ("account", acc_number),
                     ("time", self.request_date.strftime("%Y-%m-%dT%H:%M:%S")),
                     ("requestId", self.request_id),
@@ -490,7 +490,7 @@ class BankIntegrationRequest(models.Model):
         pending_payment_ids = []
         for request in pending_requests:
             for invoice in request.invoice_ids:
-                pending_payment_ids.append(invoice.payment_id)
+                pending_payment_ids.append(invoice.bankintegration_payment_id)
         vals = {
             'requestId': self.request_id,
             'paymentId': pending_payment_ids
@@ -548,18 +548,18 @@ class BankIntegrationRequest(models.Model):
             if not invoice.id:
                 _logger.error('The PaymentID {} was not found'.format(status_update['paymentId']))
                 return False
-        request = self.search([('request_id', '=', invoice.request_id)], limit=1)
+        request = self.search([('request_id', '=', invoice.bankintegration_request_id)], limit=1)
         if not request.id:
-            _logger.warn('No request with request ID {} was found. Skipping'.format(invoice.request_id))
+            _logger.warn('No request with request ID {} was found. Skipping'.format(invoice.bankintegration_request_id))
         request.write({'request_status': PAYMENT_STATUS_CODE[str(status_update['status'])]})
         vals = {
-            'payment_status':PAYMENT_STATUS_CODE[str(status_update['status'])]
+            'bankintegration_payment_status':PAYMENT_STATUS_CODE[str(status_update['status'])]
         }
         if 'errors' in status_update:
             errors = status_update['errors']
-            vals['payment_error'] = "\n".join(["{code}: {text}".format(code=error['code'] if 'code' in error else '', text=error['text']) for error in errors])
+            vals['bankintegration_payment_error'] = "\n".join(["{code}: {text}".format(code=error['code'] if 'code' in error else '', text=error['text']) for error in errors])
         elif 'warnings' in status_update:
             warnings = status_update['warnings']
-            vals['payment_error'] = "\n".join(["{code}: {text}".format(code=warning['code'] if 'code' in warning else '', text=warning['text']) for warning in warnings])
+            vals['bankintegration_payment_error'] = "\n".join(["{code}: {text}".format(code=warning['code'] if 'code' in warning else '', text=warning['text']) for warning in warnings])
         invoice.write(vals)
         return True
