@@ -185,7 +185,7 @@ class BankIntegrationRequest(models.Model):
                 ('amount', ''),
                 ('credacc', ''),
                 ('erp', self.company_id.bankintegration_erp_provider),
-                ('payid', self.bankintegration_payment_id or self.request_id),
+                ('payid', self.payment_id or self.request_id),
                 ('now', self.request_date.strftime("%Y%m%d%H%M%S")),
             ])
             auth_key = self.generate_auth_key(auth_vals)
@@ -197,7 +197,7 @@ class BankIntegrationRequest(models.Model):
                     ("requestId", self.request_id),
                     ("hash", [
                         OrderedDict([
-                            ("id", self.bankintegration_payment_id or self.request_id),
+                            ("id", self.payment_id or self.request_id),
                             ("hash", auth_key)
                         ])
                     ]),
