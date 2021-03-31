@@ -95,6 +95,8 @@ class EdiStockPickingIncoming(models.TransientModel):
                         if not move:
                             _logger.error('No stock.move found for product barcode {} or internal reference {} for order {}'.format(line['barcode_no'], line['part_number'], picking.name))
                             continue
+                        if len(move) > 1:
+                            move = move[0]
                         line_found = False
                         if not move.product_id.tracking in ['lot', 'serial']:
                             move.write({
