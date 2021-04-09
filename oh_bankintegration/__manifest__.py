@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Odoo Bankintegration',
-    'version': '3.0.7',
+    'version': '3.0.8',
     'category': 'Accounting',
     'description': """
 Odoo Bankintegration.

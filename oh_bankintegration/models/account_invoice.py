@@ -210,7 +210,7 @@ class AccountInvoice(models.Model):
             payment_vals = payment[2]
             bill.write({
                 'bankintegration_payment_id': payment_vals['paymentId'],
-                'bankintegration_request_id': request.bankintegration_request_id
+                'bankintegration_request_id': request.request_id
             })
 
     def _generate_bankintegration_transactions(self, is_scheduler=False):
@@ -220,7 +220,7 @@ class AccountInvoice(models.Model):
             if not vals:
                 record.write({
                     'bankintegration_payment_error': _('There was an error trying to pay this vendor bill using bankintegration'),
-                    'bankintegration_payment_status': bankintegration_payment_status_CODE['32']
+                    'bankintegration_payment_status': PAYMENT_STATUS_CODE['32']
                 })
                 _logger.error('There was an error generating the transaction for vendor bill {bill}'.format(bill=record.display_name))
             results.append((record.company_id.id, record.id, vals))
