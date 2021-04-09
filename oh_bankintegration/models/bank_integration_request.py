@@ -529,7 +529,7 @@ class BankIntegrationRequest(models.Model):
         return response_data
 
     def _update_invoice_payment_status(self, status_update):
-        invoice = self.env['account.invoice'].search([('payment_id', '=', status_update['paymentId'])], limit=1, order='id desc')
+        invoice = self.env['account.invoice'].search([('bankintegration_payment_id', '=', status_update['paymentId'])], limit=1, order='id desc')
         if not invoice.id:
             # In case that we cannot find the payment ID, we might still be in a transaction where the payment Id is not yet committed
             # so we instead make the lookup based on the invoice ID
