@@ -269,9 +269,9 @@ class AccountInvoice(models.Model):
             # If no FI payment string is set, check if a specific recipient bank account has been configured
             vals['account'] = self.partner_bank_id.get_bban() if self.company_id.bankintegration_use_odoo_bban else self.partner_bank_id.sanitized_acc_number
             # Set payment type as Foreign IBAN payment if account type is IBAN. Otherwise handle it as a domestic payment
-            if self.invoice_partner_bank_id.bank_id.bic:
+            if self.partner_bank_id.bank_id.bic:
                 vals['type'] = 11
-                vals['creditor']['bic'] = self.invoice_partner_bank_id.bank_id.bic
+                vals['creditor']['bic'] = self.partner_bank_id.bank_id.bic
             else:
                 vals['type'] = 1
         else:
