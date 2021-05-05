@@ -19,7 +19,7 @@ class StockPicking(models.Model):
     def _send_order_shipped(self):
         ids = self.sale_id.integration_code.split(",")
         for f_id in ids:
-            url = self.company_id.integration_api_url + "/order-fulfillments/{0}/messages".format(f_id)
+            url = self.company_id.integration_api_url + "/orders/%2A/fulfillments/{0}/messages".format(f_id)
             auth = self.company_id.integration_auth_token
 
             data = self.get_fulfillment_data()
@@ -28,9 +28,7 @@ class StockPicking(models.Model):
                 'Authorization': 'Bearer {0}'.format(auth),
                 'Content-Type': 'application/json'
             }
-            _logger.info('POST: %s', url)
-            _logger.info('HEADERS: %s', headers)
-            _logger.info('DATA: %s', data)
+
             response = requests.post(url, json=data, headers=headers)
             _logger.info('API RESPONSE: %s', response)
             _logger.info('API JSON: %s', response.json())
