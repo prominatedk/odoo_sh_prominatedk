@@ -28,9 +28,12 @@ class StockPicking(models.Model):
                 'Authorization': 'Bearer {0}'.format(auth),
                 'Content-Type': 'application/json'
             }
-            _logger.info('POST %s (%s)', url, data)
+            _logger.info('POST: %s', url)
+            _logger.info('HEADERS: %s', headers)
+            _logger.info('DATA: %s', data)
             response = requests.post(url, json=data, headers=headers)
-            _logger.info('API response: %s', response.json())
+            _logger.info('API RESPONSE: %s', response)
+            _logger.info('API JSON: %s', response.json())
 
 
     def get_fulfillment_data(self):
