@@ -73,6 +73,9 @@ class ProductProduct(models.Model):
                 'next_intake_amount': self._convert_to_primecargo_pack(intake_amount)
             })
         _logger.info('PUT %s (%s)', url + parameters, data)
+        if not self.company_id.integration_in_production:
+            _logger.info('Integration testing mode - Skipping request')
+            return
         response = requests.put(url + parameters, json=data, headers=headers)
         _logger.info('API response: %s', response.json())
 

@@ -221,6 +221,9 @@ class SaleOrder(models.Model):
                 'Content-Type': 'application/json'
             }
             _logger.info('POST %s (%s)', url, data)
+            if not self.company_id.integration_in_production:
+                _logger.info('Integration testing mode - Skipping request')
+                continue
             response = requests.post(url, json=data, headers=headers)
             _logger.info('API response: %s', response.text)
             if response.json().get('code') and (response.json()['code'] != '400' or response.json()['code'] != 400):
@@ -247,6 +250,9 @@ class SaleOrder(models.Model):
             parameters = "/warehouses/{0}/products/{1}/inventory".format(self.warehouse_id.webshop_code, code)
             data = {'amount': int(amount)}
             _logger.info('PUT %s (%s)', url + parameters, data)
+            if not self.company_id.integration_in_production:
+                _logger.info('Integration testing mode - Skipping request')
+                continue
             response = requests.put(url + parameters, json=data, headers=headers)
             _logger.info('API response: %s', response.text)
 

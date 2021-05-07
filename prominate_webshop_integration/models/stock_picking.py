@@ -36,6 +36,9 @@ class StockPicking(models.Model):
                 'Content-Type': 'application/json'
             }
             _logger.info('POST %s (%s)', url, data)
+            if not self.company_id.integration_in_production:
+                _logger.info('Integration testing mode - Skipping request')
+                continue
             response = requests.post(url, json=data, headers=headers)
             _logger.info('API response: %s', response.json())
 

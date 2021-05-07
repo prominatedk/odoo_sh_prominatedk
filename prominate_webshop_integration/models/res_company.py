@@ -7,3 +7,4 @@ class ResCompany(models.Model):
     integration_api_url = fields.Char()
     integration_analytic_account_id = fields.Many2one("account.analytic.account")
     placeholder_partner_id = fields.Many2one('res.partner')
+    integration_in_production = fields.Boolean()

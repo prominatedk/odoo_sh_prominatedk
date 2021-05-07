@@ -44,6 +44,16 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_left_pane">
+                                <div class="text-muted">
+                                    <field name="integration_in_production"/>
+                                </div>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <span class="o_form_label">In Production</span>
+                            </div>
+                        </div>
                     </div>
                 </xpath>
             </field>
