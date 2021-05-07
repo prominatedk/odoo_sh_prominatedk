@@ -19,8 +19,10 @@ class SaleOrder(models.Model):
     def message_new(self, msg, custom_values=None):
         company = self.env['res.company'].browse(custom_values.get('company_id')) if custom_values and custom_values.get('company_id') else False
         json_file = msg.get('attachments')
+        _logger.info('JSON FILE: %s', json_file)
         if not json_file:
             self.env['integration.error.log'].create({'msg': _("Error! No JSON file attached to mail"), 'action': 'odoo_support'})
+            _logger.error("Error! No JSON file attached to mail")
             raise ValidationError(_("Error! No JSON file attached to mail"))
         vals = self._parse_json(json_file[0], company)
 
@@ -62,6 +64,7 @@ class SaleOrder(models.Model):
             raise
         except json.JSONDecodeError as err:
             self.env['integration.error.log'].create({'msg': _("Error! Could not decode JSON file\n\n%s") % err, 'action': 'odoo_support'})
+            _logger.error("Error! Could not decode JSON file")
             raise
         except ValidationError as err: # ValidationErrors should be handled for each case
             raise

@@ -66,6 +66,7 @@ class ProductProduct(models.Model):
         parameters = "/warehouses/{0}/products/{1}/inventory".format(self.api_warehouse_id.webshop_code, self.default_code)
         intake_date, intake_amount = self._get_next_stock_intake()
         data = {'amount': int(self.virtual_available_quotation)}
+        _logger.info('INTAKE DATE: %s - INTAKE AMOUNT: %s', intake_date, intake_amount)
         if intake_date and intake_amount:
             data.update({
                 'next_intake_date': intake_date,
@@ -82,11 +83,13 @@ class ProductProduct(models.Model):
 
     def _get_next_stock_intake(self):
         receipt_operations = self.env['stock.picking.type'].search([('code', '=', 'incoming'), ('warehouse_id', '!=', False)])
+        _logger.info('RECEIPT OPERATIONS: %s', receipt_operations)
         pickings = self.env['stock.picking'].search([('state', 'not in', ['done', 'cancel']), ('picking_type_id', 'in', receipt_operations.ids)])
+        _logger.info('PICKINGS: %s', pickings)
         if not pickings:
             return False, False
         moves = self.env['stock.move'].search([('product_id', '=', self.id), ('picking_id', 'in', pickings.ids)])
-
+        _logger.info('MOVES: %s', moves)
         if moves:
             move = moves.sorted(key=lambda m: m.date_expected)[0]
             return move.date_expected.strftime("%Y-%m-%d"), int(move.product_uom_qty)
