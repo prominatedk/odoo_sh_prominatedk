@@ -10,6 +10,13 @@ class StockPicking(models.Model):
 
     api_order = fields.Boolean(related="sale_id.api_order")
 
+    @api.onchange('scheduled_date')
+    def _send_intake_update(self):
+        if self.state not in ['done', 'cancel']:
+            for move in self.move_ids_without_package:
+                _logger.info('UPDATING WEBSHOP STOCK')
+                move.product_id.action_update_webshop_stock()
+
     def action_done(self):
         super(StockPicking, self).action_done()
         if self.api_order and self.sale_id.integration_code:
