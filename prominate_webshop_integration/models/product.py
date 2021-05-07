@@ -97,3 +97,8 @@ class ProductProduct(models.Model):
             move = moves.sorted(key=lambda m: m.date_expected)[0]
             return move.date_expected.strftime("%Y-%m-%d"), int(move.product_uom_qty)
         return False, False
+
+    def _convert_to_primecargo_pack(self, qty):
+        if not self.primecargo_inner_pack_qty:
+            return qty
+        return qty / self.primecargo_inner_pack_qty
