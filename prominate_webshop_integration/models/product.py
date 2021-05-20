@@ -33,7 +33,13 @@ class ProductTemplate(models.Model):
             qty = product.qty_available - product.outgoing_qty
             if lines:
                 qty -= sum(lines.mapped('product_uom_qty'))
-            product.virtual_available_quotation = qty / product.primecargo_inner_pack_qty if product.primecargo_inner_pack_qty else qty
+            product.virtual_available_quotation = product._convert_to_primecargo_pack(qty)
+
+    def _convert_to_primecargo_pack(self, qty):
+        if not self.primecargo_inner_pack_qty:
+            return qty
+        return qty / self.primecargo_inner_pack_qty
+
 
 class ProductProduct(models.Model):
     _inherit = 'product.product'
@@ -58,8 +64,17 @@ class ProductProduct(models.Model):
         }
 
         parameters = "/warehouses/{0}/products/{1}/inventory".format(self.api_warehouse_id.webshop_code, self.default_code)
+        intake_date, intake_amount = self._get_next_stock_intake()
         data = {'amount': int(self.virtual_available_quotation)}
+        if intake_date and intake_amount:
+            data.update({
+                'next_intake_date': intake_date,
+                'next_intake_amount': self._convert_to_primecargo_pack(intake_amount)
+            })
         _logger.info('PUT %s (%s)', url + parameters, data)
+        if not self.company_id.integration_in_production:
+            _logger.info('Integration testing mode - Skipping request')
+            return
         response = requests.put(url + parameters, json=data, headers=headers)
         _logger.info('API response: %s', response.json())
 
@@ -67,3 +82,19 @@ class ProductProduct(models.Model):
         products = self.env['product.product'].search([('api_warehouse_id', '!=', False)])
         for p in products:
             p.action_update_webshop_stock()
+
+    def _get_next_stock_intake(self):
+        receipt_operations = self.env['stock.picking.type'].search([('code', '=', 'incoming'), ('warehouse_id', '!=', False)])
+        pickings = self.env['stock.picking'].search([('state', 'not in', ['done', 'cancel']), ('picking_type_id', 'in', receipt_operations.ids)])
+        if not pickings:
+            return False, False
+        moves = self.env['stock.move'].search([('product_id', '=', self.id), ('picking_id', 'in', pickings.ids)])
+        if moves:
+            move = moves.sorted(key=lambda m: m.date_expected, reverse=True)[0]
+            return move.date_expected.strftime("%Y-%m-%d"), int(move.product_uom_qty)
+        return False, False
+
+    def _convert_to_primecargo_pack(self, qty):
+        if not self.primecargo_inner_pack_qty:
+            return qty
+        return qty / self.primecargo_inner_pack_qty

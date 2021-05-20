@@ -19,8 +19,10 @@ class SaleOrder(models.Model):
     def message_new(self, msg, custom_values=None):
         company = self.env['res.company'].browse(custom_values.get('company_id')) if custom_values and custom_values.get('company_id') else False
         json_file = msg.get('attachments')
+        _logger.info('JSON FILE: %s', json_file)
         if not json_file:
             self.env['integration.error.log'].create({'msg': _("Error! No JSON file attached to mail"), 'action': 'odoo_support'})
+            _logger.error("Error! No JSON file attached to mail")
             raise ValidationError(_("Error! No JSON file attached to mail"))
         vals = self._parse_json(json_file[0], company)
 
@@ -62,6 +64,7 @@ class SaleOrder(models.Model):
             raise
         except json.JSONDecodeError as err:
             self.env['integration.error.log'].create({'msg': _("Error! Could not decode JSON file\n\n%s") % err, 'action': 'odoo_support'})
+            _logger.error("Error! Could not decode JSON file")
             raise
         except ValidationError as err: # ValidationErrors should be handled for each case
             raise
@@ -129,24 +132,26 @@ class SaleOrder(models.Model):
         if existing_partner:
             partners['partner_id'] = existing_partner
         else:
-            partner_country = self.env['res.country'].search([('code', 'ilike', shipping['country_code'])])
+            partner_country = False
+            if shipping.get('country_code'):
+                partner_country = self.env['res.country'].search([('code', 'ilike', shipping['country_code'])], limit=1).id
             partners['partner_id'] = self.env['res.partner'].create({
                 'name': info['full_name'],
-                'phone': info['phone_number'],
-                'ref': info['customer_number'],
+                'phone': info.get('phone_number'),
+                'ref': info.get('customer_number'),
                 'email': info['email'],
-                'country_id': partner_country.id,
-                'street': shipping['street'],
-                'street2': shipping['street2'],
-                'zip:': shipping['postcode'],
-                'city': shipping['city']
+                'country_id': partner_country,
+                'street': shipping.get('street'),
+                'street2': shipping.get('street2'),
+                'zip:': shipping.get('postcode'),
+                'city': shipping.get('city')
             })
         partners['partner_invoice_id'] = self._get_invoice_address(billing)
         
         return partners
         
     def _get_invoice_address(self, address):
-        existing_address = self.env['res.partner'].search([('vat', '=', address['vatid'])], limit=1)
+        existing_address = self.env['res.partner'].search([('vat', '=', address.get('vatid'))], limit=1)
         return existing_address.commercial_partner_id.id if existing_address and existing_address.commercial_partner_id.email else False
 
 
@@ -218,6 +223,9 @@ class SaleOrder(models.Model):
                 'Content-Type': 'application/json'
             }
             _logger.info('POST %s (%s)', url, data)
+            if not self.company_id.integration_in_production:
+                _logger.info('Integration testing mode - Skipping request')
+                continue
             response = requests.post(url, json=data, headers=headers)
             _logger.info('API response: %s', response.text)
             if response.json().get('code') and (response.json()['code'] != '400' or response.json()['code'] != 400):
@@ -244,6 +252,9 @@ class SaleOrder(models.Model):
             parameters = "/warehouses/{0}/products/{1}/inventory".format(self.warehouse_id.webshop_code, code)
             data = {'amount': int(amount)}
             _logger.info('PUT %s (%s)', url + parameters, data)
+            if not self.company_id.integration_in_production:
+                _logger.info('Integration testing mode - Skipping request')
+                continue
             response = requests.put(url + parameters, json=data, headers=headers)
             _logger.info('API response: %s', response.text)
 
