@@ -132,26 +132,24 @@ class SaleOrder(models.Model):
         if existing_partner:
             partners['partner_id'] = existing_partner
         else:
-            partner_country = False
-            if shipping.get('country_code'):
-                partner_country = self.env['res.country'].search([('code', 'ilike', shipping['country_code'])], limit=1).id
+            partner_country = self.env['res.country'].search([('code', 'ilike', shipping['country_code'])])
             partners['partner_id'] = self.env['res.partner'].create({
                 'name': info['full_name'],
-                'phone': info.get('phone_number'),
-                'ref': info.get('customer_number'),
+                'phone': info['phone_number'],
+                'ref': info['customer_number'],
                 'email': info['email'],
-                'country_id': partner_country,
-                'street': shipping.get('street'),
-                'street2': shipping.get('street2'),
-                'zip:': shipping.get('postcode'),
-                'city': shipping.get('city')
+                'country_id': partner_country.id,
+                'street': shipping['street'],
+                'street2': shipping['street2'],
+                'zip:': shipping['postcode'],
+                'city': shipping['city']
             })
         partners['partner_invoice_id'] = self._get_invoice_address(billing)
         
         return partners
         
     def _get_invoice_address(self, address):
-        existing_address = self.env['res.partner'].search([('vat', '=', address.get('vatid'))], limit=1)
+        existing_address = self.env['res.partner'].search([('vat', '=', address['vatid'])], limit=1)
         return existing_address.commercial_partner_id.id if existing_address and existing_address.commercial_partner_id.email else False
 
 
