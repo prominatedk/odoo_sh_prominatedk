@@ -1,9 +1,9 @@
+from odoo import models, fields, api, _
 import requests
 import logging
 
 _logger = logging.getLogger(__name__)
 
-from odoo import models, fields, api, _
 
 class StockPicking(models.Model):
     _inherit = 'stock.picking'
@@ -21,7 +21,6 @@ class StockPicking(models.Model):
         if self.api_order and self.sale_id.integration_code:
             self._send_order_shipped()
 
-    
     def _send_order_shipped(self):
         ids = self.sale_id.integration_code.split(",")
         for f_id in ids:
@@ -40,7 +39,6 @@ class StockPicking(models.Model):
                 continue
             response = requests.post(url, json=data, headers=headers)
             _logger.info('API response: %s', response.json())
-
 
     def get_fulfillment_data(self):
         self.ensure_one()

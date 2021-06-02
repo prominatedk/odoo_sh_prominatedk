@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+
+access_monthly_sales_report,monthly.sales.report,model_monthly_sales_report,base.group_user,1,1,1,1
+access_monthly_sales_report_excel,monthly.sales.report.excel,model_monthly_sales_report_excel,base.group_user,1,1,1,1

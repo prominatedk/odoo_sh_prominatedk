@@ -10,6 +10,7 @@ class ProductTemplate(models.Model):
     _inherit = 'product.template'
 
     template_in_primecargo_wms = fields.Boolean(compute='_variants_in_primecargo')
+    primecargo_customs_description = fields.Char(size=25)
 
     def action_use_in_primecargo_wms(self):
         for record in self:

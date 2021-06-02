@@ -6,10 +6,11 @@
             <field name="inherit_id" ref="product.product_normal_form_view"/>
             <field name="arch" type="xml">
 
-                <button name="toggle_active" position="before">
+                <!--<button name="toggle_active" position="before">-->
+                <div name="button_box" position="inside">
                     <button class="oe_stat_button" icon="fa-refresh" type="object" name="action_update_webshop_stock">
                         <div class="o_field_widget o_stat_info">
-                             <span class="o_stat_text">Update Stock</span>
+                            <span class="o_stat_text">Update Stock</span>
                         </div>
                     </button>
                     <button class="oe_stat_button" icon="fa-signal" type="object" name="action_open_quotations">
@@ -21,7 +22,8 @@
                             <span class="o_stat_text">Virtual</span>
                         </div>
                     </button>
-                </button>
+                </div>
+                <!--</button>-->
                 <field name="categ_id" position="after">
                     <field name="api_warehouse_id"/>
                     <field name="webshop_shipping_code"/>

@@ -1,9 +1,9 @@
+from odoo import models, fields, api
 import logging
 import requests
 
 _logger = logging.getLogger(__name__)
 
-from odoo import models, fields, api
 
 class ProductTemplate(models.Model):
     _inherit = 'product.template'
@@ -17,7 +17,8 @@ class ProductTemplate(models.Model):
     @api.depends('list_price')
     def _compute_webshop_price(self):
         for p in self:
-            item = p.item_ids.filtered(lambda i: i.pricelist_id.currency_id.name == 'EUR' and (i.date_end == False or i.date_end >= fields.Date.today())) if p.item_ids else False
+            item_ids = p.env['product.pricelist.item'].search(['|', ('product_tmpl_id', '=', p.id), ('product_id', 'in', p.product_variant_ids.ids)])
+            item = item_ids.filtered(lambda i: i.pricelist_id.currency_id.name == 'EUR' and (i.date_end == False or i.date_end >= fields.Date.today())) if item_ids else False
             p.webshop_price = item[0].fixed_price * p.primecargo_inner_pack_qty if item else p.list_price * p.primecargo_inner_pack_qty
 
     @api.depends('weight')
@@ -46,7 +47,6 @@ class ProductProduct(models.Model):
 
     api_warehouse_id = fields.Many2one('stock.warehouse', help="This is the Odoo warehouse that corresponds to the warehouse used in the webshop")
 
-            
     def action_open_quotations(self):
         # TODO: Open all quotations with this specific product
         return {

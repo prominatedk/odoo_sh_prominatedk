@@ -1,2 +1,0 @@
-oauthlib==2.1 
-requests-oauthlib[test]==1.0

@@ -3,7 +3,7 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
-from odoo.addons.odoo_edi.models.edi_document import LIVE_API_ROOT, TEST_API_ROOT
+from odoo.addons.odoo_edi.models.odoo_edi_document import LIVE_API_ROOT, TEST_API_ROOT
 from odoo import models, fields, api
 
 AGREEMENT_ENDPOINT = "primecargo/agreements/"

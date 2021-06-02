@@ -1,13 +1,14 @@
 {
-    "name": "Primecargo WMS",
-    "summary": "Please create a short summary for your new module",
-    "description": "Please create an in depth description of your new module",
-    "version": "1.4.5",
+    "name": "Primecargo WMS via FlexEDI",
+    "summary": "Integrates PrimeCargo WMS (Warehouse Management System) with Odoo inventory",
+    "description": "Integrates PrimeCargo WMS (Warehouse Management System) with Odoo inventory. Integration is based on PrimeCargo XML format version 1.6.8",
+    "version": "1.5.1",
     "category": "Customization",
     "author": "VK Data ApS",
     "website": "https://vkdata.dk",
     "depends": [
         "sale",
+        "sale_margin",
         "purchase",
         "stock",
         "delivery",

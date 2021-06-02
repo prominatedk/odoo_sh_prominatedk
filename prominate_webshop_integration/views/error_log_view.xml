@@ -15,10 +15,10 @@
         <record id="action_error_log_tree_view" model="ir.actions.act_window">
             <field name="name">Error Log</field>
             <field name="res_model">integration.error.log</field>
-            <field name="view_type">form</field>
+            <!--<field name="view_type">form</field>-->
             <field name="view_mode">tree</field>
         </record>
-    
+
         <menuitem
             name="Error Log"
             id="menu_integration_error_log"
