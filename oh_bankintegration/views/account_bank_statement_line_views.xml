@@ -1,0 +1,16 @@
+<odoo>
+    <data>
+        <record id="inherit_view_bank_statement_line_form" model="ir.ui.view">
+            <field name="name">statement.line.form.bankintegration_log</field>
+            <field name="model">account.bank.statement.line</field>
+            <field name="inherit_id" ref="account.view_bank_statement_line_form" />
+            <field name="arch" type="xml">
+                <xpath expr="//group" position="after">
+                    <group col="2">
+                        <field name="json_log" class="oe_inline" widget="ace" options="{'mode': 'ace/mode/json'}"/>
+                    </group>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>
