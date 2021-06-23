@@ -1,0 +1,14 @@
+<odoo>
+    <data>
+        <record id="product_primecargo_shipping_view_form" model="ir.ui.view">
+            <field name="name">product.primecargo.shipping.form</field>
+            <field name="model">product.primecargo.shipping</field>
+            <field name="inherit_id" ref="odoo_edi_primecargo_wms.product_primecargo_shipping_view_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='code']" position="after">
+                    <field name="webshop_carrier_code"/>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>
