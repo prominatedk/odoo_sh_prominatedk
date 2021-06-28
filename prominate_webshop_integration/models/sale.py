@@ -2,7 +2,6 @@ from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 import json
 import requests
-import operator
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -19,7 +18,6 @@ class SaleOrder(models.Model):
         company = self.env['res.company'].browse(
             custom_values.get('company_id')) if custom_values and custom_values.get('company_id') else False
         json_file = msg.get('attachments')
-        _logger.info('JSON FILE: %s', json_file)
         if not json_file:
             self.env['integration.error.log'].create(
                 {'msg': _("Error! No JSON file attached to mail"), 'action': 'odoo_support'})
@@ -32,7 +30,6 @@ class SaleOrder(models.Model):
     def _parse_json(self, json_file, company):
         vals = {}
         try:
-            _logger.info(json_file.content)
             data = json.loads(json_file.content)
             self.validate_data(data)
             partners = self._get_partner_data(data)
@@ -173,8 +170,7 @@ class SaleOrder(models.Model):
                 item['quantity']
                 vals.append({'product_id': product.id,
                              'product_uom_qty': quantity,
-                             'price_unit': (item[
-                                                'unit_price'] / 100.0) / product.primecargo_inner_pack_qty if product.primecargo_inner_pack_qty else (
+                             'price_unit': (item['unit_price'] / 100.0) / product.primecargo_inner_pack_qty if product.primecargo_inner_pack_qty else (
                                          item['unit_price'] / 100.0),
                              'product_uom': product.uom_id.id,
                              'name': product.with_context(lang=partner.lang,
@@ -224,7 +220,7 @@ class SaleOrder(models.Model):
     def _send_order_cancel(self):
         ids = self.integration_code.split(",")
         for f_id in ids:
-            url = self.company_id.integration_api_url + "/order-fulfillments/{0}/messages".format(f_id)
+            url = self.company_id.integration_api_url + "/orders/%2A/fulfillments/{0}/messages".format(f_id)
             auth = self.company_id.integration_auth_token
 
             data = {

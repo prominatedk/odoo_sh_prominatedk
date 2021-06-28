@@ -10,11 +10,13 @@ class StockPicking(models.Model):
 
     api_order = fields.Boolean(related="sale_id.api_order")
 
-    @api.onchange('scheduled_date')
-    def _send_intake_update(self):
-        if self.state not in ['done', 'cancel']:
+    def write(self, vals):
+        intake_date = vals.get('scheduled_date')
+        res = super(StockPicking, self).write(vals)
+        if intake_date and self.state not in ['done', 'cancel']:
             for move in self.move_ids_without_package:
-                move.product_id.action_update_webshop_stock()
+                move.product_id.action_update_webshop_stock(self.company_id)
+        return res
 
     def action_done(self):
         super(StockPicking, self).action_done()
@@ -24,7 +26,7 @@ class StockPicking(models.Model):
     def _send_order_shipped(self):
         ids = self.sale_id.integration_code.split(",")
         for f_id in ids:
-            url = self.company_id.integration_api_url + "/order-fulfillments/{0}/messages".format(f_id)
+            url = self.company_id.integration_api_url + "/orders/%2A/fulfillments/{0}/messages".format(f_id)
             auth = self.company_id.integration_auth_token
 
             data = self.get_fulfillment_data()
@@ -49,3 +51,9 @@ class StockPicking(models.Model):
                 'tracking_code': self.carrier_tracking_ref
             }
         }
+
+
+class StockMove(models.Model):
+    _inherit = 'stock.move'
+
+    scheduled_date = fields.Datetime(related='picking_id.scheduled_date')

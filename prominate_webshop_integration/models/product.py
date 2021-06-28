@@ -53,11 +53,13 @@ class ProductProduct(models.Model):
             
         }
 
-    def action_update_webshop_stock(self):
+    def action_update_webshop_stock(self, company=False):
         if not self.api_warehouse_id:
             return
-        url = self.company_id.integration_api_url
-        auth = self.company_id.integration_auth_token
+        if not company:
+            company = self.company_id or self.env['res.company'].search([('integration_auth_token', '!=', False)], limit=1)
+        url = company.integration_api_url
+        auth = company.integration_auth_token
         headers = {
             'Authorization': 'Bearer {0}'.format(auth),
             'Content-Type': 'application/json'
@@ -72,7 +74,7 @@ class ProductProduct(models.Model):
                 'next_intake_amount': self._convert_to_primecargo_pack(intake_amount)
             })
         _logger.info('PUT %s (%s)', url + parameters, data)
-        if not self.company_id.integration_in_production:
+        if not company.integration_in_production:
             _logger.info('Integration testing mode - Skipping request')
             return
         response = requests.put(url + parameters, json=data, headers=headers)
