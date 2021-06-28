@@ -202,13 +202,15 @@ class SaleOrder(models.Model):
 
     @api.model
     def create(self, vals):
+        billing_info = vals.pop('billing_info')
+        shipping_info = vals.pop('shipping_info')
         res = super(SaleOrder, self).create(vals)
         if res.api_order:
             res._send_stock_update()
-        if vals.get('billing_info'):
-            res.message_post(body=vals['billing_info'])
-        if vals.get('shipping_info'):
-            res.message_post(body=vals['shipping_info'])
+        if billing_info:
+            res.message_post(body=billing_info)
+        if shipping_info:
+            res.message_post(body=shipping_info)
         return res
 
     def action_cancel(self):

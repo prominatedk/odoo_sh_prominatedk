@@ -92,8 +92,8 @@ class ProductProduct(models.Model):
             return False, False
         moves = self.env['stock.move'].search([('product_id', '=', self.id), ('picking_id', 'in', pickings.ids)])
         if moves:
-            move = moves.sorted(key=lambda m: m.date_expected, reverse=True)[0]
-            return move.date_expected.strftime("%Y-%m-%d"), int(move.product_uom_qty)
+            move = moves.sorted(key=lambda m: m.scheduled_date, reverse=True)[0]
+            return move.scheduled_date.strftime("%Y-%m-%d"), int(move.product_uom_qty)
         return False, False
 
     def _convert_to_primecargo_pack(self, qty):
