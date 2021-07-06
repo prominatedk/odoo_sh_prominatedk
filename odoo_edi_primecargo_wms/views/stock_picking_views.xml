@@ -17,6 +17,7 @@
                     <page name="odoo_edi_stock_picking" string="EDI">
                         <group>
                             <group>
+                                <field name="primecargo_valid"/>
                                 <field name="edi_document_id"/>
                                 <field name="edi_document_guid"/>
                             </group>

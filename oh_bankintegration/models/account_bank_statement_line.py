@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
+import re
+
 
 class AccountBankStatementLine(models.Model):
     _inherit = 'account.bank.statement.line'

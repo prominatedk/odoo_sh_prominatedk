@@ -1,9 +1,9 @@
+from odoo import models, fields, api
 import logging
 import requests
 
 _logger = logging.getLogger(__name__)
 
-from odoo import models, fields, api
 
 class ProductTemplate(models.Model):
     _inherit = 'product.template'
@@ -17,7 +17,8 @@ class ProductTemplate(models.Model):
     @api.depends('list_price')
     def _compute_webshop_price(self):
         for p in self:
-            item = p.item_ids.filtered(lambda i: i.pricelist_id.currency_id.name == 'EUR' and (i.date_end == False or i.date_end >= fields.Date.today())) if p.item_ids else False
+            item_ids = p.env['product.pricelist.item'].search(['|', ('product_tmpl_id', '=', p.id), ('product_id', 'in', p.product_variant_ids.ids)])
+            item = item_ids.filtered(lambda i: i.pricelist_id.currency_id.name == 'EUR' and (i.date_end == False or i.date_end >= fields.Date.today())) if item_ids else False
             p.webshop_price = item[0].fixed_price * p.primecargo_inner_pack_qty if item else p.list_price * p.primecargo_inner_pack_qty
 
     @api.depends('weight')
@@ -46,18 +47,19 @@ class ProductProduct(models.Model):
 
     api_warehouse_id = fields.Many2one('stock.warehouse', help="This is the Odoo warehouse that corresponds to the warehouse used in the webshop")
 
-            
     def action_open_quotations(self):
         # TODO: Open all quotations with this specific product
         return {
             
         }
 
-    def action_update_webshop_stock(self):
+    def action_update_webshop_stock(self, company=False):
         if not self.api_warehouse_id:
             return
-        url = self.company_id.integration_api_url
-        auth = self.company_id.integration_auth_token
+        if not company:
+            company = self.company_id or self.env['res.company'].search([('integration_auth_token', '!=', False)], limit=1)
+        url = company.integration_api_url
+        auth = company.integration_auth_token
         headers = {
             'Authorization': 'Bearer {0}'.format(auth),
             'Content-Type': 'application/json'
@@ -72,7 +74,7 @@ class ProductProduct(models.Model):
                 'next_intake_amount': self._convert_to_primecargo_pack(intake_amount)
             })
         _logger.info('PUT %s (%s)', url + parameters, data)
-        if not self.company_id.integration_in_production:
+        if not company.integration_in_production:
             _logger.info('Integration testing mode - Skipping request')
             return
         response = requests.put(url + parameters, json=data, headers=headers)
@@ -90,8 +92,8 @@ class ProductProduct(models.Model):
             return False, False
         moves = self.env['stock.move'].search([('product_id', '=', self.id), ('picking_id', 'in', pickings.ids)])
         if moves:
-            move = moves.sorted(key=lambda m: m.date_expected, reverse=True)[0]
-            return move.date_expected.strftime("%Y-%m-%d"), int(move.product_uom_qty)
+            move = moves.sorted(key=lambda m: m.scheduled_date, reverse=True)[0]
+            return move.scheduled_date.strftime("%Y-%m-%d"), int(move.product_uom_qty)
         return False, False
 
     def _convert_to_primecargo_pack(self, qty):

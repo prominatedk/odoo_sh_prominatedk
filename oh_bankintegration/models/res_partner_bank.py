@@ -5,6 +5,8 @@ _logger = logging.getLogger(__name__)
 
 
 class ResPartnerBank(models.Model):
-    _inherit = 'res.partner.bank'
+    _name = 'res.partner.bank'
+    _inherit = ["res.partner.bank"]
 
-    bankintegration_acc_number = fields.Char('Domestic account number', help="For bankintegration insert domestic account number, if IBAN number is used in the Account Number field")
+    bankintegration_acc_number = fields.Char(
+        'Domestic account number', help="For bankintegration insert domestic account number, if IBAN number is used in the Account Number field")

@@ -1,19 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <!--
 
-    Copyright (c) 2017-2019 MuK IT GmbH.
+    Copyright (c) 2017-today MuK IT GmbH.
 
-    This file is part of MuK REST API for Odoo 
+    This file is part of MuK REST API for Odoo
     (see https://mukit.at).
 
     MuK Proprietary License v1.0
 
-    This software and associated files (the "Software") may only be used 
+    This software and associated files (the "Software") may only be used
     (executed, modified, executed after modifications) if you have
     purchased a valid license from MuK IT GmbH.
 
-    The above permissions are granted for a single database per purchased 
+    The above permissions are granted for a single database per purchased
     license. Furthermore, with a valid license it is permitted to use the
     software on other databases as long as the usage is limited to a testing
     or development environment.
@@ -22,7 +21,7 @@
     as a library (typically by depending on it, importing it and using its
     resources), but without copying any source code or material from the
     Software. You may distribute those modules under the license of your
-    choice, provided that this license is compatible with the terms of the 
+    choice, provided that this license is compatible with the terms of the
     MuK Proprietary License (For example: LGPL, MIT, or proprietary licenses
     similar to this one).
 
@@ -40,17 +39,24 @@
     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
     DEALINGS IN THE SOFTWARE.
 
-  -->
-
+-->
 <odoo>
 
 	<template id="muk_rest.authorize" name="Authorize">
         <t t-call="web.layout">
             <t t-set="head">
+                <meta name="generator" content="OAuth"/>
+                <meta name="description" content="OAuth"/>
+                
                 <t t-call-assets="web.assets_common" t-js="false"/>
                 <t t-call-assets="web.assets_frontend" t-js="false"/>
+                <t t-call-assets="muk_rest.assets_authorize" t-js="false"/>
+
+				<link rel="shortcut icon" type="image/x-icon" href="/muk_rest/static/src/img/favicon.ico" />
+                
                 <t t-call-assets="web.assets_common" t-css="false"/>
                 <t t-call-assets="web.assets_frontend" t-css="false"/>
+                <t t-call-assets="muk_rest.assets_authorize" t-css="false"/>
             </t>
             <t t-set="body_classname" t-value="'mk_authorize'"/>
             <t t-raw="0"/>
@@ -111,7 +117,7 @@
 
     <template id="muk_rest.authorize_oauth1" name="Authorize OAuth1">
     	<t t-call="muk_rest.authorize_oauth">
-    		<form class="mk_authorize_form" role="form" action="/api/authentication/oauth1/authorize" method="post">
+    		<form class="mk_authorize_form" role="form" t-att-action="api_url" method="post">
 				<div class="form-group field-login">
 		            <label for="login" class="col-form-label">Email</label>
 		            <input type="text" name="login" t-att-value="login" id="login" class="form-control" 
@@ -125,6 +131,7 @@
     			<p class="alert alert-danger" t-if="error" role="alert">
                     <t t-esc="error"/>
                 </p>
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
  				<input type="hidden" name="oauth_token" t-att-value="oauth_token" required="required" readonly="readonly"/>
  				<input type="hidden" name="callback" t-att-value="callback" readonly="readonly"/>
 		        <input type="hidden" name="db" t-att-value="request.db" required="required" readonly="readonly"/>
@@ -142,7 +149,7 @@
                 		<div id="ressources" class="d-none">
 					    	<t t-if="realms">
 						    	The available resources have been restricted. The following
-						    	models can be accessed via the Restful interface:
+						    	routes can be accessed via the Restful interface:
 					    		<ul class="fa-ul text-nowrap">
 							        <t t-foreach="realms" t-as="realm">
 									    <li>
@@ -168,7 +175,7 @@
     
     <template id="muk_rest.authorize_oauth2" name="Authorize OAuth2">
     	<t t-call="muk_rest.authorize_oauth">
-    		<form class="mk_authorize_form" role="form" action="/api/authentication/oauth2/authorize" method="post">
+    		<form class="mk_authorize_form" role="form" t-att-action="api_url" method="post">
 				<div class="form-group field-login">
 		            <label for="login" class="col-form-label">Email</label>
 		            <input type="text" name="login" t-att-value="login" id="login" class="form-control" 
@@ -182,6 +189,7 @@
     			<p class="alert alert-danger" t-if="error" role="alert">
                     <t t-esc="error"/>
                 </p>
+                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
  				<input type="hidden" name="client_id" t-att-value="client_id" required="required" readonly="readonly"/>
  				<input type="hidden" name="redirect_uri" t-att-value="redirect_uri" required="required" readonly="readonly"/>
  				<input type="hidden" name="response_type" t-att-value="response_type" required="required" readonly="readonly"/>
@@ -197,9 +205,9 @@
                 		data-placement="top" data-toggle="popover" title="Available resources">
                 		<i class="fa fa-lock"></i> Ressources
                 		<div id="ressources" class="d-none">
-					    	<t t-if="realms">
+					    	<t t-if="scopes">
 						    	The available resources have been restricted. The following
-						    	models can be accessed via the Restful interface:
+						    	routes can be accessed via the Restful interface:
 					    		<ul class="fa-ul text-nowrap">
 							        <t t-foreach="scopes" t-as="scope">
 									    <li>
@@ -245,6 +253,9 @@
 					</div>
 				</div>
 			</main>
+			<script type="text/javascript">
+                console.error("<t t-esc="error"/>");
+            </script>
 		</t>
 	</template>
 	

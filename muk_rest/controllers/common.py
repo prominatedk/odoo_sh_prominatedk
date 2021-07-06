@@ -1,17 +1,17 @@
 ###################################################################################
 #
-#    Copyright (c) 2017-2019 MuK IT GmbH.
+#    Copyright (c) 2017-today MuK IT GmbH.
 #
-#    This file is part of MuK REST API for Odoo 
+#    This file is part of MuK REST API for Odoo
 #    (see https://mukit.at).
 #
 #    MuK Proprietary License v1.0
 #
-#    This software and associated files (the "Software") may only be used 
+#    This software and associated files (the "Software") may only be used
 #    (executed, modified, executed after modifications) if you have
 #    purchased a valid license from MuK IT GmbH.
 #
-#    The above permissions are granted for a single database per purchased 
+#    The above permissions are granted for a single database per purchased
 #    license. Furthermore, with a valid license it is permitted to use the
 #    software on other databases as long as the usage is limited to a testing
 #    or development environment.
@@ -20,7 +20,7 @@
 #    as a library (typically by depending on it, importing it and using its
 #    resources), but without copying any source code or material from the
 #    Software. You may distribute those modules under the license of your
-#    choice, provided that this license is compatible with the terms of the 
+#    choice, provided that this license is compatible with the terms of the
 #    MuK Proprietary License (For example: LGPL, MIT, or proprietary licenses
 #    similar to this one).
 #
@@ -40,100 +40,346 @@
 #
 ###################################################################################
 
+
 import re
 import json
 import base64
 import urllib
-import logging
+import werkzeug
 
-from werkzeug import exceptions
-
-from odoo import _, http, release
+from odoo import http, release, _
 from odoo.http import request, Response
 from odoo.models import check_method_name
 from odoo.tools.image import image_data_uri
-from odoo.tools import misc
+from odoo.tools import misc, config
 
-from odoo.addons.muk_rest import validators, tools
-from odoo.addons.muk_rest.tools.common import parse_value
-from odoo.addons.muk_utils.tools.json import ResponseEncoder, RecordEncoder
+from odoo.addons.muk_rest import tools
+from odoo.addons.muk_rest.tools.docs import api_doc
+from odoo.addons.muk_rest.tools.common import VERSION
+from odoo.addons.muk_rest.tools.http import build_route, make_json_response
 
-_logger = logging.getLogger(__name__)
 
-VERSION = {
-    'server_version': release.version,
-    'server_version_info': release.version_info,
-    'server_serie': release.serie,
-    'api_version': '3.5',
-}
+class CommonController(http.Controller):
 
-class RestfulController(http.Controller):
-    
+    _api_doc_components = {
+        'ModuleData': {
+            'type': 'object',
+            'properties': {
+                'model': {
+                    'type': 'string',
+                },
+                'id': {
+                    'type': 'integer',
+                },
+            },
+            'description': 'A map of the model name and the corresponding ID.'
+        },
+        'RecordXMLID': {
+            'type': 'object',
+            'properties': {
+                'model': {
+                    'type': 'string',
+                },
+                'id': {
+                    'type': 'integer',
+                },
+            },
+            'description': 'The model name and the ID of the record.'
+        },
+        'CurrentUser': {
+            'type': 'object',
+            'properties': {
+                'name': {
+                    'type': 'string',
+                },
+                'uid': {
+                    'type': 'integer',
+                },
+            },
+            'description': 'The name and ID of the current user.'
+        },
+        'UserInfo': {
+            'type': 'object',
+            'properties': {
+                'address': {
+                    'type': 'object',
+                    'properties': {
+                        'country': {
+                            'type': 'string',
+                        },
+                        'formatted': {
+                            'type': 'string',
+                        },
+                        'locality': {
+                            'type': 'string',
+                        },
+                        'postal_code': {
+                            'type': 'string',
+                        },
+                        'region': {
+                            'type': 'string',
+                        },
+                        'street_address': {
+                            'type': 'string',
+                        },
+                    },
+                },
+                'email': {
+                    'type': 'string',
+                },
+                'locale': {
+                    'type': 'string',
+                },
+                'name': {
+                    'type': 'string',
+                },
+                'phone_number': {
+                    'type': 'string',
+                },
+                'picture': {
+                    'type': 'string',
+                },
+                'sub': {
+                    'type': 'integer',
+                },
+                'updated_at': {
+                    'type': 'string',
+                    'format': 'date-time',
+                },
+                'username': {
+                    'type': 'string',
+                },
+                'website': {
+                    'type': 'string',
+                },
+                'zoneinfo': {
+                    'type': 'string',
+                },
+            },
+            'description': 'Information about the current user.'
+        },
+        'UserCompany': {
+            'type': 'object',
+            'properties': {
+                'allowed_companies': {
+                    '$ref': '#/components/schemas/RecordTuples',
+                },
+                'current_company': {
+                    '$ref': '#/components/schemas/RecordTuple',
+                },
+                'current_company_id': {
+                    'type': 'integer',
+                },
+            },
+            'description': 'Information about the current company and allowed companies of the current user.'
+        },
+        'UserSession': {
+            'type': 'object',
+            'properties': {
+                'db': {
+                    'type': 'string',
+                },
+                'uid': {
+                    'type': 'integer',
+                },
+                'username': {
+                    'type': 'string',
+                },
+                'name': {
+                    'type': 'string',
+                },
+                'partner_id': {
+                    'type': 'integer',
+                },
+                'company_id': {
+                    'type': 'integer',
+                },
+                'user_context': {
+                    '$ref': '#/components/schemas/UserContext',
+                },
+            },
+            'additionalProperties': True,
+            'description': 'Information about the current session.'
+        }
+    }
+
     #----------------------------------------------------------
     # Utility
     #----------------------------------------------------------
     
-    @http.route('/api/<path:path>', auth="none", type='http', csrf=False)
-    @tools.common.parse_exception
-    def catch(self, **kw):    
-        return exceptions.NotFound()
-    
-    @http.route('/api/custom/<path:path>', auth="none", type='http', csrf=False)
-    @tools.common.parse_exception
-    @tools.common.ensure_database
-    @tools.common.ensure_module()
-    @tools.security.protected(operations=[], check_custom_routes=True)
-    def custom(self, context=None, **kw):
-        endpoint = kw.get('custom', False)
-        if endpoint and endpoint.exists():
-            ctx = request.session.context.copy()
-            ctx.update(context and parse_value(context) or {})
-            result = endpoint.with_context(ctx).evaluate(request.params)
-            content = json.dumps(result, sort_keys=True, indent=4, cls=RecordEncoder)
-            return Response(content, content_type='application/json;charset=utf-8', status=200)
-        return exceptions.NotFound()
-    
+    @tools.http.rest_route(
+        build_route('/<path:path>'),
+        rest_access_hidden=True
+    )
+    def catch(self, **kw):
+        return werkzeug.exceptions.NotFound()
+
     #----------------------------------------------------------
-    # Base
+    # Common
     #----------------------------------------------------------
 
-    @http.route('/api', auth="none", type='http', methods=['GET'], csrf=False)
-    @tools.common.parse_exception
-    def version(self, **kw): 
-        version = json.dumps(VERSION, sort_keys=True, indent=4)
-        return Response(version, content_type='application/json;charset=utf-8', status=200)
-
-    @http.route('/api/database', auth="none", type='http', methods=['GET'], csrf=False)
-    @tools.common.parse_exception
-    @tools.common.ensure_database
-    def database(self, **kw): 
-        result = {'database': request.session.db}
-        content = json.dumps(result, sort_keys=True, indent=4, cls=ResponseEncoder)
-        return Response(content, content_type='application/json;charset=utf-8', status=200)
+    @api_doc(
+        tags=['Common'], 
+        summary='Modules', 
+        description='Returns a list of installed modules.',
+        parameter_context=False,
+        parameter_company=False,
+        responses={
+            '200': {
+                'description': 'List of Modules', 
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            '$ref': '#/components/schemas/ModuleData'
+                        },
+                        'example': {
+                            'base': 1,
+                            'web': 2,
+                        }
+                    }
+                }
+            }
+        },
+        default_responses=['400', '401', '500'],
+    )
+    @tools.http.rest_route(
+        routes=build_route('/modules'), 
+        methods=['GET'],
+        protected=True,
+    )
+    def modules(self):
+        return make_json_response(request.env['ir.module.module']._installed())
+        
+    @api_doc(
+        tags=['Common'], 
+        summary='XML ID', 
+        description='Returns the XML ID record.',
+        parameter={
+            'xmlid': {
+                'name': 'xmlid',
+                'description': 'XML ID',
+                'schema': {
+                    'type': 'string'
+                },
+                'example': 'base.main_company',
+            },
+        },
+        parameter_context=False,
+        parameter_company=False,
+        responses={
+            '200': {
+                'description': 'XML ID Record', 
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            '$ref': '#/components/schemas/RecordXMLID'
+                        },
+                        'example': {
+                            'model': 'res.company',
+                            'id': 1,
+                        }
+                    }
+                }
+            }
+        },
+        default_responses=['400', '401', '500'],
+    )
+    @tools.http.rest_route(
+        routes=build_route([
+            '/xmlid',
+            '/xmlid/<string:xmlid>',
+        ]), 
+        methods=['GET'],
+        protected=True,
+    )
+    def xmlid(self, xmlid, **kw):
+        record = request.env.ref(xmlid)
+        return make_json_response({'model': record._name, 'id': record.id})
     
     #----------------------------------------------------------
     # Session
     #----------------------------------------------------------
     
-    @http.route('/api/user', auth="none", type='http', methods=['GET'], csrf=False)
-    @tools.common.parse_exception
-    @tools.common.ensure_database
-    @tools.common.ensure_module()
-    @tools.security.protected()
+    @api_doc(
+        tags=['Common'], 
+        summary='User', 
+        description='Returns the current user.',
+        responses={
+            '200': {
+                'description': 'Current User', 
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            '$ref': '#/components/schemas/CurrentUser'
+                        },
+                        'example': {
+                            'name': 'Admin',
+                            'uid': 2,
+                        }
+                    }
+                }
+            }
+        },
+        default_responses=['400', '401', '500'],
+    )
+    @tools.http.rest_route(
+        routes=build_route('/user'), 
+        methods=['GET'],
+        protected=True,
+    )
     def user(self, **kw):
-        result = {'uid': request.session.uid, 'name': request.env.user.name}
-        content = json.dumps(result, sort_keys=True, indent=4, cls=ResponseEncoder)
-        return Response(content, content_type='application/json;charset=utf-8', status=200) 
-    
-    @http.route('/api/userinfo', auth="none", type='http', methods=['GET'], csrf=False)
-    @tools.common.parse_exception
-    @tools.common.ensure_database
-    @tools.common.ensure_module()
-    @tools.security.protected()
+        return make_json_response({
+            'uid': request.session and request.session.uid, 
+            'name': request.env.user and request.env.user.name
+        })
+
+    @api_doc(
+        tags=['Common'], 
+        summary='User Information', 
+        description='Returns the user information.',
+        responses={
+            '200': {
+                'description': 'User Information', 
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            '$ref': '#/components/schemas/UserInfo'
+                        },
+                        'example': {
+                            'address': {
+                                'country': 'United States',
+                                'formatted': 'YourCompany\n215 Vine St\n\nScranton PA 18503\nUnited States',
+                                'locality': 'Scranton',
+                                'postal_code': '18503',
+                                'region': 'Pennsylvania (US)',
+                                'street_address': '215 Vine St'
+                            },
+                            'email': 'admin@yourcompany.example.com',
+                            'locale': 'en_US',
+                            'name': 'Mitchell Admin',
+                            'phone_number': '+1 555-555-5555',
+                            'picture': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
+                            'sub': 2,
+                            'updated_at': '2020-11-11 13:57:48',
+                            'username': 'admin',
+                            'website': False,
+                            'zoneinfo': 'Europe/Vienna'
+                        }
+                    }
+                }
+            }
+        },
+        default_responses=['400', '401', '500'],
+    )
+    @tools.http.rest_route(
+        routes=build_route('/userinfo'), 
+        methods=['GET'],
+        protected=True,
+    )
     def userinfo(self, **kw):
         user = request.env.user
         uid = request.session.uid
-        result = {
+        return make_json_response({
             'sub': uid,
             'name': user.name,
             'locale': user.lang,
@@ -151,225 +397,83 @@ class RestfulController(http.Controller):
                 'country': user.partner_id.country_id.display_name,
             },
             'updated_at': user.partner_id.write_date,
-            'picture': image_data_uri(user.partner_id.image_medium),
-        }
-        content = json.dumps(result, sort_keys=True, indent=4, cls=ResponseEncoder)
-        return Response(content, content_type='application/json;charset=utf-8', status=200) 
-     
-    @http.route('/api/session', auth="none", type='http', methods=['GET'], csrf=False)
-    @tools.common.parse_exception
-    @tools.common.ensure_database
-    @tools.common.ensure_module()
-    @tools.security.protected()
-    def session(self, **kw):
+            'picture': image_data_uri(user.partner_id.image_1024),
+        })
+
+    @api_doc(
+        tags=['Common'], 
+        summary='Company Information', 
+        description='Returns the current company.',
+        responses={
+            '200': {
+                'description': 'Current Company', 
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            '$ref': '#/components/schemas/UserCompany'
+                        },
+                        'example': {
+                            'allowed_companies': [[1, 'YourCompany']],
+                            'current_company': [1, 'YourCompany'],
+                            'current_company_id': 1
+                        }
+                    }
+                }
+            }
+        },
+        default_responses=['400', '401', '500'],
+    )
+    @tools.http.rest_route(
+        routes=build_route('/company'), 
+        methods=['GET'],
+        protected=True,
+    )
+    def company(self, **kw):
         user = request.env.user
-        uid = request.session.uid
-        result = {
-            'uid': uid, 
-            'name': user.name,
-            'login': user.login,
-            'display_name': user.partner_id.display_name,
-            'is_system': user._is_system() if uid else False,
-            'is_admin': user._is_admin() if uid else False,
-            'context': request.session.get_context() if uid else {},   
-            'partner_id': user.partner_id.id if uid and user.partner_id else None,       
-            'currencies': request.env['ir.http'].get_currencies() if uid else {},          
-            'company_id': user.company_id.id if uid else None,
-            'companies': {
-                'current_company': (user.company_id.id, user.company_id.name),
-                'allowed_companies': [(company.id, company.name) for company in user.company_ids]
-            } if user.has_group('base.group_multi_company') and len(user.company_ids) > 1 else False,
-            'web.base.url': request.env['ir.config_parameter'].sudo().get_param('web.base.url', default=''),
-            'db': request.session.db
+        suid = request.session.uid
+        user_company_information = {
+            'current_company_id': user.company_id.id if suid else None,
+            'current_company': (user.company_id.id, user.company_id.name) if suid else None, 
+            'allowed_companies': []
         }
-        content = json.dumps(result, sort_keys=True, indent=4, cls=ResponseEncoder)
-        return Response(content, content_type='application/json;charset=utf-8', status=200) 
-    
-    #----------------------------------------------------------
-    # Generic Method
-    #----------------------------------------------------------
-    
-    @http.route([
-        '/api/call',
-        '/api/call/<string:model>',
-        '/api/call/<string:model>/<string:method>',
-    ], auth="none", type='http', methods=['POST'], csrf=False)
-    @tools.common.parse_exception
-    @tools.common.ensure_database
-    @tools.common.ensure_module()
-    @tools.security.protected(operations=['read', 'write', 'create', 'unlink'])
-    def call(self, model, method, ids=None, context=None, args=None, kwargs=None, **kw):
-        check_method_name(method)
-        ctx = request.session.context.copy()
-        ctx.update(context and parse_value(context) or {})
-        ids = ids and parse_value(ids) or []
-        args = args and parse_value(args) or []
-        kwargs = kwargs and parse_value(kwargs) or {}
-        records = request.env[model].with_context(ctx).browse(ids)
-        result = getattr(records, method)(*args, **kwargs)
-        content = json.dumps(result, sort_keys=True, indent=4, cls=RecordEncoder)
-        return Response(content, content_type='application/json;charset=utf-8', status=200)
-    
-    @http.route([
-        '/api/xmlid',
-        '/api/xmlid/<string:xmlid>',
-    ], auth="none", type='http', methods=['GET'], csrf=False)
-    @tools.common.parse_exception
-    @tools.common.ensure_database
-    @tools.common.ensure_module()
-    @tools.security.protected()
-    def xmlid(self, xmlid, **kw):
-        record = request.env.ref(xmlid)
-        result = {'model': record._name, 'id': record.id}
-        content = json.dumps(result, sort_keys=True, indent=4, cls=ResponseEncoder)
-        return Response(content, content_type='application/json;charset=utf-8', status=200) 
-    
-    #----------------------------------------------------------
-    # Files
-    #----------------------------------------------------------
-    
-    @http.route([
-        '/api/binary',        
-        '/api/binary/<string:xmlid>',
-        '/api/binary/<string:xmlid>/<string:filename>',
-        '/api/binary/<int:id>',
-        '/api/binary/<int:id>/<string:filename>',
-        '/api/binary/<int:id>-<string:unique>',
-        '/api/binary/<int:id>-<string:unique>/<string:filename>',
-        '/api/binary/<int:id>-<string:unique>/<path:extra>/<string:filename>',
-        '/api/binary/<string:model>/<int:id>/<string:field>',
-        '/api/binary/<string:model>/<int:id>/<string:field>/<string:filename>'
-    ], auth="none", type='http', methods=['GET'], csrf=False)
-    @tools.common.parse_exception
-    @tools.common.ensure_database
-    @tools.common.ensure_module()
-    @tools.security.protected()
-    def binary(self, xmlid=None, model='ir.attachment', id=None, field='datas', unique=None,
-        filename=None, filename_field='datas_fname', mimetype=None, access_token=None,
-        related_id=None, access_mode=None, file_response=False, **kw):
-        status, headers, content = request.env['ir.http'].binary_content(xmlid=xmlid,
-            model=model, id=id, field=field, unique=unique, filename=filename,
-            filename_field=filename_field, mimetype=mimetype, related_id=related_id,
-            access_mode=access_mode, access_token=access_token, download=True,
-            default_mimetype='application/octet-stream')
-        if status != 200:
-            exceptions.abort(status)
-        if file_response and misc.str2bool(file_response):
-            decoded_content = base64.b64decode(content)
-            headers.append(('Content-Length', len(decoded_content)))
-            response = request.make_response(decoded_content, headers)
-        else:
-            if not filename:
-                record = request.env.ref(xmlid, False) if xmlid else None
-                if not record and id and model in request.env.registry:
-                    record = request.env[model].browse(int(id))   
-                if record and filename_field in record:
-                    filename = record[filename_field]
-                else:
-                    filename = "%s-%s-%s" % (record._name, record.id, field)
-            headers = dict(headers)
-            result = {
-                'content': content,
-                'filename': filename,
-                'content_disposition': headers.get('Content-Disposition'),
-                'content_type': headers.get('Content-Type'),
-                'content_length': len(base64.b64decode(content))}
-            content = json.dumps(result, sort_keys=True, indent=4, cls=ResponseEncoder)
-            response = Response(content, content_type='application/json;charset=utf-8', status=200) 
-        return response
-    
-    @http.route('/api/upload', auth="none", type='http', methods=['POST'], csrf=False)
-    @tools.common.parse_exception
-    @tools.common.ensure_database
-    @tools.common.ensure_module()
-    @tools.security.protected()
-    def upload(self, model, id, field=None, context=None, **kw):
-        ctx = request.session.context.copy()
-        ctx.update(context and parse_value(context) or {})
-        files = request.httprequest.files.getlist('ufile')
-        if field is not None and len(files) == 1:
-            record = request.env[model].with_context(ctx).browse(int(id))
-            result = record.write({field: base64.b64encode(files[0].read())})
-        else:
-            result = []
-            for ufile in files:
-                attachment = request.env['ir.attachment'].create({
-                    'datas': base64.encodestring(ufile.read()),
-                    'datas_fname': ufile.filename,
-                    'name': ufile.filename,
-                    'res_model': model,
-                    'res_id': int(id),
-                })
-                result.append(attachment.id)
-        content = json.dumps(result, sort_keys=True, indent=4, cls=RecordEncoder)
-        return Response(content, content_type='application/json;charset=utf-8', status=200) 
-        
-    #----------------------------------------------------------
-    # Reports
-    #----------------------------------------------------------
-    
-    @http.route([
-        '/api/reports',
-        '/api/reports/<string:name>',
-        '/api/reports/<string:name>/<string:model>',
-    ], auth="none", type='http', methods=['GET'], csrf=False)
-    @tools.common.parse_exception
-    @tools.common.ensure_database
-    @tools.common.ensure_module()
-    @tools.security.protected()
-    def reports(self, name=None, model=None, **kw):
-        domain = []
-        if name:
-            domain.append(['name', 'ilike', name])
-        if model:
-            domain.append(['model', '=', model])
-        result = request.env['ir.actions.report'].search_read(domain, ['name', 'model', 'report_name'])
-        content = json.dumps(result, sort_keys=True, indent=4, cls=ResponseEncoder)
-        return Response(content, content_type='application/json;charset=utf-8', status=200) 
-        
-    @http.route([
-        '/api/report',
-        '/api/report/<string:report>',
-        '/api/report/<string:report>/<string:type>',
-    ], auth="none", type='http', methods=['GET'], csrf=False)
-    @tools.common.parse_exception
-    @tools.common.ensure_database
-    @tools.common.ensure_module()
-    @tools.security.protected()
-    def report(self, report, ids, type='PDF', context=None, options=None, file_response=False, **kw):
-        ctx = request.session.context.copy()
-        ctx.update(context and parse_value(context) or {})
-        ids = ids and parse_value(ids) or []
-        options = options and parse_value(options) or {}
-        result = {'report': report, 'type': type}
-        report = request.env['ir.actions.report']._get_report_from_name(report)
-        if type.lower() == "html":
-            data = report.with_context(ctx).render_qweb_html(ids, data=options)[0]
-            result.update({
-                'content': base64.b64encode(data),
-                'content_type': 'text/html',
-                'content_length': len(data)})
-        elif type.lower() == "pdf":
-            data = report.with_context(ctx).render_qweb_pdf(ids, data=options)[0]
-            result.update({
-                'content': base64.b64encode(data),
-                'content_type': 'application/pdf',
-                'content_length': len(data)})
-        elif type.lower() == "text":
-            data = report.with_context(ctx).render_qweb_text(ids, data=options)[0]
-            result.update({
-                'content': base64.b64encode(data),
-                'content_type': 'text/plain',
-                'content_length': len(data)})
-        else:
-            return exceptions.NotFound() 
-        if file_response and misc.str2bool(file_response):
-            headers = [
-                ('Content-Type', result.get('content_type')),
-                ('Content-Length',  result.get('content_length'))
+        if request.env.user and request.env.user.has_group('base.group_user'):
+            user_company_information['allowed_companies'] = [
+                (comp.id, comp.name) for comp in user.company_ids
             ]
-            response = request.make_response(data, headers)
-        else:
-            content = json.dumps(result, sort_keys=True, indent=4, cls=ResponseEncoder)
-            response = Response(content, content_type='application/json;charset=utf-8', status=200) 
-        return response
+        return make_json_response(user_company_information)
+
+    @api_doc(
+        tags=['Common'], 
+        summary='Session Information', 
+        description='Returns the current session.',
+        responses={
+            '200': {
+                'description': 'Current Session', 
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            '$ref': '#/components/schemas/UserSession'
+                        },
+                        'example': {
+                            'db': 'mydb',
+                            'user_id': 2,
+                            'company_id': 1,
+                            'user_context': {
+                                'lang': 'en_US',
+                                'tz': 'Europe/Vienna',
+                                'uid': 2
+                            },
+                        }
+                    }
+                }
+            }
+        },
+        default_responses=['400', '401', '500'],
+    )
+    @tools.http.rest_route(
+        routes=build_route('/session'), 
+        methods=['GET'],
+        protected=True,
+    )
+    def session(self, **kw):
+        return make_json_response(request.env['ir.http'].session_info())

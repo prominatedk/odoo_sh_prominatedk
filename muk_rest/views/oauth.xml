@@ -1,19 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <!--
 
-    Copyright (c) 2017-2019 MuK IT GmbH.
+    Copyright (c) 2017-today MuK IT GmbH.
 
-    This file is part of MuK REST API for Odoo 
+    This file is part of MuK REST API for Odoo
     (see https://mukit.at).
 
     MuK Proprietary License v1.0
 
-    This software and associated files (the "Software") may only be used 
+    This software and associated files (the "Software") may only be used
     (executed, modified, executed after modifications) if you have
     purchased a valid license from MuK IT GmbH.
 
-    The above permissions are granted for a single database per purchased 
+    The above permissions are granted for a single database per purchased
     license. Furthermore, with a valid license it is permitted to use the
     software on other databases as long as the usage is limited to a testing
     or development environment.
@@ -22,7 +21,7 @@
     as a library (typically by depending on it, importing it and using its
     resources), but without copying any source code or material from the
     Software. You may distribute those modules under the license of your
-    choice, provided that this license is compatible with the terms of the 
+    choice, provided that this license is compatible with the terms of the
     MuK Proprietary License (For example: LGPL, MIT, or proprietary licenses
     similar to this one).
 
@@ -40,7 +39,7 @@
     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
     DEALINGS IN THE SOFTWARE.
 
-  -->
+-->
 
 <odoo>
 	
@@ -149,7 +148,7 @@
 				<field name="name"/>
 				<field name="company"/>
 				<field name="homepage" widget="url" />
-				<field name="active"/>
+				<field name="active" widget="boolean_toggle"/>
 			</tree>
 		</field>
 	</record>
@@ -160,11 +159,9 @@
 		<field name="arch" type="xml">
 			<form string="Configuration">
 	        	<sheet>
-				    <div class="oe_button_box" name="button_box">
-				        <button name="toggle_active" type="object" class="oe_stat_button" icon="fa-bell">
-				            <field name="active" widget="boolean_button"/>
-				        </button>
-				    </div>
+	        		<field name="active" invisible="1"/>
+				    <div class="oe_button_box" name="button_box"></div>
+				    <widget name="web_ribbon" title="Hidden" bg_color="bg-warning" attrs="{'invisible': [('active', '=', True)]}"/>
 			        <div class="oe_title">
 			            <label for="name" class="oe_edit_only"/>
 			            <h1>
@@ -178,27 +175,7 @@
 				        </group>
 			        </group>
 			        <notebook>
-			        	<page string="Callbacks" name="callback" autofocus="autofocus">
-				      		<field name="callbacks">
-			                	<tree editable="bottom">
-			                		<field name="sequence" widget="handle" />
-			                		<field name="url" widget="url" placeholder="http://www.example.com" />
-			                	</tree>
-			                </field>
-				        </page>
-				        <page string="Access Rules" name="access" attrs="{'invisible': [('security', '=', 'basic')]}">
-				      		<field name="rules">
-			                	<tree editable="bottom" decoration-muted="(not active)">
-			                		<field name="model"/>
-			                		<field name="perm_read"/>
-			                		<field name="perm_write"/>
-			                		<field name="perm_create"/>
-			                		<field name="perm_unlink"/>
-			                		<field name="active"/>
-			                	</tree>
-			                </field>
-				        </page>
-		                <page string="Information" name="info">
+		                <page string="Information" name="info" autofocus="autofocus">
 		                    <group>
 						        <group>
 						        	<field name="company"/>
@@ -213,18 +190,53 @@
 					        <label for="description"/>
 					        <field name="description"/>
 		                </page>
-		                <page string="Meta Data " name="meta" groups="base.group_no_one">
-		                   <group>
-						        <group>
-						        	<field name="create_date" readonly="1"/>
-						        	<field name="create_uid" readonly="1"/>
-						        </group>
-						        <group>
-						        	<field name="write_date" readonly="1"/>
-						        	<field name="write_uid" readonly="1"/>
-						        </group>
-					        </group>
-		                </page>
+			        	<page string="Callbacks" name="callback">
+				      		<field name="callback_ids">
+			                	<tree editable="bottom">
+			                		<field name="sequence" widget="handle" />
+			                		<field name="url" widget="url" placeholder="http://www.example.com" />
+			                	</tree>
+			                </field>
+				        </page>
+				        <page string="Access Rules" name="access" attrs="{'invisible': [('security', '=', 'basic')]}">
+				      		<field name="rule_ids">
+			                	<tree  decoration-muted="(not applied)">
+			                		<field name="sequence" widget="handle" />
+					        		<field name="route"/>
+			                		<field name="expression_ids" widget="many2many_tags"/>
+			                		<field name="applied" widget="boolean_toggle"/>
+			                	</tree>
+			                	<form>
+			                		<sheet>
+								        <group>
+									        <group>
+									        	<field name="route_selection"/>
+					        					<field name="route" placeholder="/api/.*" />
+									        </group>
+									        <group>
+									        	<field name="applied" widget="boolean_toggle"/>
+									        </group>
+								        </group>
+										<notebook>
+		                					<page string="Expressions" name="expressions" autofocus="autofocus">
+												<field name="expression_ids">
+													<tree editable="bottom">
+														<field name="display_name" invisible="1"/>
+														<field name="name" invisible="1"/>
+														<field name="param"/>
+														<field name="operation"/>
+														<field name="expression" attrs="{'invisible': [('operation','in',['!', '*'])], 'required': [('operation','not in',['!', '*'])]}"/>
+													</tree>
+												</field>
+											</page>
+		                					<page string="Rule" name="rule" groups="base.group_no_one">
+												<field name="rule" widget="ace" options="{'mode': 'json'}"/>
+											</page>
+										</notebook>
+									</sheet>
+			                	</form>
+			                </field>
+				        </page>
 			        </notebook>
 		        </sheet>
 			</form>
@@ -237,9 +249,9 @@
 		<field name="view_mode">kanban</field>
 		<field name="help" type="html">
 		    <p class="o_view_nocontent_smiling_face">
-                OAuth1 setting
+                OAuth Settings
             </p><p>
-                An OAuth1 setting can be used to connect to the system via the Restful API.
+                An OAuth Settings can be used to connect to the system via the Restful API.
             </p>
 	    </field>
 	</record>
@@ -247,7 +259,6 @@
 	<record id="action_rest_oauth_on_create" model="ir.actions.act_window">
 		<field name="name">Create a new OAuth2 Setting</field>
 		<field name="res_model">muk_rest.oauth2</field>
-		<field name="view_type">form</field>
 		<field name="view_mode">form</field>
 		<field name="target">new</field>
 	</record>

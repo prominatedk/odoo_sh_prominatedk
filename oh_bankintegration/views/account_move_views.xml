@@ -1,0 +1,52 @@
+<odoo>
+    <data>
+        <record id="inherit_view_invoice_tree" model="ir.ui.view">
+            <field name="name">account.move.tree.bankintegration</field>
+            <field name="model">account.move</field>
+            <field name="inherit_id" ref="account.view_invoice_tree" />
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='state']" position="after">
+                    <field name="bankintegration_payment_autopay" class="oe_inline" optional="show" />
+                </xpath>
+                <xpath expr="//field[@name='invoice_date_due']" position="after">
+                    <field name="bankintegration_payment_date" class="oe_inline" optional="show" />
+                    <field name="bankintegration_payment_journal_id" class="oe_inline" optional="show" />
+                </xpath> 
+                <xpath expr="//field[@name='state']" position="after">
+                    <field name="bankintegration_payment_status" class="oe_inline" optional="show" />
+                </xpath>
+            </field>
+        </record>
+        <record id="inherit_view_move_form" model="ir.ui.view">
+            <field name="name">account.move.form.bankintegration_payment</field>
+            <field name="model">account.move</field>
+            <field name="inherit_id" ref="account.view_move_form" />
+            <field name="arch" type="xml">
+                <xpath expr="//button[@name='action_register_payment']" position="after">
+                    <field name="bankintegration_payment_status" class="oe_inline" invisible="1" />
+                    <button type="object" name="action_reset_bankintegration_bankintegration_payment_status" string="Set for payment again" attrs="{'invisible': ['|', '|', ('state', '!=', 'posted'), ('bankintegration_payment_status', 'not in', ['rejected', 'failed']), ('move_type', 'not in', ('in_invoice', 'in_refund', 'in_receipt'))]}" />
+                </xpath>
+                <!--<xpath expr="//field[@name='date']" position="after">-->
+                <xpath expr="//label[@for='invoice_payment_term_id']" position="before">
+                    <field name="bankintegration_payment_date" class="oe_inline" attrs="{'invisible': [('move_type', 'not in', ['out_invoice','in_invoice'])],'readonly': [('payment_state', '=', 'paid')]}"/>
+                    <field name="bankintegration_payment_journal_id" class="oe_inline" attrs="{'invisible': [('move_type', 'not in', ['out_invoice','in_invoice'])]}"/>
+                    <field name="payment_reference" class="oe_inline" attrs="{'invisible': [('move_type', 'not in', ['out_invoice','in_invoice'])]}"/>
+                    <field name="bankintegration_payment_autopay" class="oe_inline" attrs="{'invisible': [('move_type', 'not in', ['out_invoice','in_invoice'])]}"/>
+                </xpath>
+                <xpath expr="//field[@name='fiscal_position_id']" position="after">
+                    <field name="bankintegration_payment_status" class="oe_inline" attrs="{'invisible': [('move_type', 'not in', ['out_invoice','in_invoice'])]}"/>
+                    <field name="bankintegration_payment_error" class="oe_inline" attrs="{'invisible': [('move_type', 'not in', ['out_invoice','in_invoice'])]}"/>
+                </xpath>
+                <xpath expr='//group[@id="header_right_group"]' position="inside">
+                    <label for="payment_fik_number_payment_code" string="FIK Number" class="oe_inline" attrs="{'invisible': [('move_type', 'not in', ['in_invoice'])]}"/>
+                    <div name="fik_number_data" attrs="{'invisible': [('move_type', 'not in', ['in_invoice'])]}">
+                        <field name="payment_fik_number_payment_code" class="oe_inline" nolabel="1"/> &lt;
+                        <field name="payment_fik_number_payment_string" class="oe_inline" nolabel="1" attrs="{ 'invisible': [('payment_fik_number_payment_code', 'in', ['+01', '+73'])] }"/> +
+                        <field name="payment_fik_number_creditor" class="oe_inline" nolabel="1"/> &lt;
+                    </div>
+                    <field name="payment_fik_number" attrs="{'invisible': [('move_type', 'not in', ['out_invoice','in_invoice'])]}" groups="base.group_no_one"/>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

@@ -1,17 +1,17 @@
 ###################################################################################
 #
-#    Copyright (c) 2017-2019 MuK IT GmbH.
+#    Copyright (c) 2017-today MuK IT GmbH.
 #
-#    This file is part of MuK REST API for Odoo 
+#    This file is part of MuK REST API for Odoo
 #    (see https://mukit.at).
 #
 #    MuK Proprietary License v1.0
 #
-#    This software and associated files (the "Software") may only be used 
+#    This software and associated files (the "Software") may only be used
 #    (executed, modified, executed after modifications) if you have
 #    purchased a valid license from MuK IT GmbH.
 #
-#    The above permissions are granted for a single database per purchased 
+#    The above permissions are granted for a single database per purchased
 #    license. Furthermore, with a valid license it is permitted to use the
 #    software on other databases as long as the usage is limited to a testing
 #    or development environment.
@@ -20,7 +20,7 @@
 #    as a library (typically by depending on it, importing it and using its
 #    resources), but without copying any source code or material from the
 #    Software. You may distribute those modules under the license of your
-#    choice, provided that this license is compatible with the terms of the 
+#    choice, provided that this license is compatible with the terms of the
 #    MuK Proprietary License (For example: LGPL, MIT, or proprietary licenses
 #    similar to this one).
 #
@@ -40,20 +40,26 @@
 #
 ###################################################################################
 
+
 import re
 import json
 import urllib
 import logging
+import functools
 
 from werkzeug import exceptions, utils
 
-from odoo import _, http
+from odoo import _, http, api, registry, SUPERUSER_ID
 from odoo.http import request, Response
 from odoo.exceptions import AccessDenied
+from odoo.modules import get_resource_path
+from odoo.tools import misc, config
 
 from odoo.addons.muk_rest import validators, tools
+from odoo.addons.muk_rest.tools.http import build_route, make_json_response
 
 _logger = logging.getLogger(__name__)
+
 
 class AuthenticationController(http.Controller):
     
@@ -63,10 +69,18 @@ class AuthenticationController(http.Controller):
         self.oauth2 = validators.oauth2_provider
 
     #----------------------------------------------------------
-    # OAuth Authorize
+    # OAuth Helper
     #----------------------------------------------------------
-
-    def client_information(self, client, values={}):
+    
+    def _check_active_oauth1(self):
+        if not (tools.common.ACTIVE_OAUTH1_AUTHENTICATION and validators.oauth1_provider):
+            raise exceptions.NotImplemented()
+    
+    def _check_active_oauth2(self):
+        if not (tools.common.ACTIVE_OAUTH2_AUTHENTICATION and validators.oauth2_provider):
+            raise exceptions.NotImplemented()    
+    
+    def _client_information(self, client, values={}):
         values.update({
             'name': client.homepage,
             'company': client.company,
@@ -77,29 +91,32 @@ class AuthenticationController(http.Controller):
             'description': client.description,
         })
         return values
-    
-    def oauth1_information(self, token, realms=[], values={}):
-        model = request.env['muk_rest.request_token'].sudo()
-        domain = [('resource_owner_key', '=', token)]
-        request_token = model.search(domain, limit=1)
-        if token and request_token.exists():
-            values = self.client_information(request_token.oauth, values)
+     
+    def _oauth1_information(self, token, realms=[], values={}):
+        env = api.Environment(http.request.cr, SUPERUSER_ID, {})
+        request_token = env['muk_rest.request_token']._check_resource(token)
+        if token:
+            values = self._client_information(
+                request_token.oauth_id, values
+            )
             values.update({
-                'oauth_token': request_token.resource_owner_key,
+                'api_url': build_route('/authentication/oauth1/authorize')[0],
+                'oauth_token': token,
                 'callback': request_token.callback,
                 'realms': realms or [],
             })
             return values
-        else:
-            raise exceptions.BadRequest
-        
-    def oauth2_information(self, client_id, redirect_uri, response_type, state=None, scopes=[], values={}):
-        model = request.env['muk_rest.oauth2'].sudo()
-        domain = [('client_id', '=', client_id)]
-        oauth = model.search(domain, limit=1)
-        if client_id and redirect_uri and response_type and oauth.exists():
-            values = self.client_information(oauth, values)
+        raise exceptions.BadRequest()
+         
+    def _oauth2_information(self, client_id, redirect_uri, response_type, state=None, scopes=[], values={}):
+        env = api.Environment(http.request.cr, SUPERUSER_ID, {})
+        oauth = env['muk_rest.oauth2'].search([('client_id', '=', client_id)], limit=1)
+        if client_id and redirect_uri and response_type and oauth:
+            values = self._client_information(
+                oauth, values
+            )
             values.update({
+                'api_url': build_route('/authentication/oauth2/authorize')[0],
                 'client_id': client_id,
                 'redirect_uri': redirect_uri,
                 'response_type': response_type,
@@ -107,164 +124,204 @@ class AuthenticationController(http.Controller):
                 'scopes': scopes or []
             })
             return values
-        else:
-            raise exceptions.BadRequest
-        
+        raise exceptions.BadRequest()
+
     #----------------------------------------------------------
     # OAuth 1.0
     #----------------------------------------------------------
-
-    @http.route('/api/authentication/oauth1/initiate', auth="none", type='http', methods=['POST'], csrf=False)
-    @tools.common.parse_exception
-    @tools.common.ensure_database
-    @tools.common.ensure_module()
-    @tools.common.ensure_import()
+ 
+    @http.route(
+        route=build_route('/authentication/oauth1/initiate'),
+        methods=['GET', 'POST'],
+        save_session=False,
+        type='http',
+        auth='none', 
+        csrf=False, 
+    )
+    @tools.security.handle_error
+    @tools.http.ensure_database
+    @tools.http.ensure_rest_module
     def oauth1_initiate(self, **kw):
+        self._check_active_oauth1()
         headers, body, status = self.oauth1.create_request_token_response(
-            uri=request.httprequest.url,
+            uri=tools.http.clean_query_params(request.httprequest.url, clean_db=True),
             http_method=request.httprequest.method,
             body=request.httprequest.form,
-            headers=request.httprequest.headers)
+            headers=request.httprequest.headers
+        )
         return Response(response=body, headers=headers, status=status) 
-    
-    @http.route('/api/authentication/oauth1/authorize', auth="none", type='http', methods=['GET', 'POST'], csrf=False)
-    @tools.common.ensure_database
-    @tools.common.ensure_module()
-    @tools.common.ensure_import()
+
+    @http.route(
+        route=build_route('/authentication/oauth1/authorize'),
+        methods=['GET', 'POST'],
+        save_session=False,
+        type='http',
+        auth='none', 
+        csrf=False, 
+    )
+    @tools.security.handle_error
+    @tools.http.ensure_database
+    @tools.http.ensure_rest_module
     def oauth1_authorize(self, **kw):
-        try:
-            if request.httprequest.method.upper() == 'GET':
-                realms, credentials = self.oauth1.get_realms_and_credentials(
-                    uri=request.httprequest.url,
+        self._check_active_oauth1()
+        if request.httprequest.method.upper() == 'POST':
+            token = request.params.get('oauth_token')
+            realms = request.httprequest.form.getlist('realms')
+            try:
+                uid = tools.security.check_login_credentials(
+                    request.session.db, 
+                    request.params.get('login', None), 
+                    request.params.get('password', None)
+                )
+                headers, body, status = self.oauth1.create_authorization_response(
+                    uri=tools.http.clean_query_params(request.httprequest.url, clean_db=True),
                     http_method=request.httprequest.method,
                     body=request.httprequest.form,
-                    headers=request.httprequest.headers)
-                resource_owner_key = credentials.get('resource_owner_key', False)
-                values = self.oauth1_information(resource_owner_key, realms)
+                    headers=request.httprequest.headers,
+                    realms=realms or [],
+                    credentials={'user': uid}
+                )
+                if status == 200:
+                    verifier = str(urllib.parse.parse_qs(body)['oauth_verifier'][0])
+                    return make_json_response({'oauth_token': token, 'oauth_verifier': verifier})
+                return Response(body, status=status, headers=headers)
+            except AccessDenied:
+                values = self._oauth1_information(token, realms)
+                values.update({'error': _("Invalid login or password!")})
                 return request.render('muk_rest.authorize_oauth1', values)
-            elif request.httprequest.method.upper() == 'POST':
-                login = request.params.get('login', None)
-                password = request.params.get('password', None)
-                token = request.params.get('oauth_token')
-                realms = request.httprequest.form.getlist('realms')
-                try:
-                    uid = request.session.authenticate(request.env.cr.dbname, login, password)
-                    headers, body, status = self.oauth1.create_authorization_response(
-                        uri=request.httprequest.url,
-                        http_method=request.httprequest.method,
-                        body=request.httprequest.form,
-                        headers=request.httprequest.headers,
-                        realms=realms or [],
-                        credentials={'user': uid})
-                    if status == 200:
-                        verifier = str(urllib.parse.parse_qs(body)['oauth_verifier'][0])
-                        content = json.dumps({'oauth_token': token, 'oauth_verifier': verifier}, sort_keys=True, indent=4)
-                        return Response(content, content_type='application/json;charset=utf-8', status=200) 
-                    else:
-                        return Response(body, status=status, headers=headers)
-                except AccessDenied:
-                    values = self.oauth1_information(token, realms)
-                    values.update({'error': _("Invalid login or password!")})
-                    return request.render('muk_rest.authorize_oauth1', values)
-        except exceptions.HTTPException as exc:
-            _logger.exception("OAUth authorize failed!")
-            return utils.redirect('/api/authentication/error', 302, exc)
-        except:
-            _logger.exception("OAUth authorize")    
-            return utils.redirect('/api/authentication/error', 302)
-
-    
-    @http.route('/api/authentication/oauth1/token', auth="none", type='http', methods=['POST'], csrf=False)
-    @tools.common.parse_exception
-    @tools.common.ensure_database
-    @tools.common.ensure_module()
-    @tools.common.ensure_import()
-    def oauth1_token(self, **kw):
-        headers, body, status = self.oauth1.create_access_token_response(
+            
+        realms, credentials = self.oauth1.get_realms_and_credentials(
             uri=request.httprequest.url,
             http_method=request.httprequest.method,
             body=request.httprequest.form,
-            headers=request.httprequest.headers)
+            headers=request.httprequest.headers
+        )
+        resource_owner_key = credentials.get('resource_owner_key', False)
+        values = self._oauth1_information(resource_owner_key, realms)
+        return request.render('muk_rest.authorize_oauth1', values)
+
+    @http.route(
+        route=build_route('/authentication/oauth1/token'),
+        methods=['GET', 'POST'],
+        save_session=False,
+        type='http',
+        auth='none', 
+        csrf=False, 
+    )
+    @tools.security.handle_error
+    @tools.http.ensure_database
+    @tools.http.ensure_rest_module
+    def oauth1_token(self, **kw):
+        self._check_active_oauth1()
+        headers, body, status = self.oauth1.create_access_token_response(
+            uri=tools.http.clean_query_params(request.httprequest.url, clean_db=True),
+            http_method=request.httprequest.method,
+            body=request.httprequest.form,
+            headers=request.httprequest.headers
+        )
         return Response(response=body, headers=headers, status=status) 
     
     #----------------------------------------------------------
     # OAuth 2.0
     #----------------------------------------------------------
 
-    @http.route('/api/authentication/oauth2/authorize', auth="none", type='http', methods=['GET', 'POST'], csrf=False)
-    @tools.common.ensure_database
-    @tools.common.ensure_module()
-    @tools.common.ensure_import()
+    @http.route(
+        route=build_route('/authentication/oauth2/authorize'),
+        methods=['GET', 'POST'],
+        save_session=False,
+        type='http',
+        auth='none', 
+        csrf=False, 
+    )
+    @tools.security.handle_error
+    @tools.http.ensure_database
+    @tools.http.ensure_rest_module
     def oauth2_authorize(self, **kw):
-        try:
-            if request.httprequest.method.upper() == 'GET':
-                scopes, credentials = self.oauth2.validate_authorization_request(
-                    uri=request.httprequest.url,
+        self._check_active_oauth2()
+        if request.httprequest.method.upper() == 'POST':
+            client_id = request.params.get('client_id')
+            scopes = request.httprequest.form.getlist('scopes')
+            try:
+                uid = tools.security.check_login_credentials(
+                    request.session.db, 
+                    request.params.get('login', None), 
+                    request.params.get('password', None)
+                )
+                headers, body, status = self.oauth2.create_authorization_response(
+                    uri=tools.http.clean_query_params(request.httprequest.url, clean_db=True),
                     http_method=request.httprequest.method,
                     body=request.httprequest.form,
-                    headers=request.httprequest.headers)
-                client_id = credentials.get('client_id', False)
-                redirect_uri = credentials.get('redirect_uri', False)
-                response_type = credentials.get('response_type', False)
-                state = credentials.get('state', False)
-                values = self.oauth2_information(client_id, redirect_uri, response_type, state, scopes)
+                    headers=request.httprequest.headers,
+                    scopes=scopes or [],
+                    credentials={'user': uid}
+                )
+                return Response(body, status=status, headers=headers)
+            except AccessDenied:
+                if http.request._cr:
+                    http.request._cr.rollback()
+                values = self._oauth2_information(
+                    client_id, 
+                    request.params.get('redirect_uri', False), 
+                    request.params.get('response_type', False), 
+                    request.params.get('state', False), 
+                    scopes
+                )
+                values.update({'error': _("Invalid login or password!")})
                 return request.render('muk_rest.authorize_oauth2', values)
-            elif request.httprequest.method.upper() == 'POST':
-                login = request.params.get('login', None)
-                password = request.params.get('password', None)
-                client_id = request.params.get('client_id')
-                redirect_uri = request.params.get('redirect_uri')
-                response_type = request.params.get('response_type')
-                state = request.params.get('state')
-                scopes = request.httprequest.form.getlist('scopes')
-                try:
-                    uid = request.session.authenticate(request.env.cr.dbname, login, password)
-                    headers, body, status = self.oauth2.create_authorization_response(
-                        uri=request.httprequest.url,
-                        http_method=request.httprequest.method,
-                        body=request.httprequest.form,
-                        headers=request.httprequest.headers,
-                        scopes=scopes or ['all'],
-                        credentials={'user': uid})
-                    return Response(body, status=status, headers=headers)
-                except AccessDenied:
-                    values = self.oauth2_information(client_id, redirect_uri, response_type, state, scopes)
-                    values.update({'error': _("Invalid login or password!")})
-                    return request.render('muk_rest.authorize_oauth2', values)
-        except exceptions.HTTPException as exc:
-            _logger.exception("OAUth authorize")   
-            return utils.redirect('/api/authentication/error', 302, exc)
-        except:       
-            _logger.exception("OAUth authorize")   
-            return utils.redirect('/api/authentication/error', 302)
-    
-    @http.route('/api/authentication/oauth2/token', auth="none", type='http', methods=['POST'], csrf=False)
-    @tools.common.parse_exception
-    @tools.common.ensure_database
-    @tools.common.ensure_module()
-    @tools.common.ensure_import()
+            
+        scopes, credentials = self.oauth2.validate_authorization_request(
+            uri=request.httprequest.url,
+            http_method=request.httprequest.method,
+            body=request.httprequest.form,
+            headers=request.httprequest.headers
+        )
+        values = self._oauth2_information(
+            credentials.get('client_id', False), 
+            credentials.get('redirect_uri', False), 
+            credentials.get('response_type', False),
+            credentials.get('state', False), 
+            scopes
+        )
+        return request.render('muk_rest.authorize_oauth2', values)  
+
+    @http.route(
+        route=build_route('/authentication/oauth2/token'),
+        methods=['GET', 'POST'],
+        save_session=False,
+        type='http',
+        auth='none', 
+        csrf=False, 
+    )
+    @tools.security.handle_error
+    @tools.http.ensure_database
+    @tools.http.ensure_rest_module
     def oauth2_token(self, **kw):
+        self._check_active_oauth2()
         headers, body, status = self.oauth2.create_token_response(
-            uri=request.httprequest.url,
+            uri=tools.http.clean_query_params(request.httprequest.url, clean_db=True),
             http_method=request.httprequest.method,
             body=request.httprequest.form,
-            headers=request.httprequest.headers)
+            headers=request.httprequest.headers
+        )
         return Response(response=body, headers=headers, status=status) 
-    
-    @http.route('/api/authentication/oauth2/revoke', auth="none", type='http', methods=['POST'], csrf=False)
-    @tools.common.parse_exception
-    @tools.common.ensure_database
-    @tools.common.ensure_module()
-    @tools.common.ensure_import()
+     
+    @http.route(
+        route=build_route('/authentication/oauth2/revoke'),
+        methods=['GET', 'POST'],
+        save_session=False,
+        type='http',
+        auth='none', 
+        csrf=False, 
+    )
+    @tools.security.handle_error
+    @tools.http.ensure_database
+    @tools.http.ensure_rest_module
     def oauth2_revoke(self, **kw):
+        self._check_active_oauth2()
         headers, body, status = self.oauth2.create_revocation_response(
-            uri=request.httprequest.url,
+            uri=tools.http.clean_query_params(request.httprequest.url, clean_db=True),
             http_method=request.httprequest.method,
             body=request.httprequest.form,
-            headers=request.httprequest.headers)
-        request.session.logout()
+            headers=request.httprequest.headers
+        )
         return Response(response=body, headers=headers, status=status) 
-        
-    @http.route('/api/authentication/error', auth="none", type='http', methods=['GET'], csrf=False)
-    def oauth_error(self, **kw):
-        return request.render('muk_rest.authorize_error')

@@ -1,17 +1,17 @@
 ###################################################################################
 #
-#    Copyright (c) 2017-2019 MuK IT GmbH.
+#    Copyright (c) 2017-today MuK IT GmbH.
 #
-#    This file is part of MuK REST API for Odoo 
+#    This file is part of MuK REST API for Odoo
 #    (see https://mukit.at).
 #
 #    MuK Proprietary License v1.0
 #
-#    This software and associated files (the "Software") may only be used 
+#    This software and associated files (the "Software") may only be used
 #    (executed, modified, executed after modifications) if you have
 #    purchased a valid license from MuK IT GmbH.
 #
-#    The above permissions are granted for a single database per purchased 
+#    The above permissions are granted for a single database per purchased
 #    license. Furthermore, with a valid license it is permitted to use the
 #    software on other databases as long as the usage is limited to a testing
 #    or development environment.
@@ -20,7 +20,7 @@
 #    as a library (typically by depending on it, importing it and using its
 #    resources), but without copying any source code or material from the
 #    Software. You may distribute those modules under the license of your
-#    choice, provided that this license is compatible with the terms of the 
+#    choice, provided that this license is compatible with the terms of the
 #    MuK Proprietary License (For example: LGPL, MIT, or proprietary licenses
 #    similar to this one).
 #
@@ -40,14 +40,16 @@
 #
 ###################################################################################
 
+
 import logging
 
 from odoo import _, models, api, fields
 from odoo.exceptions import ValidationError
 
-from odoo.addons.muk_utils.tools import security
+from odoo.addons.muk_rest.tools import common, security
 
 _logger = logging.getLogger(__name__)
+
 
 class OAuth2(models.Model):
     
@@ -58,49 +60,66 @@ class OAuth2(models.Model):
     # Database
     #----------------------------------------------------------
 
-    oauth = fields.Many2one(
+    oauth_id = fields.Many2one(
         comodel_name='muk_rest.oauth',
+        ondelete='cascade',
         string='OAuth',
         delegate=True,  
         required=True,
-        ondelete='cascade')
+    )
+    
+    active = fields.Boolean(
+        related='oauth_id.active',
+        readonly=False,
+        store=True,
+    )
     
     state = fields.Selection(
         selection=[
             ('authorization_code', 'Authorization Code'),
             ('implicit', 'Implicit'),
             ('password', 'Password Credentials'),
-            ('client_credentials', 'Client Credentials')],
+            ('client_credentials', 'Client Credentials')
+        ],
         string="OAuth Type",
         required=True,
-        default='authorization_code')
+        default='authorization_code'
+    )
     
     client_id = fields.Char(
         string="Client Key",
         required=True,
-        default=lambda x: security.generate_token())
+        default=lambda x: common.generate_token()
+    )
     
     client_secret = fields.Char(
         string="Client Secret",
         states={
             'authorization_code': [('required', True)], 
-            'client_credentials': [('required', True)]},
-        default=lambda x: security.generate_token())
+            'client_credentials': [('required', True)]
+        },
+        default=lambda x: common.generate_token()
+    )
     
-    default_callback = fields.Many2one(
-        compute='_compute_default_callback',
+    default_callback_id = fields.Many2one(
+        compute='_compute_default_callback_id',
         comodel_name='muk_rest.callback',
-        string="Default Callback")
+        string="Default Callback",
+        readonly=True,
+        store=True,
+    )
     
-    user = fields.Many2one(
+    user_id = fields.Many2one(
         comodel_name='res.users',
+        ondelete='cascade',
         string="User",
         states={
             'authorization_code': [('invisible', True)], 
             'implicit': [('invisible', True)], 
             'password': [('invisible', True)], 
-            'client_credentials': [('required', True)]},
-        ondelete='cascade')
+            'client_credentials': [('required', True)]
+        },
+    )
     
     #----------------------------------------------------------
     # Constraints
@@ -111,29 +130,29 @@ class OAuth2(models.Model):
         ('client_secret_unique', 'UNIQUE (client_secret)', 'Client Secret must be unique.'),
     ]
     
-    @api.constrains('state', 'callbacks')
-    def _check_default_callback(self):
+    @api.constrains('state', 'callback_ids')
+    def _check_default_callback_id(self):
         for record in self.filtered(lambda rec: rec.state == 'authorization_code'):
-            if not record.default_callback:
+            if not record.default_callback_id:
                 raise ValidationError(_("Authorization Code needs a default callback."))
     
     #----------------------------------------------------------
     # Read
     #----------------------------------------------------------
     
-    @api.depends('callbacks')
-    def _compute_default_callback(self):
+    @api.depends('callback_ids', 'callback_ids.sequence')
+    def _compute_default_callback_id(self):
         for record in self:
-            if len(record.callbacks) >= 1:
-                record.default_callback = record.callbacks[0]
-        
+            if len(record.callback_ids) >= 1:
+                record.default_callback_id = record.callback_ids[0]
+            else:
+                record.default_callback_id = False
         
     #----------------------------------------------------------
     # Create / Update / Delete
     #----------------------------------------------------------
 
-    @api.multi
     def unlink(self):
-        self.mapped('oauth').unlink()
+        self.mapped('oauth_id').unlink()
         return super(OAuth2, self).unlink()
         

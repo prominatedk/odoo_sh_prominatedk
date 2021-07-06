@@ -1,17 +1,17 @@
 ###################################################################################
 #
-#    Copyright (c) 2017-2019 MuK IT GmbH.
+#    Copyright (c) 2017-today MuK IT GmbH.
 #
-#    This file is part of MuK REST API for Odoo 
+#    This file is part of MuK REST API for Odoo
 #    (see https://mukit.at).
 #
 #    MuK Proprietary License v1.0
 #
-#    This software and associated files (the "Software") may only be used 
+#    This software and associated files (the "Software") may only be used
 #    (executed, modified, executed after modifications) if you have
 #    purchased a valid license from MuK IT GmbH.
 #
-#    The above permissions are granted for a single database per purchased 
+#    The above permissions are granted for a single database per purchased
 #    license. Furthermore, with a valid license it is permitted to use the
 #    software on other databases as long as the usage is limited to a testing
 #    or development environment.
@@ -20,7 +20,7 @@
 #    as a library (typically by depending on it, importing it and using its
 #    resources), but without copying any source code or material from the
 #    Software. You may distribute those modules under the license of your
-#    choice, provided that this license is compatible with the terms of the 
+#    choice, provided that this license is compatible with the terms of the
 #    MuK Proprietary License (For example: LGPL, MIT, or proprietary licenses
 #    similar to this one).
 #
@@ -40,6 +40,7 @@
 #
 ###################################################################################
 
+
 import re
 import logging
 import datetime
@@ -47,11 +48,11 @@ import datetime
 from oauthlib.oauth2 import RequestValidator
 from oauthlib.oauth2 import InvalidRequestFatalError
 
-from odoo import http
+from odoo import api, fields, http, SUPERUSER_ID
 from odoo.tools.misc import consteq
 
 from odoo.addons.muk_rest.tools import security
-from odoo.addons.muk_utils.tools.http import decode_http_basic_authentication
+from odoo.addons.muk_rest.tools.http import build_route
 
 _logger = logging.getLogger(__name__)
 
@@ -63,7 +64,7 @@ class OAuth2RequestValidator(RequestValidator):
     
     def client_authentication_required(self, request, *args, **kwargs):
         if request.grant_type in ('password', 'authorization_code', 'refresh_token'):
-            request = self.ensure_client_parameters(request)
+            request = self._ensure_client_parameters(request)
             if request.client_id and self.get_client(request.client_id):
                 return True
         return False
@@ -72,73 +73,81 @@ class OAuth2RequestValidator(RequestValidator):
     # Helper
     #----------------------------------------------------------
     
-    def ensure_client_parameters(self, request):
+    def _ensure_request_client(self, request, client_id):
+        if not request.client:
+            request.client = self.get_client(client_id)
+        return request.client
+            
+    def _ensure_client_parameters(self, request):
         if not request.client_id:
             authorization_header = request.headers.get('Authorization')
-            username, password = decode_http_basic_authentication(authorization_header)
+            username, password = security.decode_http_basic_authentication(authorization_header)
             request.client_id = username
             request.client_secret = password
         if not request.client_id:
             raise InvalidRequestFatalError(description='Missing client_id parameter.', request=request)
         return request
     
+    def _check_client_id(self, obj, client_key):
+        return obj and consteq(obj.oauth_id.client_id, client_key)
+    
+    def _retrieve_rule_routes(self, rules):
+        return rules.filtered('applied').mapped('route')
+        
     #----------------------------------------------------------
     # Validate
     #----------------------------------------------------------
     
     def validate_client_id(self, client_id, request, *args, **kwargs):
-        if not request.client:
-            request.client = self.get_client(client_id)
+        self._ensure_request_client(request, client_id)
         return bool(request.client)
 
     def validate_redirect_uri(self, client_id, redirect_uri, request):
-        if not request.client:
-            request.client = self.get_client(client_id)
+        self._ensure_request_client(request, client_id)
         if not request.client:
             return False
         request.redirect_uri = redirect_uri
-        callbacks = request.client.callbacks.mapped('url')
-        if redirect_uri in callbacks:
+        if redirect_uri  == self.get_docs_redirect_uri():
             return True
-        for callback in callbacks:
-            if re.match(callback, redirect_uri):
-                return True
-        return False
+        return request.client.oauth_id._check_callback(redirect_uri)
 
     def validate_response_type(self, client_id, response_type, client, request, *args, **kwargs):
-        if not request.client:
-            request.client = self.get_client(client_id)
+        self._ensure_request_client(request, client_id)
         if not request.client:
             return False
         request.response_type = response_type
         return response_type in security.get_response_type(request.client.state)
 
     def validate_scopes(self, client_id, scopes, client, request, *args, **kwargs):
-        if client and client.security == 'advanced': 
-            return set(client.mapped('rules.model.model')).issuperset(set(scopes))
+        if client and client.security == 'advanced':
+            return set(self._retrieve_rule_routes(client.rule_ids)).issuperset(set(scopes))
         return True
     
     def validate_user(self, username, password, client, request, *args, **kwargs):
-        request.user = http.request.session.authenticate(http.request.session.db, username, password)
+        request.user = security.check_login_credentials(
+            http.request.session.db, username, password
+        )
         return bool(request.user)
 
     def validate_grant_type(self, client_id, grant_type, client, request, *args, **kwargs):
+        self._ensure_request_client(request, client_id)
         if not request.client:
-            request.client = self.get_client(client_id)
+            return False
         return grant_type == 'refresh_token' or grant_type == request.client.state
 
     def validate_code(self, client_id, code, client, request, *args, **kwargs):
+        self._ensure_request_client(request, client_id)
         if not request.client:
-            request.client = self.get_client(client_id)
-        authorization_code = self.get_authorization_code(code)
-        if authorization_code and consteq(authorization_code.oauth.client_id, request.client.client_id):
-            request.user = authorization_code.user.id
+            return False
+        authorization_code = self.get_authorization_code(code, getattr(request, 'state', ''))
+        if self._check_client_id(authorization_code, request.client.client_id):
+            request.user = authorization_code.user_id.id
             return True
         return False
 
     def invalidate_authorization_code(self, client_id, code, request, *args, **kwargs):
-        authorization_code = self.get_authorization_code(code)
-        if authorization_code and consteq(authorization_code.oauth.client_id, client_id):
+        authorization_code = self.get_authorization_code(code, getattr(request, 'state', ''))
+        if self._check_client_id(authorization_code, client_id):
             authorization_code.unlink()
 
     def validate_bearer_token(self, token, scopes, request):
@@ -146,16 +155,18 @@ class OAuth2RequestValidator(RequestValidator):
             request.access_token = self.get_bearer_token(token)
         if not request.access_token:
             return False
-        if request.access_token and request.access_token.oauth.security == 'advanced': 
-            return set(request.access_token.oauth.mapped('rules.model.model')).issuperset(set(scopes))    
-        if request.access_token.expires_in is not None and datetime.datetime.utcnow() > request.access_token.expires_in:
+        if request.access_token and request.access_token.oauth_id.security == 'advanced':
+            rules = self._retrieve_rule_routes(request.access_token.oauth_id.rule_ids)
+            return set(rules).issuperset(set(scopes))    
+        if request.access_token.expiration_date is not None and \
+                datetime.datetime.utcnow() > request.access_token.expiration_date:
             return False
         return True
     
     def validate_refresh_token(self, refresh_token, client, request, *args, **kwargs):
-        request.refresh_token = self.get_refresh_token(refresh_token)
-        if request.refresh_token and consteq(request.refresh_token.oauth.client_id, client.client_id):
-            request.user = request.refresh_token.user.id
+        request.refresh_token = self.get_refresh_token(refresh_token)   
+        if self._check_client_id(request.refresh_token, client.client_id):
+            request.user = request.refresh_token.user_id.id
             return True
         return False   
         
@@ -164,21 +175,20 @@ class OAuth2RequestValidator(RequestValidator):
     #----------------------------------------------------------
 
     def authenticate_client(self, request, *args, **kwargs):
-        request = self.ensure_client_parameters(request)
-        if not request.client:
-            request.client = self.get_client(request.client_id)
+        request = self._ensure_client_parameters(request)
+        self._ensure_request_client(request, request.client_id)
         if not request.client:
             return False
-        if request.client_secret is not None and request.client.client_secret != request.client_secret:
-            return False
-        return True
+        return not (
+            request.client_secret is not None and
+            not consteq(request.client.client_secret, request.client_secret)
+        )
 
     def authenticate_client_id(self, client_id, request, *args, **kwargs):
-        request = self.ensure_client_parameters(request)
-        if not client_id:
-            client_id = request.client_id
+        request = self._ensure_client_parameters(request)
+        self._ensure_request_client(request, client_id or request.client_id)
         if not request.client:
-            request.client = self.get_client(client_id)
+            return False
         return request.client and consteq(request.client.client_id, client_id)
     
     #----------------------------------------------------------
@@ -186,10 +196,11 @@ class OAuth2RequestValidator(RequestValidator):
     #----------------------------------------------------------
     
     def confirm_redirect_uri(self, client_id, code, redirect_uri, client, request, *args, **kwargs):
+        self._ensure_request_client(request, client_id)
         if not request.client:
-            request.client = self.get_client(client_id)
-        authorization_code = self.get_authorization_code(code)
-        return authorization_code.callback == redirect_uri
+            return False
+        authorization_code = self.get_authorization_code(code, getattr(request, 'state', ''))
+        return authorization_code and authorization_code.callback == redirect_uri or False
     
     #----------------------------------------------------------
     # Getter
@@ -197,68 +208,82 @@ class OAuth2RequestValidator(RequestValidator):
 
     def get_client(self, client_id):
         domain = [('client_id', '=', client_id)]
-        client = http.request.env['muk_rest.oauth2'].sudo().search(domain, limit=1)
-        return client.exists() and client
+        env = api.Environment(http.request.cr, SUPERUSER_ID, {})
+        return env['muk_rest.oauth2'].search(domain, limit=1)
       
-    def get_default_scopes(self, client_id, request, *args, **kwargs):
-        if not request.client:
-            request.client = self.get_client(client_id)
-        if request.client and request.client.security == 'advanced': 
-            return request.client.mapped('rules.model.model')
-        return []
+    def get_docs_redirect_uri(self):
+        env = api.Environment(http.request.cr, SUPERUSER_ID, {})
+        base_url = env['ir.config_parameter'].get_param('web.base.url')
+        return '{}{}'.format(base_url, build_route('/docs/oauth2/redirect')[0])
     
     def get_default_redirect_uri(self, client_id, request, *args, **kwargs):
-        if not request.client:
-            request.client = self.get_client(client_id)
-        return request.client.default_callback.url
+        self._ensure_request_client(request, client_id)
+        return request.client.default_callback_id.url
+      
+    def get_default_scopes(self, client_id, request, *args, **kwargs):
+        self._ensure_request_client(request, client_id)
+        if request.client and request.client.security == 'advanced': 
+            return self._retrieve_rule_routes(request.client.rule_ids)
+        return []
     
     def get_original_scopes(self, refresh_token, request, *args, **kwargs):
         if not request.refresh_token:
             request.refresh_token = self.get_refresh_token(refresh_token)
-        if request.refresh_token and  request.refresh_token.oauth.security == 'advanced': 
-            return request.refresh_token.oauth.mapped('rules.model.model')
+        if request.refresh_token and request.refresh_token.oauth_id.security == 'advanced':
+            return self._retrieve_rule_routes(request.refresh_token.oauth_id.rule_ids)
         return []
              
-    def get_authorization_code(self, code):
-        domain = [('code', '=', code)]
-        authorization_code = http.request.env['muk_rest.authorization_code'].sudo().search(domain, limit=1)
-        return authorization_code.exists() and authorization_code
+    def get_authorization_code(self, code, state):
+        env = api.Environment(http.request.cr, SUPERUSER_ID, {})
+        return env['muk_rest.authorization_code']._check_code(code, state)
     
     def get_bearer_token(self, token):
-        domain = [('access_token', '=', token)]
-        token = http.request.env['muk_rest.bearer_token'].sudo().search(domain, limit=1)
-        return token.exists() and token
+        env = api.Environment(http.request.cr, SUPERUSER_ID, {})
+        return env['muk_rest.bearer_token']._check_token(token)
     
     def get_refresh_token(self, token):
-        domain = [('refresh_token', '=', token)]
-        token = http.request.env['muk_rest.bearer_token'].sudo().search(domain, limit=1)
-        return token.exists() and token
+        env = api.Environment(http.request.cr, SUPERUSER_ID, {})
+        return env['muk_rest.bearer_token']._check_refresh(token)
     
     #----------------------------------------------------------
     # Setter
     #----------------------------------------------------------
     
     def save_authorization_code(self, client_id, code, request, *args, **kwargs):
-        http.request.env['muk_rest.authorization_code'].sudo().create({
-            'oauth': request.client.id,
+        env = api.Environment(http.request.cr, SUPERUSER_ID, {})
+        env['muk_rest.authorization_code']._save_authorization_code({
+            'user_id': request.user,
+            'oauth_id': request.client.id,
             'code': code['code'],
             'state': code.get('state', None),
-            'user': request.user,
-            'callback': request.redirect_uri})
-    
+            'callback': request.redirect_uri
+        }) 
+
     def save_bearer_token(self, token, request, *args, **kwargs):
-        timedelta = datetime.timedelta(seconds=token['expires_in'])
-        expires_in = datetime.datetime.utcnow() + timedelta
-        http.request.env['muk_rest.bearer_token'].sudo().create({
-            'user': request.user,
-            'oauth': request.client.id,
+        env = api.Environment(http.request.cr, SUPERUSER_ID, {})
+        expiration_date = None
+        if token.get('expires_in', False):
+            expires_in = env['ir.config_parameter'].get_param(
+                'muk_rest.oauth2_bearer_expires_in_seconds', False
+            )
+            expires_in = int(expires_in or token['expires_in']) 
+            timedelta = datetime.timedelta(seconds=expires_in)
+            expiration_date = fields.Datetime.to_string(
+                fields.Datetime.now() + timedelta
+            )
+            token['expires_in'] = expires_in
+        env['muk_rest.bearer_token']._save_bearer_token({
+            'user_id': request.user,
+            'oauth_id': request.client.id,
             'access_token': token['access_token'],
             'refresh_token': token.get('refresh_token', None),
-            'expires_in': expires_in}) 
+            'expiration_date': expiration_date,
+        }) 
     
     #----------------------------------------------------------
     # Revoke
     #----------------------------------------------------------
     
     def revoke_token(self, token, token_type_hint, request, *args, **kwargs):
-        return self.get_bearer_token(token).unlink()
+        access_token = self.get_bearer_token(token)
+        return access_token and access_token.unlink()

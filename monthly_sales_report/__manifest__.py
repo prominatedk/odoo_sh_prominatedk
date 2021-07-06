@@ -9,6 +9,7 @@
     'version': '1.0.7',
     'depends': ['sale', 'account'],
     'data': [
+        'security/ir.model.access.csv',
         'wizard/monthly_sales_report_view.xml',
         'views/res_partner_views.xml',
     ],
