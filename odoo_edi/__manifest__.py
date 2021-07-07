@@ -18,7 +18,7 @@
     # Check https://github.com/odoo/odoo/blob/master/odoo/addons/base/module/module_data.xml
     # for the full list
     'category': 'Specific Industry Applications',
-    'version': '3.0.6',
+    'version': '3.0.7',
     'license': 'LGPL-3',
 
     # any module necessary for this one to work correctly

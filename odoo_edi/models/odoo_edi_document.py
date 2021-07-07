@@ -61,8 +61,6 @@ class EdiDocument(models.TransientModel):
             raise UserError(_('The current company, %s, does not have a country set. This is required for EDI') % company.name)
         if company.odoo_edi_token == "" or not company.odoo_edi_token:
             raise UserError(_('Please define the FlexEDI API Key before sending'))
-        if not company.bank_journal_id:
-            raise UserError(_('The current company, %s, does not have a default bank journal configured, which is required for EDI invoicing') % company.name)
 
     def cron_document_status(self):
         pass
