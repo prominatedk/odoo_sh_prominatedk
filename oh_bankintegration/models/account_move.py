@@ -282,14 +282,14 @@ class AccountMove(models.Model):
                 else:
                     raise ValidationError(
                         _('The value provided as the FI payment string appears to be valid, but no payment type could be found matching the FI payment type %s' % self.payment_fik_number[:3]))
-        elif self.invoice_partner_bank_id:
+        elif self.partner_bank_id:
             # If no FI payment string is set, check if a specific recipient
             # bank account has been configured
-            vals['account'] = self.invoice_partner_bank_id.get_bban(
-            ) if self.company_id.bankintegration_use_odoo_bban else self.invoice_partner_bank_id.sanitized_acc_number
-            if self.invoice_partner_bank_id.bank_id.bic:
+            vals['account'] = self.partner_bank_id.get_bban(
+            ) if self.company_id.bankintegration_use_odoo_bban else self.partner_bank_id.sanitized_acc_number
+            if self.partner_bank_id.bank_id.bic:
                 vals['type'] = 11
-                vals['creditor']['bic'] = self.invoice_partner_bank_id.bank_id.bic
+                vals['creditor']['bic'] = self.partner_bank_id.bank_id.bic
             else:
                 vals['type'] = 1
 
