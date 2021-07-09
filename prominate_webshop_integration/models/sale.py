@@ -202,8 +202,8 @@ class SaleOrder(models.Model):
 
     @api.model
     def create(self, vals):
-        billing_info = vals.pop('billing_info')
-        shipping_info = vals.pop('shipping_info')
+        billing_info = vals.pop('billing_info', False)
+        shipping_info = vals.pop('shipping_info', False)
         res = super(SaleOrder, self).create(vals)
         if res.api_order:
             res._send_stock_update()
