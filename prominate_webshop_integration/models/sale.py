@@ -145,7 +145,7 @@ class SaleOrder(models.Model):
                 'country_id': partner_country,
                 'street': shipping.get('street'),
                 'street2': shipping.get('street2'),
-                'zip:': shipping.get('postcode'),
+                'zip': shipping.get('postcode'),
                 'city': shipping.get('city')
             })
         partners['partner_invoice_id'] = self._get_invoice_address(billing)
