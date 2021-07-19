@@ -1,7 +1,10 @@
+# -*- coding: utf-8 -*-
 import base64
 import io
 from odoo import api, fields, models, _
 import xlsxwriter
+import logging
+_logger = logging.getLogger(__name__)
 
 
 class MonthlySalesReport(models.TransientModel):
@@ -112,14 +115,15 @@ class MonthlySalesReport(models.TransientModel):
                 sheet.write(j, 11, item.move_id.partner_id.country_id.code, table_body)
                 sheet.write(j, 12, '', table_body)
                 sheet.write(j, 13, '', table_body)
-                sheet.write(j, 14, item.move_id.invoice_date, table_date)
+                if item.mapped('sale_line_ids'):
+                    sheet.write(j, 14, item.mapped('sale_line_ids')[0].order_id.confirmation_date.date(), table_date)
                 sheet.write(j, 15, item.move_id.partner_id.country_id.code, table_body)
                 if item.move_id.invoice_origin:
                     shipment = self.env['stock.picking'].search([('origin', '=', item.move_id.invoice_origin)])
                     shipdates = []
                     for i in shipment:
-                        if i.scheduled_date:
-                            shipdates.append(i.scheduled_date.strftime("%d-%m-%Y"))
+                        if i.date_done:
+                            shipdates.append(i.date_done.strftime("%d-%m-%Y"))
                     shipdate = ",".join(shipdates)
                     sheet.write(j, 16, shipdate, table_body)
                 sheet.write(j, 17, item.move_id.currency_id.name, table_body)
@@ -158,14 +162,14 @@ class MonthlySalesReport(models.TransientModel):
                 sheet.write(j, 39, '', table_body)
                 sheet.write(j, 40, '', table_body)
                 sheet.write(j, 41, '', table_body)
-                # credit_note = self.env['account.move'].search([('invoice_origin', '=', item.move_id.number),
-                #                                                   ('move_type', '=', 'out_refund')], limit=1)
-                # if credit_note:
-                #     sheet.write(j, 42, credit_note.number, table_body)
-                # else:
-                #     sheet.write(j, 42, '', table_body)
-                #
-                # j += 1
+                credit_note = self.env['account.move'].search([('invoice_origin', '=', item.move_id.number),
+                                                                  ('type', '=', 'out_refund')], limit=1)
+                if credit_note:
+                    sheet.write(j, 42, credit_note.number, table_body)
+                else:
+                    sheet.write(j, 42, '', table_body)
+
+                j += 1
 
         workbook.close()
 
