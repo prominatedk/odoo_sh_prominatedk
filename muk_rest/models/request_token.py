@@ -59,23 +59,23 @@ class RequestToken(models.Model):
     # Setup Database
     #----------------------------------------------------------
     
-    # def init(self):
-    #     self.env.cr.execute("""
-    #         CREATE TABLE IF NOT EXISTS {table} (
-    #             id SERIAL PRIMARY KEY,
-    #             resource_owner_key VARCHAR NOT NULL,
-    #             resource_owner_secret VARCHAR NOT NULL,
-    #             verifier VARCHAR,
-    #             callback VARCHAR,
-    #             key_index VARCHAR({index_size}) NOT NULL CHECK (char_length(key_index) = {index_size}),
-    #             verifier_index VARCHAR({index_size}) CHECK (char_length(verifier_index) = {index_size}),
-    #             oauth_id INTEGER NOT NULL REFERENCES muk_rest_oauth1(id),
-    #             user_id INTEGER REFERENCES res_users(id),
-    #             create_date TIMESTAMP WITHOUT TIME ZONE DEFAULT (now() at time zone 'UTC')
-    #         );
-    #         CREATE INDEX IF NOT EXISTS {table}_key_index_idx ON {table} (key_index);
-    #         CREATE INDEX IF NOT EXISTS {table}_verifier_index_idx ON {table} (verifier_index);
-    #     """.format(table=self._table, index_size=common.TOKEN_INDEX))
+    def init(self):
+        self.env.cr.execute("""
+            CREATE TABLE IF NOT EXISTS {table} (
+                id SERIAL PRIMARY KEY,
+                resource_owner_key VARCHAR NOT NULL,
+                resource_owner_secret VARCHAR NOT NULL,
+                verifier VARCHAR,
+                callback VARCHAR,
+                key_index VARCHAR({index_size}) NOT NULL CHECK (char_length(key_index) = {index_size}),
+                verifier_index VARCHAR({index_size}) CHECK (char_length(verifier_index) = {index_size}),
+                oauth_id INTEGER NOT NULL REFERENCES muk_rest_oauth1(id),
+                user_id INTEGER REFERENCES res_users(id),
+                create_date TIMESTAMP WITHOUT TIME ZONE DEFAULT (now() at time zone 'UTC')
+            );
+            CREATE INDEX IF NOT EXISTS {table}_key_index_idx ON {table} (key_index);
+            CREATE INDEX IF NOT EXISTS {table}_verifier_index_idx ON {table} (verifier_index);
+        """.format(table=self._table, index_size=common.TOKEN_INDEX))
     #----------------------------------------------------------
     # Database
     #----------------------------------------------------------
