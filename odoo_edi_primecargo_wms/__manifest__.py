@@ -2,7 +2,7 @@
     "name": "Primecargo WMS via FlexEDI",
     "summary": "Integrates PrimeCargo WMS (Warehouse Management System) with Odoo inventory",
     "description": "Integrates PrimeCargo WMS (Warehouse Management System) with Odoo inventory. Integration is based on PrimeCargo XML format version 1.6.8",
-    "version": "1.5.3",
+    "version": "1.5.4",
     "category": "Customization",
     "author": "VK Data ApS",
     "website": "https://vkdata.dk",

@@ -89,13 +89,13 @@ class EdiStockPickingIncoming(models.TransientModel):
                     if not picking.id:
                         _logger.error('No picking was found with Order UUID {}'.format(data['order_uuid']))
                         continue
-                    if picking.state == 'done':
-                        _logger.error('Picking {} is already marked done, so we cannot update quantities on it'.format(picking.name))
-                        continue
                     picking.edi_document_id = data['order_id']
                     picking.edi_document_status = data['status']
                     picking.edi_document_status_message = data['status_message']
                     for line in data['purchaseorderexportline_set']:
+                        if picking.state == 'done':
+                            _logger.error('Picking {} is already marked done, so we cannot update quantities on it'.format(picking.name))
+                            continue
                         move = picking.move_ids_without_package.filtered(lambda l: l.product_id.barcode == line['barcode_no'] or l.product_id.default_code == line['part_number'])
                         if not move:
                             _logger.error('No stock.move found for product barcode {} or internal reference {} for order {}'.format(line['barcode_no'], line['part_number'], picking.name))
