@@ -89,6 +89,9 @@ class EdiStockPickingIncoming(models.TransientModel):
                     if not picking.id:
                         _logger.error('No picking was found with Order UUID {}'.format(data['order_uuid']))
                         continue
+                    if picking.state == 'done':
+                        _logger.error('Picking {} is already marked done, so we cannot update quantities on it'.format(picking.name))
+                        continue
                     picking.edi_document_id = data['order_id']
                     picking.edi_document_status = data['status']
                     picking.edi_document_status_message = data['status_message']
@@ -107,7 +110,8 @@ class EdiStockPickingIncoming(models.TransientModel):
                                     'qty_done': line['quantity'],
                                     'product_uom_id': move.product_uom.id,
                                     'location_id': move.picking_id.location_id.id,
-                                    'location_dest_id': move.picking_id.location_dest_id.id
+                                    'location_dest_id': move.picking_id.location_dest_id.id,
+                                    'picking_id': picking.id
                                 })]
                             })
                         else:
@@ -125,7 +129,8 @@ class EdiStockPickingIncoming(models.TransientModel):
                                             'name': line['batch_number']
                                         }),
                                         'location_id': move.picking_id.location_id.id,
-                                        'location_dest_id': move.picking_id.location_dest_id.id
+                                        'location_dest_id': move.picking_id.location_dest_id.id,
+                                        'picking_id': picking.id
                                     })]
                                 })
                     if picking.company_id.primecargo_autovalidate_done:

@@ -126,6 +126,9 @@ class EdiStockPickingOutgoing(models.TransientModel):
                     if not picking.id:
                         _logger.error('No picking was found with Order UUID {}'.format(data['order_uuid']))
                         continue
+                    if picking.state == 'done':
+                        _logger.error('Picking {} is already marked done, so we cannot update quantities on it'.format(picking.name))
+                        continue
                     picking.edi_document_id = data['order_id']
                     picking.edi_document_status = data['status']
                     picking.edi_document_status_message = data['status_message']
@@ -143,22 +146,23 @@ class EdiStockPickingOutgoing(models.TransientModel):
                         line_found = False
                         if not move.product_id.tracking in ['lot', 'serial']:
                             move.write({
-                                'move_line_ids_without_package': [(0,0, {
+                                'move_line_ids': [(0,0, {
                                     'product_id': move.product_id.id,
                                     'qty_done': line['quantity_done'],
                                     'product_uom_id': move.product_uom.id,
                                     'location_id': move.picking_id.location_id.id,
-                                    'location_dest_id': move.picking_id.location_dest_id.id
+                                    'location_dest_id': move.picking_id.location_dest_id.id,
+                                    'picking_id': picking.id
                                 })]
                             })
                         else:
-                            for ml in move.move_line_ids_without_package:
+                            for ml in move.move_line_ids:
                                 if ml.lot_id.name == line['batch_number']:
                                     ml.qty_done = line['quantity_done']
                                     line_found = True
                             if not line_found:
                                 move.write({
-                                    'move_line_ids_without_package': [(0,0, {
+                                    'move_line_ids': [(0,0, {
                                         'product_id': move.product_id.id,
                                         'product_uom_id': move.product_uom.id,
                                         'qty_done': line['quantity_done'],
@@ -166,7 +170,8 @@ class EdiStockPickingOutgoing(models.TransientModel):
                                             'name': line['batch_number']
                                         }),
                                         'location_id': move.picking_id.location_id.id,
-                                        'location_dest_id': move.picking_id.location_dest_id.id
+                                        'location_dest_id': move.picking_id.location_dest_id.id,
+                                        'picking_id': picking.id
                                     })]
                                 })
                     if picking.company_id.id:
