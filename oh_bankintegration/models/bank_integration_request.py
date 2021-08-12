@@ -542,6 +542,7 @@ class BankIntegrationRequest(models.Model):
             'requestId': self.request_id,
             'paymentId': pending_payment_ids
         }
+        _logger.info(f"------------------ Values: ----------------\n{vals}")
         headers = {
             'Authorization': str('Basic ' + auth_header),
             'Content-type': 'application/json'
@@ -553,6 +554,7 @@ class BankIntegrationRequest(models.Model):
             headers=headers,
             json=vals
         )
+        _logger.info(f"------------------ Response: ----------------\n{response}")
         self.response_text = response.text
         if response.status_code == 200:
             response_data = response.json()
