@@ -18,7 +18,7 @@
     # Check https://github.com/odoo/odoo/blob/master/odoo/addons/base/module/module_data.xml
     # for the full list
     'category': 'Specific Industry Applications',
-    'version': '3.0.2',
+    'version': '3.0.7',
     'license': 'LGPL-3',
 
     # any module necessary for this one to work correctly
@@ -27,13 +27,13 @@
     # always loaded
     'data': [
         'security/ir.model.access.csv',
-        'views/res_company_form_view.xml',
-        'views/res_config_view.xml',
-        'views/product_uom_form_view.xml',
+        'views/res_company_views.xml',
+        'views/res_config_settings_views.xml',
+        'views/uom_uom_form_view.xml',
         'views/res_partner_views.xml',
         'data/odoo_edi_product_uom_data.xml',
         'data/odoo_edi_endpoints.xml',
-        #'data/uom_uom_data.xml',
+        'data/uom_uom_data.xml',
         'data/odoo_edi_tax_scheme_data.xml',
         'data/odoo_edi_tax_category_data.xml',
     ],

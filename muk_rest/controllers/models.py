@@ -1,17 +1,17 @@
 ###################################################################################
 #
-#    Copyright (c) 2017-2019 MuK IT GmbH.
+#    Copyright (c) 2017-today MuK IT GmbH.
 #
-#    This file is part of MuK REST API for Odoo 
+#    This file is part of MuK REST API for Odoo
 #    (see https://mukit.at).
 #
 #    MuK Proprietary License v1.0
 #
-#    This software and associated files (the "Software") may only be used 
+#    This software and associated files (the "Software") may only be used
 #    (executed, modified, executed after modifications) if you have
 #    purchased a valid license from MuK IT GmbH.
 #
-#    The above permissions are granted for a single database per purchased 
+#    The above permissions are granted for a single database per purchased
 #    license. Furthermore, with a valid license it is permitted to use the
 #    software on other databases as long as the usage is limited to a testing
 #    or development environment.
@@ -20,7 +20,7 @@
 #    as a library (typically by depending on it, importing it and using its
 #    resources), but without copying any source code or material from the
 #    Software. You may distribute those modules under the license of your
-#    choice, provided that this license is compatible with the terms of the 
+#    choice, provided that this license is compatible with the terms of the
 #    MuK Proprietary License (For example: LGPL, MIT, or proprietary licenses
 #    similar to this one).
 #
@@ -40,240 +40,760 @@
 #
 ###################################################################################
 
+
 import re
-import ast
 import json
+import base64
 import urllib
-import logging
+import werkzeug
 
-from werkzeug import exceptions
-
-from odoo import _, http, release
+from odoo import http, release, service, _
 from odoo.http import request, Response
-from odoo.tools import misc
+from odoo.models import check_method_name
+from odoo.tools.image import image_data_uri
+from odoo.tools import misc, config
 
-from odoo.addons.muk_rest import validators, tools
-from odoo.addons.muk_rest.tools.common import parse_value
-from odoo.addons.muk_utils.tools.json import ResponseEncoder, RecordEncoder
+from odoo.addons.muk_rest import tools
+from odoo.addons.muk_rest.tools.docs import api_doc
+from odoo.addons.muk_rest.tools.common import VERSION
+from odoo.addons.muk_rest.tools.http import build_route, make_json_response
 
-_logger = logging.getLogger(__name__)
 
 class ModelController(http.Controller):
+  
+    _api_doc_components = {
+        'ReadGroupResult': {
+            'type': 'array',
+            'items': {
+                'type': 'object',
+                'properties': {
+                    '__domain': {
+                        '$ref': '#/components/schemas/Domain',
+                    }
+                },
+                'additionalProperties': True,
+            },
+            'description': 'A list of grouped record information.'
+        },
+        'RecordValues': {
+            'type': 'object',
+            'description': 'A map of field names and their corresponding values.'
+        },
+    }
+  
+    #----------------------------------------------------------
+    # Generic Method
+    #----------------------------------------------------------
+     
+    @api_doc(
+        tags=['Model'], 
+        summary='Call', 
+        description='Generic method call.',
+        parameter={
+            'model': {
+                'name': 'model',
+                'description': 'Model',
+                'required': True,
+                'schema': {
+                    'type': 'string'
+                },
+            },
+            'method': {
+                'name': 'method',
+                'description': 'Method',
+                'required': True,
+                'schema': {
+                    'type': 'string'
+                },
+            },
+            'ids': {
+                'name': 'ids',
+                'description': 'Record IDs',
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            '$ref': '#/components/schemas/RecordIDs',
+                        }
+                    }
+                },
+                'example': [],
+            },
+            'args': {
+                'name': 'args',
+                'description': 'Positional Arguments',
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            'type': 'array',
+                            'items': {}
+                        }
+                    }
+                },
+                'example': [],
+            },
+            'kwargs': {
+                'name': 'kwargs',
+                'description': 'Keyword Arguments',
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            'type': 'object'
+                        }
+                    }
+                },
+                'example': {},
+            },
+        },
+        default_responses=['200', '400', '401', '500'],
+    )
+    @tools.http.rest_route(
+        routes=build_route([
+            '/call',
+            '/call/<string:model>',
+            '/call/<string:model>/<string:method>',
+        ]), 
+        methods=['POST'],
+        protected=True,
+    )
+    def call(self, model, method, ids=None, args=None, kwargs=None, **kw):
+        check_method_name(method)
+        args = tools.common.parse_value(args, []) 
+        kwargs = tools.common.parse_value(kwargs, {})
+        records = request.env[model].browse(tools.common.parse_ids(ids))
+        return make_json_response(getattr(records, method)(*args, **kwargs))
 
-    #----------------------------------------------------------
-    # Inspection
-    #----------------------------------------------------------
-    
-    @http.route([
-        '/api/field_names',
-        '/api/field_names/<string:model>',
-    ], auth="none", type='http', methods=['GET'],  csrf=False)
-    @tools.common.parse_exception
-    @tools.common.ensure_database
-    @tools.common.ensure_module()
-    @tools.security.protected()
-    def field_names(self, model, **kw):
-        result = request.env[model].fields_get_keys()
-        content = json.dumps(result, sort_keys=True, indent=4, cls=ResponseEncoder)
-        return Response(content, content_type='application/json;charset=utf-8', status=200)
-    
-    @http.route([
-        '/api/fields',
-        '/api/fields/<string:model>',
-    ], auth="none", type='http', methods=['GET'],  csrf=False)
-    @tools.common.parse_exception
-    @tools.common.ensure_database
-    @tools.common.ensure_module()
-    @tools.security.protected()
-    def fields(self, model, fields=None, attributes=None, **kw):
-        fields = fields and parse_value(fields) or None
-        attributes = attributes and parse_value(attributes) or None
-        result = request.env[model].fields_get(allfields=fields, attributes=attributes)
-        content = json.dumps(result, sort_keys=True, indent=4, cls=ResponseEncoder)
-        return Response(content, content_type='application/json;charset=utf-8', status=200)
-    
-    @http.route([
-        '/api/metadata',
-        '/api/metadata/<string:model>',
-    ], auth="none", type='http', methods=['GET'], csrf=False)
-    @tools.common.parse_exception
-    @tools.common.ensure_database
-    @tools.common.ensure_module()
-    @tools.security.protected()
-    def metadata(self, model, ids, context=None, **kw):
-        ctx = request.session.context.copy()
-        ctx.update(context and parse_value(context) or {})
-        ids = ids and parse_value(ids) or []
-        records = request.env[model].with_context(ctx).browse(ids)
-        result = records.get_metadata()
-        content = json.dumps(result, sort_keys=True, indent=4, cls=ResponseEncoder)
-        return Response(content, content_type='application/json;charset=utf-8', status=200)
-    
     #----------------------------------------------------------
     # Search / Read
     #----------------------------------------------------------
-    
-    @http.route([
-        '/api/search',
-        '/api/search/<string:model>',
-        '/api/search/<string:model>/<string:order>',
-        '/api/search/<string:model>/<int:limit>/<string:order>',
-        '/api/search/<string:model>/<int:limit>/<int:offset>/<string:order>'
-    ], auth="none", type='http', methods=['GET'],  csrf=False)
-    @tools.common.parse_exception
-    @tools.common.ensure_database
-    @tools.common.ensure_module()
-    @tools.security.protected()
-    def search(self, model, domain=None, context=None, count=False, limit=80, offset=0, order=None, **kw):
-        ctx = request.session.context.copy()
-        ctx.update({'prefetch_fields': False})
-        ctx.update(context and parse_value(context) or {})
-        domain = domain and parse_value(domain) or []
+
+    @api_doc(
+        tags=['Model'], 
+        summary='Search', 
+        description='Search for matching records',
+        parameter={
+            'model': {
+                'name': 'model',
+                'description': 'Model',
+                'required': True,
+                'schema': {
+                    'type': 'string'
+                },
+                'example': 'res.partner',
+            },
+            'domain': {
+                'name': 'domain',
+                'description': 'Search Domain',
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            '$ref': '#/components/schemas/Domain',
+                        }
+                    }
+                },
+                'example': ['|', ('is_company', '=', True), ('parent_id', '=', False)],
+            },
+            'count': {
+                'name': 'count',
+                'description': 'Count',
+                'schema': {
+                    'type': 'boolean'
+                },
+            },
+            'limit': {
+                'name': 'limit',
+                'description': 'Limit',
+                'schema': {
+                    'type': 'integer'
+                },
+            },
+            'offset': {
+                'name': 'offset',
+                'description': 'Offset',
+                'schema': {
+                    'type': 'integer'
+                },
+            },
+            'order': {
+                'name': 'order',
+                'description': 'Order',
+                'schema': {
+                    'type': 'string'
+                },
+            },
+        },
+        responses={
+            '200': {
+                'description': 'Records IDs', 
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            '$ref': '#/components/schemas/RecordIDs'
+                        },
+                        'example': [1, 2, 3]
+                    }
+                }
+            }
+        },
+        default_responses=['400', '401', '500'],
+    )
+    @tools.http.rest_route(
+        routes=build_route([
+            '/search',
+            '/search/<string:model>',
+            '/search/<string:model>/<string:order>',
+            '/search/<string:model>/<int:limit>/<string:order>',
+            '/search/<string:model>/<int:limit>/<int:offset>/<string:order>'
+        ]), 
+        methods=['GET'],
+        protected=True,
+    )
+    def search(self, model, domain=None, count=False, limit=80, offset=0, order=None, **kw):
+        domain = tools.common.parse_domain(domain)
         count = count and misc.str2bool(count) or None
         limit = limit and int(limit) or None
         offset = offset and int(offset) or None
-        model = request.env[model].with_context(ctx)
+        model = request.env[model].with_context(prefetch_fields=False)
         result = model.search(domain, offset=offset, limit=limit, order=order, count=count)
         if not count:
-            result = result.ids
-        content = json.dumps(result, sort_keys=True, indent=4, cls=ResponseEncoder)
-        return Response(content, content_type='application/json;charset=utf-8', status=200)
-    
-    @http.route([
-        '/api/name',
-        '/api/name/<string:model>',
-    ], auth="none", type='http', methods=['GET'], csrf=False)
-    @tools.common.parse_exception
-    @tools.common.ensure_database
-    @tools.common.ensure_module()
-    @tools.security.protected()
-    def name(self, model, ids, context=None, **kw):
-        ctx = request.session.context.copy()
-        ctx.update(context and parse_value(context) or {})
-        ids = ids and parse_value(ids) or []
-        records = request.env[model].with_context(ctx).browse(ids)
-        result = records.name_get()
-        content = json.dumps(result, sort_keys=True, indent=4, cls=ResponseEncoder)
-        return Response(content, content_type='application/json;charset=utf-8', status=200)
-    
-    @http.route([
-        '/api/read',
-        '/api/read/<string:model>',
-    ], auth="none", type='http', methods=['GET'], csrf=False)
-    @tools.common.parse_exception
-    @tools.common.ensure_database
-    @tools.common.ensure_module()
-    @tools.security.protected()
-    def read(self, model, ids, fields=None, context=None, **kw):
-        ctx = request.session.context.copy()
-        ctx.update(context and parse_value(context) or {})
-        ids = ids and parse_value(ids) or []
-        fields = fields and parse_value(fields) or None
-        records = request.env[model].with_context(ctx).browse(ids)
-        result = records.read(fields=fields)
-        content = json.dumps(result, sort_keys=True, indent=4, cls=ResponseEncoder)
-        return Response(content, content_type='application/json;charset=utf-8', status=200)
+            return make_json_response(result.ids)
+        return make_json_response(result)
+            
+    @api_doc(
+        tags=['Model'], 
+        summary='Names', 
+        description='Get the record names.',
+        parameter={
+            'model': {
+                'name': 'model',
+                'description': 'Model',
+                'required': True,
+                'schema': {
+                    'type': 'string'
+                },
+                'example': 'res.partner',
+            },
+            'ids': {
+                'name': 'ids',
+                'description': 'Record IDs',
+                'required': True,
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            '$ref': '#/components/schemas/RecordIDs'
+                        }
+                    }
+                },
+                'example': [1, 2, 3],
+            },
+        },
+        responses={
+            '200': {
+                'description': 'List of ID and Name Tupels', 
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            '$ref': '#/components/schemas/RecordTupels'
+                        },
+                        'example': [[1, 'YourCompany']]
+                    }
+                }
+            }
+        },
+        default_responses=['400', '401', '500'],
+    )
+    @tools.http.rest_route(
+        routes=build_route([
+            '/name',
+            '/name/<string:model>',
+        ]), 
+        methods=['GET'],
+        protected=True,
+    )
+    def name(self, model, ids, **kw):
+        return make_json_response(request.env[model].browse(
+            tools.common.parse_ids(ids)
+        ).name_get())
 
-    @http.route([
-        '/api/search_read',
-        '/api/search_read/<string:model>',
-        '/api/search_read/<string:model>/<string:order>',
-        '/api/search_read/<string:model>/<int:limit>/<string:order>',
-        '/api/search_read/<string:model>/<int:limit>/<int:offset>/<string:order>'
-    ], auth="none", type='http', methods=['GET'],  csrf=False)
-    @tools.common.parse_exception
-    @tools.common.ensure_database
-    @tools.common.ensure_module()
-    @tools.security.protected()
-    def search_read(self, model, domain=None, fields=None, context=None, limit=80, offset=0, order=None, **kw):
-        ctx = request.session.context.copy()
-        ctx.update(context and parse_value(context) or {})
-        domain = domain and parse_value(domain) or []
-        fields = fields and parse_value(fields) or None
+    @api_doc(
+        tags=['Model'], 
+        summary='Read', 
+        description='Read the given records.',
+        parameter={
+            'model': {
+                'name': 'model',
+                'description': 'Model',
+                'required': True,
+                'schema': {
+                    'type': 'string'
+                },
+                'example': 'res.partner',
+            },
+            'ids': {
+                'name': 'ids',
+                'description': 'Record IDs',
+                'required': True,
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            '$ref': '#/components/schemas/RecordIDs'
+                        }
+                    }
+                },
+                'example': [1, 2, 3],
+            },
+            'fields': {
+                'name': 'fields',
+                'description': 'Fields',
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            '$ref': '#/components/schemas/RecordFields',
+                        }
+                    }
+                },
+                'example': ['name'],
+            },
+        },
+        responses={
+            '200': {
+                'description': 'List of ID and name tupels', 
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            '$ref': '#/components/schemas/RecordData'
+                        },
+                        'example': [{
+                            'active': True,
+                            'id': 14,
+                            'name': 'Azure Interior'
+                        }]
+                    }
+                }
+            }
+        },
+        default_responses=['400', '401', '500'],
+    )
+    @tools.http.rest_route(
+        routes=build_route([
+            '/read',
+            '/read/<string:model>',
+        ]), 
+        methods=['GET'],
+        protected=True,
+    )
+    def read(self, model, ids, fields=None, **kw):
+        return make_json_response(request.env[model].browse(
+            tools.common.parse_ids(ids)
+        ).read(tools.common.parse_value(fields)))
+
+    @api_doc(
+        tags=['Model'], 
+        summary='Search Read', 
+        description='Search for matching records',
+        parameter={
+            'model': {
+                'name': 'model',
+                'description': 'Model',
+                'required': True,
+                'schema': {
+                    'type': 'string'
+                },
+                'example': 'res.partner',
+            },
+            'domain': {
+                'name': 'domain',
+                'description': 'Search Domain',
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            '$ref': '#/components/schemas/Domain',
+                        }
+                    }
+                },
+                'example': ['|', ('is_company', '=', True), ('parent_id', '=', False)],
+            },
+            'fields': {
+                'name': 'fields',
+                'description': 'Fields',
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            '$ref': '#/components/schemas/RecordFields',
+                        }
+                    }
+                },
+                'example': ['name'],
+            },
+            'limit': {
+                'name': 'limit',
+                'description': 'Limit',
+                'schema': {
+                    'type': 'integer'
+                },
+            },
+            'offset': {
+                'name': 'offset',
+                'description': 'Offset',
+                'schema': {
+                    'type': 'integer'
+                },
+            },
+            'order': {
+                'name': 'order',
+                'description': 'Order',
+                'schema': {
+                    'type': 'string'
+                },
+            },
+        },
+        responses={
+            '200': {
+                'description': 'Records', 
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            '$ref': '#/components/schemas/RecordData'
+                        },
+                        'example': [{
+                            'active': True,
+                            'id': 14,
+                            'name': 'Azure Interior'
+                        }]
+                    }
+                }
+            }
+        },
+        default_responses=['400', '401', '500'],
+    )
+    @tools.http.rest_route(
+        routes=build_route([
+            '/search_read',
+            '/search_read/<string:model>',
+            '/search_read/<string:model>/<string:order>',
+            '/search_read/<string:model>/<int:limit>/<string:order>',
+            '/search_read/<string:model>/<int:limit>/<int:offset>/<string:order>'
+        ]), 
+        methods=['GET'],
+        protected=True,
+    )
+    def search_read(self, model, domain=None, fields=None, limit=80, offset=0, order=None, **kw):
+        domain = tools.common.parse_domain(domain)
+        fields = tools.common.parse_value(fields)
         limit = limit and int(limit) or None
         offset = offset and int(offset) or None
-        model = request.env[model].with_context(ctx)
-        result = model.search_read(domain, fields=fields, offset=offset, limit=limit, order=order)
-        content = json.dumps(result, sort_keys=True, indent=4, cls=ResponseEncoder)
-        return Response(content, content_type='application/json;charset=utf-8', status=200)
-    
-    @http.route([
-        '/api/read_group',
-        '/api/read_group/<string:model>',
-        '/api/read_group/<string:model>/<string:orderby>',
-        '/api/read_group/<string:model>/<int:limit>/<string:orderby>',
-        '/api/read_group/<string:model>/<int:limit>/<int:offset>/<string:orderby>'
-    ], auth="none", type='http', methods=['GET'],  csrf=False)
-    @tools.common.parse_exception
-    @tools.common.ensure_database
-    @tools.common.ensure_module()
-    @tools.security.protected()
-    def read_group(self, model, domain, fields, groupby, context=None, offset=0, limit=None, orderby=False, lazy=True, **kw):
-        ctx = request.session.context.copy()
-        ctx.update(context and parse_value(context) or {})
-        domain = domain and parse_value(domain) or []
-        fields = fields and parse_value(fields) or []
-        groupby = groupby and parse_value(groupby) or []
+        return make_json_response(request.env[model].search_read(
+            domain, fields=fields, offset=offset, limit=limit, order=order
+        ))
+
+    @api_doc(
+        tags=['Model'], 
+        summary='Read Group', 
+        description='Search for matching records',
+        parameter={
+            'model': {
+                'name': 'model',
+                'description': 'Model',
+                'required': True,
+                'schema': {
+                    'type': 'string'
+                },
+                'example': 'res.partner',
+            },
+            'domain': {
+                'name': 'domain',
+                'required': True,
+                'description': 'Search Domain',
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            '$ref': '#/components/schemas/Domain',
+                        }
+                    }
+                },
+                'example': ['|', ('is_company', '=', True), ('parent_id', '=', False)],
+            },
+            'fields': {
+                'name': 'fields',
+                'description': 'Fields',
+                'required': True,
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            '$ref': '#/components/schemas/RecordFields',
+                        }
+                    }
+                },
+                'example': ['name', 'parent_id'],
+            },
+            'groupby': {
+                'name': 'groupby',
+                'description': 'GroupBy',
+                'required': True,
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            'type': 'array',
+                            'items': {
+                                'type': 'string',
+                            }
+                        }
+                    }
+                },
+                'example': ['parent_id'],
+            },
+            'limit': {
+                'name': 'limit',
+                'description': 'Limit',
+                'schema': {
+                    'type': 'integer'
+                },
+            },
+            'offset': {
+                'name': 'offset',
+                'description': 'Offset',
+                'schema': {
+                    'type': 'integer'
+                },
+            },
+            'orderby': {
+                'name': 'orderby',
+                'description': 'Order',
+                'schema': {
+                    'type': 'string'
+                },
+            },
+            'lazy': {
+                'name': 'lazy',
+                'description': 'Lazy Loading',
+                'schema': {
+                    'type': 'boolean'
+                },
+            },
+        },
+        responses={
+            '200': {
+                'description': 'Records', 
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            '$ref': '#/components/schemas/ReadGroupResult',
+                        },
+                        'example': [{
+                            '__domain': [
+                                '&', ['parent_id', '=', False],
+                                '|', ['is_company', '=', True],
+                                ['parent_id', '=', False]
+                            ],
+                            'parent_id': False,
+                            'parent_id_count': 12
+                        }]
+                    }
+                }
+            }
+        },
+        default_responses=['400', '401', '500'],
+    )
+    @tools.http.rest_route(
+        routes=build_route([
+            '/read_group',
+            '/read_group/<string:model>',
+            '/read_group/<string:model>/<string:orderby>',
+            '/read_group/<string:model>/<int:limit>/<string:orderby>',
+            '/read_group/<string:model>/<int:limit>/<int:offset>/<string:orderby>'
+        ]), 
+        methods=['GET'],
+        protected=True,
+    )
+    def read_group(self, model, domain, fields, groupby, offset=0, limit=None, orderby=False, lazy=True, **kw):
+        domain = tools.common.parse_domain(domain)
+        fields = tools.common.parse_value(fields)
+        groupby = tools.common.parse_value(groupby, [])
         limit = limit and int(limit) or None
         offset = offset and int(offset) or None
         lazy = misc.str2bool(lazy)
-        model = request.env[model].with_context(ctx)
-        result = model.read_group(domain, fields, groupby, offset=offset, limit=limit, orderby=orderby, lazy=lazy)
-        content = json.dumps(result, sort_keys=True, indent=4, cls=ResponseEncoder)
-        return Response(content, content_type='application/json;charset=utf-8', status=200)
-    
+        return make_json_response(request.env[model].read_group(
+            domain, fields, groupby=groupby, offset=offset, 
+            limit=limit, orderby=orderby, lazy=lazy
+        ))
+     
     #----------------------------------------------------------
     # Create / Update / Delete
     #----------------------------------------------------------
     
-    @http.route([
-        '/api/create',
-        '/api/create/<string:model>',
-    ], auth="none", type='http', methods=['POST'], csrf=False)
-    @tools.common.parse_exception
-    @tools.common.ensure_database
-    @tools.common.ensure_module()
-    @tools.security.protected(operations=['create'])
-    def create(self, model, values=None, context=None, **kw):
-        ctx = request.session.context.copy()
-        ctx.update(context and parse_value(context) or {})
-        values = values and parse_value(values) or {}
-        model = request.env[model].with_context(ctx)
-        result = model.create(values).ids
-        content = json.dumps(result, sort_keys=True, indent=4, cls=ResponseEncoder)
-        return Response(content, content_type='application/json;charset=utf-8', status=200)
-    
-    @http.route([
-        '/api/write',
-        '/api/write/<string:model>',
-    ], auth="none", type='http', methods=['PUT'], csrf=False)
-    @tools.common.parse_exception
-    @tools.common.ensure_database
-    @tools.common.ensure_module()
-    @tools.security.protected(operations=['write'])
-    def write(self, model, ids=None, values=None, context=None, **kw):
-        ctx = request.session.context.copy()
-        ctx.update(context and parse_value(context) or {})
-        ids = ids and parse_value(ids) or []
-        values = values and parse_value(values) or {}
-        records = request.env[model].with_context(ctx).browse(ids)
-        result = records.write(values)
-        content = json.dumps(result, sort_keys=True, indent=4, cls=ResponseEncoder)
-        return Response(content, content_type='application/json;charset=utf-8', status=200)
-    
-    @http.route([
-        '/api/unlink',
-        '/api/unlink/<string:model>',
-    ], auth="none", type='http', methods=['DELETE'], csrf=False)
-    @tools.common.parse_exception
-    @tools.common.ensure_database
-    @tools.common.ensure_module()
-    @tools.security.protected(operations=['unlink'])
-    def unlink(self, model, ids=None, context=None, **kw):
-        ctx = request.session.context.copy()
-        ctx.update(context and parse_value(context) or {})
-        ids = ids and parse_value(ids) or []
-        records = request.env[model].with_context(ctx).browse(ids)
-        result = records.unlink()
-        content = json.dumps(result, sort_keys=True, indent=4, cls=ResponseEncoder)
-        return Response(content, content_type='application/json;charset=utf-8', status=200)
+    @api_doc(
+        tags=['Model'], 
+        summary='Create', 
+        description='Creates new records.',
+        parameter={
+            'model': {
+                'name': 'model',
+                'description': 'Model',
+                'required': True,
+                'schema': {
+                    'type': 'string'
+                },
+                'example': 'res.partner',
+            },
+            'values': {
+                'name': 'values',
+                'description': 'Values',
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            '$ref': '#/components/schemas/RecordValues'
+                        }
+                    }
+                },
+                'example': {'name': 'New Name'},
+            },
+        },
+        responses={
+            '200': {
+                'description': 'Records IDs', 
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            '$ref': '#/components/schemas/RecordIDs'
+                        },
+                        'example': [1, 2, 3]
+                    }
+                }
+            }
+        },
+        default_responses=['400', '401', '500'],
+    )
+    @tools.http.rest_route(
+        routes=build_route([
+            '/create',
+            '/create/<string:model>',
+        ]), 
+        methods=['POST'],
+        protected=True,
+    )
+    def create(self, model, values=None, **kw):
+        return make_json_response(request.env[model].create(
+            tools.common.parse_value(values, {})
+        ).ids)
+
+    @api_doc(
+        tags=['Model'], 
+        summary='Write', 
+        description='Update records.',
+        parameter={
+            'model': {
+                'name': 'model',
+                'description': 'Model',
+                'required': True,
+                'schema': {
+                    'type': 'string'
+                },
+                'example': 'res.partner',
+            },
+            'ids': {
+                'name': 'ids',
+                'description': 'Record IDs',
+                'required': True,
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            '$ref': '#/components/schemas/RecordIDs'
+                        }
+                    }
+                },
+                'example': [1, 2, 3],
+            },
+            'values': {
+                'name': 'values',
+                'description': 'Values',
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            '$ref': '#/components/schemas/RecordValues'
+                        }
+                    }
+                },
+                'example': {'name': 'New Name'},
+            },
+        },
+        responses={
+            '200': {
+                'description': 'Records IDs', 
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            '$ref': '#/components/schemas/RecordIDs'
+                        },
+                        'example': [1, 2, 3]
+                    }
+                }
+            }
+        },
+        default_responses=['400', '401', '500'],
+    )
+    @tools.http.rest_route(
+        routes=build_route([
+            '/write',
+            '/write/<string:model>',
+        ]), 
+        methods=['PUT'],
+        protected=True,
+    )
+    def write(self, model, ids=None, values=None, **kw):
+        records = request.env[model].browse(tools.common.parse_ids(ids))
+        records.write(tools.common.parse_value(values, {}))
+        return make_json_response(records.ids)
+
+    @api_doc(
+        tags=['Model'], 
+        summary='Delete', 
+        description='Delete records.',
+        parameter={
+            'model': {
+                'name': 'model',
+                'description': 'Model',
+                'required': True,
+                'schema': {
+                    'type': 'string'
+                },
+                'example': 'res.partner',
+            },
+            'ids': {
+                'name': 'ids',
+                'description': 'Record IDs',
+                'required': True,
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            '$ref': '#/components/schemas/RecordIDs'
+                        }
+                    }
+                },
+                'example': [1, 2, 3],
+            },
+        },
+        responses={
+            '200': {
+                'description': 'Records IDs', 
+                'content': {
+                    'application/json': {
+                        'schema': {
+                            'type': 'boolean'
+                        },
+                    }
+                }
+            }
+        },
+        default_responses=['400', '401', '500'],
+    )
+    @tools.http.rest_route(
+        routes=build_route([
+            '/unlink',
+            '/unlink/<string:model>',
+        ]), 
+        methods=['DELETE'],
+        protected=True,
+    )
+    def unlink(self, model, ids=None, **kw):
+        return make_json_response(request.env[model].browse(
+            tools.common.parse_ids(ids)
+        ).unlink())

@@ -6,10 +6,5 @@
             <field name="description">Send via NemHandel (OIOUBL/eFaktura)</field>
             <field name="edi_provider">nemhandel</field>
         </record>
-        <record id="format_oioubl_kbh_municipality" model="odoo_edi.endpoint">
-            <field name="name">NemHandel - Københavns Kommune</field>
-            <field name="description">Send via NemHandel (OIOUBL/eFaktura) - Denne version indeholder specielle regler der gælder for Københavns kommune</field>
-            <field name="edi_provider">nemhandel</field>
-        </record>
     </data>
 </odoo>

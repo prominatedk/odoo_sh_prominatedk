@@ -1,17 +1,17 @@
 ###################################################################################
 #
-#    Copyright (c) 2017-2019 MuK IT GmbH.
+#    Copyright (c) 2017-today MuK IT GmbH.
 #
-#    This file is part of MuK REST API for Odoo 
+#    This file is part of MuK REST API for Odoo
 #    (see https://mukit.at).
 #
 #    MuK Proprietary License v1.0
 #
-#    This software and associated files (the "Software") may only be used 
+#    This software and associated files (the "Software") may only be used
 #    (executed, modified, executed after modifications) if you have
 #    purchased a valid license from MuK IT GmbH.
 #
-#    The above permissions are granted for a single database per purchased 
+#    The above permissions are granted for a single database per purchased
 #    license. Furthermore, with a valid license it is permitted to use the
 #    software on other databases as long as the usage is limited to a testing
 #    or development environment.
@@ -20,7 +20,7 @@
 #    as a library (typically by depending on it, importing it and using its
 #    resources), but without copying any source code or material from the
 #    Software. You may distribute those modules under the license of your
-#    choice, provided that this license is compatible with the terms of the 
+#    choice, provided that this license is compatible with the terms of the
 #    MuK Proprietary License (For example: LGPL, MIT, or proprietary licenses
 #    similar to this one).
 #
@@ -40,9 +40,11 @@
 #
 ###################################################################################
 
+
 import logging
 
 from odoo import _, models, api, fields, SUPERUSER_ID
+from odoo.addons.muk_rest.tools import common 
 
 _logger = logging.getLogger(__name__)
 
@@ -50,49 +52,103 @@ class AuthorizationCode(models.Model):
     
     _name = 'muk_rest.authorization_code'
     _description = "OAuth2 Authorization Code"
+    _auto = False
+    
+    #----------------------------------------------------------
+    # Setup Database
+    #----------------------------------------------------------
+    
+    def init(self):
+        self.env.cr.execute("""
+            CREATE TABLE IF NOT EXISTS {table} (
+                id SERIAL PRIMARY KEY,
+                state VARCHAR,
+                callback VARCHAR,
+                code VARCHAR NOT NULL,
+                index VARCHAR({index_size}) NOT NULL CHECK (char_length(index) = {index_size}),
+                oauth_id INTEGER NOT NULL REFERENCES muk_rest_oauth2(id),
+                user_id INTEGER NOT NULL REFERENCES res_users(id),
+                create_date TIMESTAMP WITHOUT TIME ZONE DEFAULT (now() at time zone 'UTC')
+            );
+            CREATE INDEX IF NOT EXISTS {table}_index_idx ON {table} (index);
+        """.format(table=self._table, index_size=common.TOKEN_INDEX))
 
     #----------------------------------------------------------
     # Database
     #----------------------------------------------------------
-
-    code = fields.Char(
-        string="Code",
-        required=True,
-        readonly=True)
     
-    state = fields.Char(
-        string="State",
-        readonly=True)
+    create_date = fields.Datetime(
+        string="Creation Date", 
+        readonly=True
+    )
 
     callback = fields.Char(
         string="Callback",
-        readonly=True)
+        readonly=True
+    )
     
-    user = fields.Many2one(
+    user_id = fields.Many2one(
         comodel_name='res.users',
+        ondelete='cascade',
         string="User",
         readonly=True,
-        ondelete='cascade')
+    )
     
-    oauth = fields.Many2one(
+    oauth_id = fields.Many2one(
         comodel_name='muk_rest.oauth2',
+        ondelete='cascade',
         string="Configuration",
         required=True, 
         readonly=True,
-        ondelete='cascade')
+    )
     
     #----------------------------------------------------------
-    # Read
+    # Helper
     #----------------------------------------------------------
     
-    def _read_from_database(self, field_names, inherited_field_names=[]):
-        super(AuthorizationCode, self)._read_from_database(field_names, inherited_field_names)
-        protected_fields = ['code', 'state']
-        if self.env.uid != SUPERUSER_ID and set(protected_fields).intersection(field_names):
-            for record in self:
-                for field in protected_fields:
-                    try:
-                        record._cache[field]
-                        record._cache[field] = '****************'
-                    except:
-                        pass
+    @api.model
+    def _check_code(self, code, state=None):
+        if not code:
+            return False
+        self.env.cr.execute(
+            "SELECT id, code FROM {table} WHERE index = %s {where_state}".format(
+                table=self._table, where_state=(state and 'AND (state IS NULL OR state = %s)' or '')
+            ), 
+            [code[:common.TOKEN_INDEX]], state
+        )
+        for code_id, code_hash in self.env.cr.fetchall():
+            if common.KEY_CRYPT_CONTEXT.verify(code, code_hash):
+                return self.browse([code_id])
+        return False
+
+    @api.model
+    def _save_authorization_code(self, values):
+        fields = ['oauth_id', 'user_id', 'callback', 'index', 'code']
+        insert = [
+            values['oauth_id'], 
+            values['user_id'], 
+            values['callback'],
+            values['code'][:common.TOKEN_INDEX], 
+            common.hash_token(values['code'])
+        ]
+        if values.get('state', False):
+            fields.append('state')
+            insert.append(values['state'])
+        self.env.cr.execute("""
+            INSERT INTO {table} ({fields})
+            VALUES ({values})
+            RETURNING id
+        """.format(
+            table=self._table, 
+            fields=', '.join(fields), 
+            values=', '.join(['%s' for _ in range(len(fields))])
+        ), insert)
+    
+    #----------------------------------------------------------
+    # Autovacuum
+    #----------------------------------------------------------
+    
+    @api.autovacuum
+    def _autovacuum_code(self):
+        limit_date = fields.Datetime.subtract(fields.Datetime.now(), days=7)
+        self.search([('create_date', '<', limit_date)]).unlink()

@@ -1,17 +1,17 @@
 ###################################################################################
 #
-#    Copyright (c) 2017-2019 MuK IT GmbH.
+#    Copyright (c) 2017-today MuK IT GmbH.
 #
-#    This file is part of MuK REST API for Odoo 
+#    This file is part of MuK REST API for Odoo
 #    (see https://mukit.at).
 #
 #    MuK Proprietary License v1.0
 #
-#    This software and associated files (the "Software") may only be used 
+#    This software and associated files (the "Software") may only be used
 #    (executed, modified, executed after modifications) if you have
 #    purchased a valid license from MuK IT GmbH.
 #
-#    The above permissions are granted for a single database per purchased 
+#    The above permissions are granted for a single database per purchased
 #    license. Furthermore, with a valid license it is permitted to use the
 #    software on other databases as long as the usage is limited to a testing
 #    or development environment.
@@ -20,7 +20,7 @@
 #    as a library (typically by depending on it, importing it and using its
 #    resources), but without copying any source code or material from the
 #    Software. You may distribute those modules under the license of your
-#    choice, provided that this license is compatible with the terms of the 
+#    choice, provided that this license is compatible with the terms of the
 #    MuK Proprietary License (For example: LGPL, MIT, or proprietary licenses
 #    similar to this one).
 #
@@ -40,123 +40,141 @@
 #
 ###################################################################################
 
+
+import re
 import ast
 import json
-import importlib
-import logging
+import random
+import passlib
 import functools
 import traceback
 
-from werkzeug.exceptions import HTTPException
+from string import ascii_letters, digits
 
-from odoo import _, http, api, SUPERUSER_ID
-from odoo.tools import ustr, mail, config
-from odoo.exceptions import UserError, AccessError, MissingError, ValidationError
+from odoo import conf, tools, registry, modules, api, SUPERUSER_ID
+from odoo.addons.muk_rest import exceptions
 
-from odoo.addons.muk_rest import exceptions, tools
-from odoo.addons.muk_utils.tools.json import RecordEncoder
+VERSION = '1'
+BASE_URL = '/api/v{}'.format(VERSION)
 
-_logger = logging.getLogger(__name__)
+CONTENT_TYPE_HEADER = 'Content-Type'
+JSON_CONTENT_TYPE = 'application/json'
 
-#----------------------------------------------------------
-# Functions
-#----------------------------------------------------------
+TOKEN_INDEX = 10
+KEY_CRYPT_CONTEXT = passlib.context.CryptContext(
+    ['pbkdf2_sha512'], pbkdf2_sha512__rounds=6000,
+)
 
-def parse_value(value):
+GRANT_RESPONSE_MAP = {
+    'authorization_code': ['code'],
+    'implicit': ['token'],
+}
+
+UNICODE_ASCII_CHARACTERS = ascii_letters + digits
+
+SAFE_URL_CHARS = set(
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 
+    'abcdefghijklmnopqrstuvwxyz'
+    '0123456789' '_.-' 
+    '=&;:%+~,*@!()/?'
+)
+
+INVALID_HEX_PATTERN = re.compile(
+    r'%[^0-9A-Fa-f]|%[0-9A-Fa-f][^0-9A-Fa-f]'
+)
+
+DBNAME_PATTERN = '^[a-zA-Z0-9][a-zA-Z0-9_.-]+$'
+
+DOCS_SECURITY_GROUP = tools.config.get(
+    'rest_docs_security_group', False
+)
+DOCS_CODEGEN_URL = tools.config.get(
+    'rest_docs_codegen_url', 
+    'https://generator3.swagger.io/api'
+)
+
+ACTIVE_BASIC_AUTHENTICATION = tools.config.get(
+    'rest_authentication_basic', True
+)
+ACTIVE_OAUTH1_AUTHENTICATION = tools.config.get(
+    'rest_authentication_oauth1', True
+)
+ACTIVE_OAUTH2_AUTHENTICATION = tools.config.get(
+    'rest_authentication_oauth2', True
+)
+
+try:
+    import oauthlib
+except ImportError:
+    ACTIVE_OAUTH1_AUTHENTICATION = False
+    ACTIVE_OAUTH2_AUTHENTICATION = False
+    
+
+def monkey_patch(cls):
+    def decorate(func):
+        name = func.__name__
+        func.super = getattr(cls, name, None)
+        setattr(cls, name, func)
+        return func
+    return decorate
+
+
+def parse_value(value, default=None, raise_exception=False):
+    if not value:
+        return default
+    exception = None
     try:
-        return json.loads(value)
-    except json.decoder.JSONDecodeError:
-        return ast.literal_eval(value)
-
-#----------------------------------------------------------
-# Decorators
-#----------------------------------------------------------
-
-def parse_exception(func):
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
         try:
-            response = func(*args, **kwargs)
-            if isinstance(response, HTTPException):
-                error = {'code': response.code, 'description': response.description}
-                content = json.dumps(error, sort_keys=True, indent=4, cls=RecordEncoder)
-                return http.Response(content, content_type='application/json;charset=utf-8', status=error.get('code', 500))
-            return response
-        except Exception as exc:
-            _logger.exception("Restful API Error")
-            modul = type(exc).__module__
-            name = type(exc).__name__
-            error = {
-                "name": "%s.%s" % (modul, name) if modul else name,
-                "message": ustr(exc),
-                "arguments": exc.args,
-                "exception_type": "error",
-            }
-            if config.get('rest_debug'):
-                error["debug"] = traceback.format_exc()
-            if isinstance(exc, HTTPException):
-                error.update({'code': exc.code, 'description': exc.description})
-            else:
-                error.update({'code': 500, 'description': "Restful API Error"})
-            if isinstance(exc, UserError):
-                error["exception_type"] = "user_error"
-            elif isinstance(exc, AccessError):
-                error["exception_type"] = "access_error"
-            elif isinstance(exc, MissingError):
-                error["exception_type"] = "missing_error"
-            elif isinstance(exc, ValidationError):
-                error["exception_type"] = "validation_error"
-            elif isinstance(exc, exceptions.common.NoDatabaseFound):
-                error["exception_type"] = "database_error"
-            elif isinstance(exc, exceptions.common.ModuleNotInstalled):
-                error["exception_type"] = "module_error"
-            elif isinstance(exc, exceptions.common.LibraryNotInstalled):
-                error["exception_type"] = "library_error"
-            content = json.dumps(error, indent=4, cls=RecordEncoder)
-            return http.Response(content, content_type='application/json;charset=utf-8', status=error.get('code', 500))
-    return wrapper
+            return json.loads(value)
+        except json.decoder.JSONDecodeError as exc:
+            if isinstance(value, str):
+                value = value.replace('true', 'True')
+                value = value.replace('false', 'False')
+                value = value.replace('null', 'None')
+            exception = exc
+            return ast.literal_eval(value)
+    except Exception as exc:
+        if raise_exception:
+            raise (exception or exc)
+        return default
 
-def ensure_database(func):
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        params = http.request.params
-        session = http.request.session
-        database = params.get('db') and params.get('db').strip()
-        if database and database not in http.db_filter([database]):
-            database = None
-        if not database and session.db and http.db_filter([session.db]):
-            database = session.db
-        if not database:
-            database = http.db_monodb(http.request.httprequest)
-        if not database:
-            return exceptions.common.NoDatabaseFound()
-        if database != session.db:
-            session.logout()
-        session.db = database
-        return func(*args, **kwargs)
-    return wrapper
 
-def ensure_module(module='muk_rest', error=_("The Restful API is not supported by this database.")):
-    def decorator(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            states = ['installed', 'to install', 'to upgrade']
-            env = api.Environment(http.request.cr, SUPERUSER_ID, {})
-            record = env['ir.module.module'].search([('name', '=', module)], limit=1)
-            if not record.exists() and record.state in states:
-                return exceptions.common.ModuleNotInstalled(error)
-            return func(*args, **kwargs)
-        return wrapper
-    return decorator
+def parse_ids(ids):
+    if isinstance(ids, int):
+        return [ids]
+    values = parse_value(ids, [])
+    if isinstance(values, int):
+        return [values]
+    return list(map(lambda i: int(i), values))
 
-def ensure_import(library='oauthlib', error=_("Authentication via OAuth is not supported!")):
-    def decorator(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            try:
-                module = importlib.import_module(library)
-            except ImportError:
-                return exceptions.common.LibraryNotInstalled(error)
-            return func(*args, **kwargs)
-        return wrapper
-    return decorator
+
+def parse_domain(domain):
+    domain = parse_value(domain, [])
+    parsed_domain = []
+    for item in domain:
+        if isinstance(item, str) and item not in ['&', '|', '!']:
+            item = parse_value(re.sub(r'^.*?List\s?', '', item), [])
+        parsed_domain.append(item)
+    return parsed_domain
+
+def parse_exception(exc):
+    modul = type(exc).__module__
+    name = type(exc).__name__
+    error = {
+        'name': '%s.%s' % (modul, name) if modul else name,
+        'message': getattr(exc, 'description', tools.ustr(exc)),
+        'arguments': getattr(exc, 'args', None),
+        'context': getattr(exc, 'context', {}),
+        'code': getattr(exc, 'code', 500),
+    }
+    if tools.config.get('rest_debug', True):
+        trace_text = ''.join(traceback.format_tb(exc.__traceback__))
+        error['traceback'] = trace_text.splitlines()
+    return error
+
+
+def generate_token(length=40, chars=UNICODE_ASCII_CHARACTERS):
+    return ''.join(random.SystemRandom().choice(chars) for index in range(length))
+
+
+hash_token = getattr(KEY_CRYPT_CONTEXT, 'hash', None) or KEY_CRYPT_CONTEXT.encrypt

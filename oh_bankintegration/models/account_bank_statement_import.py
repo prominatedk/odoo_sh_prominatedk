@@ -12,17 +12,24 @@ class AccountBankStatementImport(models.TransientModel):
     def bankintegration_import_statements(self, bank_statement, is_scheduler=False):
         errors = []
         statement_ids = []
-        # Validate that the data from bankintegration was correctly transformed before we attempt to load it
-        self._check_parsed_data(bank_statement['statement'])
+        # Validate that the data from bankintegration was correctly transformed
+        # before we attempt to load it
+        self._check_parsed_data(
+            bank_statement['statement'], bank_statement['account'])
         # Find currency and journal in Odoo
-        sanitized_account_number = sanitize_account_number(bank_statement['account'])
-        currency_id = self.env['res.currency'].search([('name', '=ilike', bank_statement['currency'])], limit=1)
-        journal_id = self.env['account.journal'].search([('bank_account_id.bankintegration_acc_number', '=', sanitized_account_number)])
+        sanitized_account_number = sanitize_account_number(
+            bank_statement['account'])
+        currency_id = self.env['res.currency'].search(
+            [('name', '=ilike', bank_statement['currency'])], limit=1)
+        journal_id = self.env['account.journal'].search(
+            [('bank_account_id.bankintegration_acc_number', '=', sanitized_account_number)])
         if not journal_id:
-            journal_id = self.env['account.journal'].search([('bank_account_id.sanitized_acc_number', '=', sanitized_account_number)])
+            journal_id = self.env['account.journal'].search(
+                [('bank_account_id.sanitized_acc_number', '=', sanitized_account_number)])
         # If either one is missing, then we cannot proceed
         if not journal_id:
-            errors.append(_('A journal with bank account %s, could not be found' % bank_statement['account']))
+            errors.append(
+                _('A journal with bank account %s, could not be found' % bank_statement['account']))
         if journal_id:
             if not currency_id:
                 currency_id = journal_id.currency_id
@@ -33,15 +40,17 @@ class AccountBankStatementImport(models.TransientModel):
                 raise ValidationError("\n".join(errors))
         if journal_id.currency_id:
             if currency_id.id != journal_id.currency_id.id:
-                error = _('The currency of the bank statement (%s) is not the same as the currency of the journal (%s).') % (currency_id.name, journal_id.currency_id.name)
+                error = _('The currency of the bank statement (%s) is not the same as the currency of the journal (%s).') % (
+                    currency_id.name, journal_id.currency_id.name)
                 if is_scheduler:
                     _logger.error(error)
                     errors.append(error)
                     return statement_ids, errors
                 else:
                     raise UserError(error)
-        if not journal_id.default_debit_account_id or not journal_id.default_credit_account_id:
-            error = _('You have to set a Default Debit Account and a Default Credit Account for the journal: %s') % (journal_id.name,)
+        if not journal_id.payment_debit_account_id or not journal_id.payment_credit_account_id:
+            error = _('You have to set a Default Debit Account and a Default Credit Account for the journal: %s') % (
+                journal_id.name,)
             if is_scheduler:
                 _logger.error(error)
                 errors.append(error)
@@ -49,22 +58,23 @@ class AccountBankStatementImport(models.TransientModel):
             else:
                 raise UserError(error)
         # Prepare statement data to be used for bank statements creation
-        bank_statement = self._complete_stmts_vals(bank_statement['statement'], journal_id, bank_statement['account'])
+        bank_statement = self._complete_stmts_vals(
+            bank_statement['statement'], journal_id, bank_statement['account'])
         # Create the bank statements
-        statement_ids, notifications = self._create_bank_statements(bank_statement)
-        # Finally dispatch to reconciliation interface if method was executed from the UI
+        statement_ids, statement_line_ids, notifications = self._create_bank_statements(
+            bank_statement)
+        # Finally dispatch to reconciliation interface if method was executed
+        # from the UI
+        statements = self.env['account.bank.statement'].browse(statement_ids)
         if is_scheduler:
             return statement_ids, errors
-        else:
-            action = self.env.ref('account.action_bank_reconcile_bank_statements')
+        # Dispatch to reconciliation interface if all statements are posted.
+        elif all(s.state == 'posted' for s in statements):
             return {
-                'name': action.name,
-                'tag': action.tag,
-                'context': {
-                    'statement_ids': statement_ids,
-                    'notifications': notifications
-                },
                 'type': 'ir.actions.client',
+                'tag': 'bank_statement_reconciliation_view',
+                'context': {'statement_line_ids': statement_line_ids,
+                            'company_ids': self.env.user.company_ids.ids,
+                            'notifications': notifications,
+                },
             }
-        
-

@@ -1,12 +1,11 @@
+from odoo import models, fields, api, _
+from odoo.exceptions import ValidationError
 import json
 import requests
-import operator
 import logging
 
 _logger = logging.getLogger(__name__)
 
-from odoo import models, fields, api, _
-from odoo.exceptions import ValidationError
 
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
@@ -14,25 +13,23 @@ class SaleOrder(models.Model):
     integration_code = fields.Char()
     api_order = fields.Boolean()
 
-
     @api.model
     def message_new(self, msg, custom_values=None):
-        company = self.env['res.company'].browse(custom_values.get('company_id')) if custom_values and custom_values.get('company_id') else False
+        company = self.env['res.company'].browse(
+            custom_values.get('company_id')) if custom_values and custom_values.get('company_id') else False
         json_file = msg.get('attachments')
-        _logger.info('JSON FILE: %s', json_file)
         if not json_file:
-            self.env['integration.error.log'].create({'msg': _("Error! No JSON file attached to mail"), 'action': 'odoo_support'})
+            self.env['integration.error.log'].create(
+                {'msg': _("Error! No JSON file attached to mail"), 'action': 'odoo_support'})
             _logger.error("Error! No JSON file attached to mail")
             raise ValidationError(_("Error! No JSON file attached to mail"))
         vals = self._parse_json(json_file[0], company)
 
         return super(SaleOrder, self).message_new(msg, custom_values=vals)
-        
 
     def _parse_json(self, json_file, company):
         vals = {}
         try:
-            _logger.info(json_file.content)
             data = json.loads(json_file.content)
             self.validate_data(data)
             partners = self._get_partner_data(data)
@@ -57,19 +54,23 @@ class SaleOrder(models.Model):
 
             return vals
         except KeyError as err:
-            self.env['integration.error.log'].create({'msg': _("Error! JSON file did not include expected data\n\n%s") % err, 'action': 'odoo_support'})
+            self.env['integration.error.log'].create(
+                {'msg': _("Error! JSON file did not include expected data\n\n%s") % err, 'action': 'odoo_support'})
             raise
         except TypeError as err:
-            self.env['integration.error.log'].create({'msg': _("Error! Could not parse data in JSON file\n\n%s") % err, 'action': 'odoo_support'})
+            self.env['integration.error.log'].create(
+                {'msg': _("Error! Could not parse data in JSON file\n\n%s") % err, 'action': 'odoo_support'})
             raise
         except json.JSONDecodeError as err:
-            self.env['integration.error.log'].create({'msg': _("Error! Could not decode JSON file\n\n%s") % err, 'action': 'odoo_support'})
+            self.env['integration.error.log'].create(
+                {'msg': _("Error! Could not decode JSON file\n\n%s") % err, 'action': 'odoo_support'})
             _logger.error("Error! Could not decode JSON file")
             raise
-        except ValidationError as err: # ValidationErrors should be handled for each case
+        except ValidationError as err:  # ValidationErrors should be handled for each case
             raise
         except Exception as err:
-            self.env['integration.error.log'].create({'msg': _("Error! Undefined error!\n\n%s") % err, 'action': 'odoo_support'})
+            self.env['integration.error.log'].create(
+                {'msg': _("Error! Undefined error!\n\n%s") % err, 'action': 'odoo_support'})
             raise
 
     # Prominate wants the shipping info logged as a note in the activity log
@@ -112,17 +113,17 @@ class SaleOrder(models.Model):
                    data['postcode'], data['city'], data['country_code'],
                    data['phone_number'], data['vatid'], data['organization'])
 
-
     def validate_data(self, data):
         if not data.get('order_number'):
-            self.env['integration.error.log'].create({'msg': _("Error! No order number in JSON data"), 'action': 'link_support'})
+            self.env['integration.error.log'].create(
+                {'msg': _("Error! No order number in JSON data"), 'action': 'link_support'})
             raise ValidationError(_("Error! No order number in JSON data"))
         cur = self.env['res.currency'].search([('name', '=', data['currency_code'])])
         if not cur:
-            self.env['integration.error.log'].create({'msg': _("Error! Could not read currency code in JSON data"), 'action': 'odoo_support'})
+            self.env['integration.error.log'].create(
+                {'msg': _("Error! Could not read currency code in JSON data"), 'action': 'odoo_support'})
             raise ValidationError(_("Error! Could not read currency code in JSON data"))
 
-            
     def _get_partner_data(self, data):
         partners = {}
         info = data['customer']
@@ -132,26 +133,28 @@ class SaleOrder(models.Model):
         if existing_partner:
             partners['partner_id'] = existing_partner
         else:
-            partner_country = self.env['res.country'].search([('code', 'ilike', shipping['country_code'])])
+            partner_country = False
+            if shipping.get('country_code'):
+                partner_country = self.env['res.country'].search([('code', 'ilike', shipping['country_code'])],
+                                                                 limit=1).id
             partners['partner_id'] = self.env['res.partner'].create({
                 'name': info['full_name'],
-                'phone': info['phone_number'],
-                'ref': info['customer_number'],
+                'phone': info.get('phone_number'),
+                'ref': info.get('customer_number'),
                 'email': info['email'],
-                'country_id': partner_country.id,
-                'street': shipping['street'],
-                'street2': shipping['street2'],
-                'zip:': shipping['postcode'],
-                'city': shipping['city']
+                'country_id': partner_country,
+                'street': shipping.get('street'),
+                'street2': shipping.get('street2'),
+                'zip': shipping.get('postcode'),
+                'city': shipping.get('city')
             })
         partners['partner_invoice_id'] = self._get_invoice_address(billing)
-        
-        return partners
-        
-    def _get_invoice_address(self, address):
-        existing_address = self.env['res.partner'].search([('vat', '=', address['vatid'])], limit=1)
-        return existing_address.commercial_partner_id.id if existing_address and existing_address.commercial_partner_id.email else False
 
+        return partners
+
+    def _get_invoice_address(self, address):
+        existing_address = self.env['res.partner'].search([('vat', '=', address.get('vatid'))], limit=1)
+        return existing_address.commercial_partner_id.id if existing_address and existing_address.commercial_partner_id.email else False
 
     def _get_order_items(self, data, partner, company):
         vals = []
@@ -159,46 +162,56 @@ class SaleOrder(models.Model):
             for item in shipment['items']:
                 product = self.env['product.product'].search([('default_code', '=', item['variant']['code'])])
                 if not product:
-                    self.env['integration.error.log'].create({'msg': _("Error! Product %s not found!") % item['variant']['code'], 'action': 'check_product'})
+                    self.env['integration.error.log'].create(
+                        {'msg': _("Error! Product %s not found!") % item['variant']['code'], 'action': 'check_product'})
                     raise ValidationError(_("Error! Product %s not found!") % item['variant']['code'])
-                quantity = item['quantity'] * product.primecargo_inner_pack_qty if product.primecargo_inner_pack_qty else item['quantity']
+                quantity = item[
+                               'quantity'] * product.primecargo_inner_pack_qty if product.primecargo_inner_pack_qty else \
+                item['quantity']
                 vals.append({'product_id': product.id,
-                            'product_uom_qty': quantity,
-                            'price_unit': (item['unit_price'] / 100.0) / product.primecargo_inner_pack_qty if product.primecargo_inner_pack_qty else (item['unit_price'] / 100.0),
-                            'product_uom': product.uom_id.id,
-                            'name': product.with_context(lang=partner.lang,
-                                                        partner=partner,
-                                                        quantity=quantity,
-                                                        date=fields.Date.today()).get_product_multiline_description_sale()})
-            #Shipping product
-            product = self.env['product.product'].search([('webshop_shipping_code', '=', shipment['method']['code'])], limit=1)
+                             'product_uom_qty': quantity,
+                             'price_unit': (item['unit_price'] / 100.0) / product.primecargo_inner_pack_qty if product.primecargo_inner_pack_qty else (
+                                         item['unit_price'] / 100.0),
+                             'product_uom': product.uom_id.id,
+                             'name': product.with_context(lang=partner.lang,
+                                                          partner=partner,
+                                                          quantity=quantity,
+                                                          date=fields.Date.today()).get_product_multiline_description_sale()})
+            # Shipping product
+            product = self.env['product.product'].search([('webshop_shipping_code', '=', shipment['method']['code'])],
+                                                         limit=1)
             if not product:
-                self.env['integration.error.log'].create({'msg': _('Error! Shipping product %s not found!') % shipment['method']['code'], 'action': 'check_product'})
+                self.env['integration.error.log'].create(
+                    {'msg': _('Error! Shipping product %s not found!') % shipment['method']['code'],
+                     'action': 'check_product'})
                 raise ValidationError(_("Error! Shipping product %s not found!") % shipment['method']['code'])
             else:
-                shipping_info = list(filter(lambda x: x.get('type') == 'shipping' and x.get('code') == shipment['method']['code'], shipment['adjustments']))
+                shipping_info = list(
+                    filter(lambda x: x.get('type') == 'shipping' and x.get('code') == shipment['method']['code'],
+                           shipment['adjustments']))
                 amount = shipping_info[0].get('amount', product.list_price) if shipping_info else product.list_price
                 vals.append({'product_id': product.id,
-                            'product_uom_qty': 1.0,
-                            'price_unit': amount / 100,
-                            'product_uom': product.uom_id.id,
-                            'name': product.with_context(lang=partner.lang,
-                                                        partner=partner,
-                                                        quantity=1.0,
-                                                        date=fields.Date.today()).get_product_multiline_description_sale()})
+                             'product_uom_qty': 1.0,
+                             'price_unit': amount / 100,
+                             'product_uom': product.uom_id.id,
+                             'name': product.with_context(lang=partner.lang,
+                                                          partner=partner,
+                                                          quantity=1.0,
+                                                          date=fields.Date.today()).get_product_multiline_description_sale()})
         return vals
 
     @api.model
     def create(self, vals):
+        billing_info = vals.pop('billing_info', False)
+        shipping_info = vals.pop('shipping_info', False)
         res = super(SaleOrder, self).create(vals)
         if res.api_order:
             res._send_stock_update()
-        if vals.get('billing_info'):
-            res.message_post(body=vals['billing_info'])
-        if vals.get('shipping_info'):
-            res.message_post(body=vals['shipping_info'])
+        if billing_info:
+            res.message_post(body=billing_info)
+        if shipping_info:
+            res.message_post(body=shipping_info)
         return res
-
 
     def action_cancel(self):
         res = super(SaleOrder, self).action_cancel()
@@ -209,7 +222,7 @@ class SaleOrder(models.Model):
     def _send_order_cancel(self):
         ids = self.integration_code.split(",")
         for f_id in ids:
-            url = self.company_id.integration_api_url + "/order-fulfillments/{0}/messages".format(f_id)
+            url = self.company_id.integration_api_url + "/orders/%2A/fulfillments/{0}/messages".format(f_id)
             auth = self.company_id.integration_auth_token
 
             data = {
@@ -227,9 +240,9 @@ class SaleOrder(models.Model):
             response = requests.post(url, json=data, headers=headers)
             _logger.info('API response: %s', response.text)
             if response.json().get('code') and (response.json()['code'] != '400' or response.json()['code'] != 400):
-                self.env['integration.error.log'].create({'msg': _("Error! Response code %s with message:\n\n%s") % (response.json()['code'], response.json()['message']), 'action': 'odoo_support'})
+                self.env['integration.error.log'].create({'msg': _("Error! Response code %s with message:\n\n%s") % (
+                response.json()['code'], response.json()['message']), 'action': 'odoo_support'})
             self._send_stock_update()
-
 
     def _send_stock_update(self):
         url = self.company_id.integration_api_url
@@ -263,7 +276,6 @@ class SaleOrderMail(models.Model):
 
     name = fields.Char(required=True, related="alias_name", readonly=False)
     alias_name = fields.Char()
-
 
     def get_alias_model_name(self, vals):
         return vals.get('alias_model', 'sale.order')

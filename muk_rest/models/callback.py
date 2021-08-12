@@ -1,17 +1,17 @@
 ###################################################################################
 #
-#    Copyright (c) 2017-2019 MuK IT GmbH.
+#    Copyright (c) 2017-today MuK IT GmbH.
 #
-#    This file is part of MuK REST API for Odoo 
+#    This file is part of MuK REST API for Odoo
 #    (see https://mukit.at).
 #
 #    MuK Proprietary License v1.0
 #
-#    This software and associated files (the "Software") may only be used 
+#    This software and associated files (the "Software") may only be used
 #    (executed, modified, executed after modifications) if you have
 #    purchased a valid license from MuK IT GmbH.
 #
-#    The above permissions are granted for a single database per purchased 
+#    The above permissions are granted for a single database per purchased
 #    license. Furthermore, with a valid license it is permitted to use the
 #    software on other databases as long as the usage is limited to a testing
 #    or development environment.
@@ -20,7 +20,7 @@
 #    as a library (typically by depending on it, importing it and using its
 #    resources), but without copying any source code or material from the
 #    Software. You may distribute those modules under the license of your
-#    choice, provided that this license is compatible with the terms of the 
+#    choice, provided that this license is compatible with the terms of the
 #    MuK Proprietary License (For example: LGPL, MIT, or proprietary licenses
 #    similar to this one).
 #
@@ -40,11 +40,13 @@
 #
 ###################################################################################
 
+
 import logging
 
 from odoo import _, models, api, fields
 
 _logger = logging.getLogger(__name__)
+
 
 class Callback(models.Model):
     
@@ -60,15 +62,19 @@ class Callback(models.Model):
 
     url = fields.Char(
         string="Callback URL",
-        required=True)
+        required=True
+    )
     
     sequence = fields.Integer(
         string='Sequence',
         required=True,
-        default=5)
+        default=5
+    )
     
-    oauth = fields.Many2one(
+    oauth_id = fields.Many2one(
         comodel_name='muk_rest.oauth',
         string="OAuth Configuration",
         ondelete='cascade',
-        required=True)
+        required=True
+    )
+    

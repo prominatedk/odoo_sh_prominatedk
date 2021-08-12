@@ -2,7 +2,7 @@
 import datetime
 from odoo import fields, api, models, _
 from odoo.exceptions import ValidationError
-from odoo.addons.oh_bankintegration.models.account_invoice import PAYMENT_STATUS_CODE
+from odoo.addons.oh_bankintegration.models.account_move import PAYMENT_STATUS_CODE
 from collections import OrderedDict
 from hashlib import sha256
 import uuid
@@ -15,7 +15,8 @@ import requests
 import logging
 _logger = logging.getLogger(__name__)
 BANKINTEGRATION_API_BASE_URL = 'https://api.bankintegration.dk'
-ACCOUNT_STATEMENT_API_URL = BANKINTEGRATION_API_BASE_URL + '/report/account?requestId='
+ACCOUNT_STATEMENT_API_URL = BANKINTEGRATION_API_BASE_URL + \
+    '/report/account?requestId='
 PAYMENT_API_URL = BANKINTEGRATION_API_BASE_URL + '/payment'
 PAYMENT_STATUS_API_URL = BANKINTEGRATION_API_BASE_URL + '/status'
 
@@ -40,10 +41,10 @@ class BankIntegrationRequest(models.Model):
         ('canceling', 'Canceling'),
         ('invalid_signature', 'Invalid Signature'),
     ], string='Request status', index=True, readonly=True, default='created')
-    request_date = fields.Datetime(string='Request datetime', index=True, help="API Request date", default=_default_request_date, oldname='request_datetime')
-    # invoice_id = fields.Many2one(
-    #     'account.invoice', string='Payment Invoice', domain=[('type', '=', 'in_invoice')])
-    invoice_ids = fields.Many2many('account.invoice', string='Invoices', domain=[('type', '=', 'in_invoice')])
+    request_date = fields.Datetime(string='Request datetime', index=True,
+                                   help="API Request date", default=_default_request_date, oldname='request_datetime')
+    move_ids = fields.Many2many('account.move', string='Invoices', domain=[
+                                ('move_type', '=', 'in_invoice')], oldname='invoice_ids')
     journal_id = fields.Many2one('account.journal', string='Journal')
     company_id = fields.Many2one('res.company', required=True)
     vendor_account = fields.Many2one(
@@ -57,7 +58,8 @@ class BankIntegrationRequest(models.Model):
 
     def set_request_id(self):
         for record in self:
-            request_id = 'REQ_{company_id}_{timestamp}'.format(company_id=record.company_id.id, timestamp=datetime.datetime.now().timestamp())
+            request_id = 'REQ_{company_id}_{timestamp}'.format(
+                company_id=record.company_id.id, timestamp=datetime.datetime.now().timestamp())
             record.write({'request_id': request_id})
 
     def get_vendorbill_payment_token(self, payment_vals):
@@ -72,7 +74,8 @@ class BankIntegrationRequest(models.Model):
                 _logger.error('The account number could not be found')
                 return False
             if not bankintegration_integration_code:
-                _logger.error('The integration code for the journal on the bills could not be found')
+                _logger.error(
+                    'The integration code for the journal on the bills could not be found')
                 return False
 
             auth_dict = OrderedDict([
@@ -97,6 +100,7 @@ class BankIntegrationRequest(models.Model):
                     ('now', self.request_date.strftime("%Y%m%d%H%M%S")),
                 ])
                 auth_key = self.generate_auth_key(auth_vals)
+                _logger.info(auth_key)
                 if auth_key:
                     hashed = OrderedDict([
                         ('id', payment['paymentId']),
@@ -104,20 +108,21 @@ class BankIntegrationRequest(models.Model):
                     ])
                     hash_list.append(hashed)
                 else:
-                    _logger.error('Authentication key for bankintegration.dk could not be generated for {company}'.format(company=self.company_id.display_name))
+                    _logger.error('Authentication key for bankintegration.dk could not be generated for {company}'.format(
+                        company=self.company_id.display_name))
                     return False
-            auth_dict['hash'] = hash_list
+            auth_dict["hash"] = hash_list
             auth_obj = json.dumps(auth_dict)
             auth_obj = auth_obj.replace(" ", "")
             auth_header = base64.b64encode(auth_obj.encode('ascii')).decode()
             return auth_header
         except Exception:
             tb = traceback.format_exc()
-            _logger.error('There was an error generating the Authentication token for bankintegration.dk for company {company}: {error}'.format(company=self.company_id.display_name, error=tb))
+            _logger.error('There was an error generating the Authentication token for bankintegration.dk for company {company}: {error}'.format(
+                company=self.company_id.display_name, error=tb))
 
     def pay_invoice(self, vals, auth_header):
         self.ensure_one()
-        _logger.info(vals)
         payment = OrderedDict([
             ('requestId', self.request_id),
             ('transactions', vals),
@@ -143,11 +148,7 @@ class BankIntegrationRequest(models.Model):
         self.response_text = response.text
         if response.status_code in [200, 201, 202, 204]:
             self.request_status = 'pending'
-            for payment_data in vals:
-                payment_id = payment_data['paymentId'].split('_')
-                invoice = self.env['account.invoice'].search([('id', '=', payment_id[3])], limit=1, order='id desc')
-                if invoice.id:
-                    invoice.write({'bankintegration_payment_status': 'pending'})
+            self.move_ids.write({'bankintegration_payment_status': 'pending'})
             if self.company_id.bankintegration_check_payment_status:
                 response_data = response.json()
                 if 'answers' in response_data:
@@ -155,19 +156,18 @@ class BankIntegrationRequest(models.Model):
                     for entry in entries:
                         self._update_invoice_payment_status(entry)
                 else:
-                    _logger.warn('There were no status updates in the response although it was specified that these should be delivered')
+                    _logger.warn(
+                        'There were no status updates in the response although it was specified that these should be delivered')
         else:
             _logger.error(response.text)
             self.request_status = 'failed'
-            for invoice in self.invoice_ids:
-                invoice.write({
-                    'bankintegration_payment_status': 'failed',
-                    'bankintegration_payment_error': 'There was an error processing the payment. Please check that the payment details are filled correctly'
-                })
+            self.move_ids.write({
+                'bankintegration_payment_status': 'failed',
+                'payment_error': 'There was an error processing the payment. Please check that the payment details are filled correctly'
+            })
 
         return True
 
-    
     def get_bank_statement_token(self):
         self.ensure_one()
         try:
@@ -175,7 +175,7 @@ class BankIntegrationRequest(models.Model):
             acc_number = self.journal_id.get_bankintegration_acc_number()
             # Get integration code for the specific bank account
             bankintegration_integration_code = self.journal_id.bankintegration_integration_code
-            
+
             auth_vals = OrderedDict([
                 ('token', sha256(str(bankintegration_integration_code).encode('utf-8')).hexdigest()),
                 ('custacc', acc_number),
@@ -185,7 +185,7 @@ class BankIntegrationRequest(models.Model):
                 ('amount', ''),
                 ('credacc', ''),
                 ('erp', self.company_id.bankintegration_erp_provider),
-                ('payid', self.bankintegration_payment_id or self.request_id),
+                ('payid', self.payment_id or self.request_id),
                 ('now', self.request_date.strftime("%Y%m%d%H%M%S")),
             ])
             auth_key = self.generate_auth_key(auth_vals)
@@ -197,21 +197,24 @@ class BankIntegrationRequest(models.Model):
                     ("requestId", self.request_id),
                     ("hash", [
                         OrderedDict([
-                            ("id", self.bankintegration_payment_id or self.request_id),
+                            ("id", self.payment_id or self.request_id),
                             ("hash", auth_key)
                         ])
                     ]),
                 ])
                 auth_obj = json.dumps(auth_dict)
                 auth_obj = auth_obj.replace(" ", "")
-                auth_header = base64.b64encode(auth_obj.encode('ascii')).decode()
+                auth_header = base64.b64encode(
+                    auth_obj.encode('ascii')).decode()
                 return auth_header
             else:
-                _logger.error('Authentication key for bankintegration.dk could not be generated for {company}'.format(company=self.company_id.display_name))
+                _logger.error('Authentication key for bankintegration.dk could not be generated for {company}'.format(
+                    company=self.company_id.display_name))
                 return False
         except Exception:
             tb = traceback.format_exc()
-            _logger.error('There was an error generating the Authentication token for bankintegration.dk for company {company}: {error}'.format(company=self.company_id.display_name, error=tb))
+            _logger.error('There was an error generating the Authentication token for bankintegration.dk for company {company}: {error}'.format(
+                company=self.company_id.display_name, error=tb))
 
     def generate_auth_key(self, auth_vals_dict):
         try:
@@ -228,18 +231,22 @@ class BankIntegrationRequest(models.Model):
         return False
 
     def get_bank_statements(self, auth_header, last_bank_statement, is_scheduler=False):
+        AccountBankStatementLine = self.env['account.bank.statement.line']
         errors = []
         bank_statement = {
             'from_date': last_bank_statement.date,
             'to_date': (datetime.datetime.today() - datetime.timedelta(days=1)).date()
         }
         transactions = []
-        # Store the current balance as per the last transaction, as we need to set this on the statement in the end
+        # Store the current balance as per the last transaction, as we need to
+        # set this on the statement in the end
         current_balance_amount = round(last_bank_statement.balance_end_real, 2)
         # Store a balance, which starts the same as the current_balance_amount, but here all transaction amounts are
-        # added together so that we can check in the end if one or more transactions have been missed
+        # added together so that we can check in the end if one or more
+        # transactions have been missed
         running_balance = current_balance_amount
-        data, errors = self.get_bank_statement_data_from_bankintegration_api(auth_header, last_bank_statement.date, last_bank_statement.balance_end_real)
+        data, errors = self.get_bank_statement_data_from_bankintegration_api(
+            auth_header, last_bank_statement.date, last_bank_statement.balance_end_real)
         if errors:
             if is_scheduler:
                 return bank_statement, errors
@@ -252,47 +259,61 @@ class BankIntegrationRequest(models.Model):
             while(not balance_matches):
                 # Check if retry attemps are above 5
                 if retry_attempts > 5:
-                    _logger.error('Max retries exceeded for automation to try and get any missing transactions. User/Administrator has to handle the issue manually')
+                    _logger.error(
+                        'Max retries exceeded for automation to try and get any missing transactions. User/Administrator has to handle the issue manually')
                     break
-                # Assign the current_balance_amount to a different variable so that we can modify it and keep track of the balance
+                # Assign the current_balance_amount to a different variable so
+                # that we can modify it and keep track of the balance
                 last_statement_balance_amount = current_balance_amount
                 if 'entries' in data:
                     lines = data['entries']
                     if len(lines) > 0:
                         transaction = lines[0]
-                        current_running_balance = round(transaction['balance'], 2)
+                        current_running_balance = round(
+                            transaction['balance'], 2)
                         running_balance = current_balance_amount
                         if round(last_statement_balance_amount + transaction['amount'], 2) == current_running_balance:
                             # If the balances match, then we can continue
                             balance_matches = True
-                            _logger.info('Balances are matching. Now importing')
+                            _logger.info(
+                                'Balances are matching. Now importing')
                         else:
                             retry_attempts += 1
-                            _logger.warn('There is a difference between the reported ending balance and the balance computed. Reported ending balance as of last transaction: {ending}. Computed balance as of last transaction: {last}'.format(ending=round(last_statement_balance_amount + transaction['amount'], 2), last=current_running_balance))
+                            _logger.warn('There is a difference between the reported ending balance and the balance computed. Reported ending balance as of last transaction: {ending}. Computed balance as of last transaction: {last}'.format(
+                                ending=round(last_statement_balance_amount + transaction['amount'], 2), last=current_running_balance))
                             self.set_request_id()
                             self.request_date = datetime.datetime.now()
                             auth_header = self.get_bank_statement_token()
-                            last_bank_statement = self.env['account.bank.statement'].search([('journal_id', '=', self.journal_id.id), ('date', '<', last_bank_statement.date)], limit=1, order='date desc')
+                            last_bank_statement = self.env['account.bank.statement'].search(
+                                [('journal_id', '=', self.journal_id.id), ('date', '<', last_bank_statement.date)], limit=1, order='date desc')
                             if not last_bank_statement.id:
-                                _logger.error('No previous bank statements could be found')
+                                _logger.error(
+                                    'No previous bank statements could be found')
                                 break
-                            # Store the current balance as per the last transaction, as we need to set this on the statement in the end
-                            current_balance_amount = round(last_bank_statement.balance_end_real, 2)
+                            # Store the current balance as per the last
+                            # transaction, as we need to set this on the
+                            # statement in the end
+                            current_balance_amount = round(
+                                last_bank_statement.balance_end_real, 2)
                             bank_statement = {
                                 'from_date': last_bank_statement.date,
                                 'to_date': (datetime.datetime.today() - datetime.timedelta(days=1)).date()
                             }
-                            data, errors = self.get_bank_statement_data_from_bankintegration_api(auth_header, last_bank_statement.date, last_bank_statement.balance_end_real)
+                            data, errors = self.get_bank_statement_data_from_bankintegration_api(
+                                auth_header, last_bank_statement.date, last_bank_statement.balance_end_real)
                     else:
                         break
                 else:
-                    # If no entries are there, then we break the loop and let the exception handling run
+                    # If no entries are there, then we break the loop and let
+                    # the exception handling run
                     break
             if data['requestId'] == str(self.request_id):
                 if data['currency'] and data['entries']:
                     # TODO: Validate if we are missing any entries
-                    from_date = datetime.datetime.strptime(data['from'], '%Y-%m-%dT%H:%M:%S').strftime('%d-%m-%Y')
-                    to_date = datetime.datetime.strptime(data['to'], '%Y-%m-%dT%H:%M:%S').strftime('%d-%m-%Y')
+                    from_date = datetime.datetime.strptime(
+                        data['from'], '%Y-%m-%dT%H:%M:%S').strftime('%d-%m-%Y')
+                    to_date = datetime.datetime.strptime(
+                        data['to'], '%Y-%m-%dT%H:%M:%S').strftime('%d-%m-%Y')
                     bank_statement = {
                         'account': data['account'],
                         'currency': data['currency'],
@@ -306,43 +327,60 @@ class BankIntegrationRequest(models.Model):
                         'name': _('Bank statement from ' + from_date + ' to ' + to_date),
                         'balance_start': current_balance_amount,
                         'balance_end_real': 0,
-                        'date': datetime.datetime.strptime(data['to'].split('T')[0], '%Y-%m-%d') if bankintegration_last_entry_date_as_statement_date else datetime.datetime.strptime(data['created'].split('T')[0], '%Y-%m-%d'), # Only the date from the timestamp
+                        # Only the date from the timestamp
+                        'date': datetime.datetime.strptime(data['to'].split('T')[0], '%Y-%m-%d') if bankintegration_last_entry_date_as_statement_date else datetime.datetime.strptime(data['created'].split('T')[0], '%Y-%m-%d'),
                         'transactions': [],
                     }
                     if 'entries' in data:
                         lines = data['entries']
                         for transaction in lines:
+                            stmt_name = transaction['advis'][
+                                0] if self.company_id.bankintegration_statement_note_as_label else transaction['text']
+                            stmt_partner = AccountBankStatementLine.get_partner_id(
+                                stmt_name, transaction['amount'])
                             vals = {
                                 'unique_import_id': "{account}_{id}".format(id=transaction['id'], account=data['account']),
-                                'name': transaction['advis'][0] if self.company_id.bankintegration_statement_note_as_label else transaction['text'],
+                                'payment_ref': stmt_name,
                                 'date': datetime.datetime.strptime(transaction['date'][bankintegration_transaction_accounting_date], '%Y-%m-%dT%H:%M:%S'),
                                 'amount': transaction['amount'],
-                                'note': "\n".join(transaction['advis']) if 'advis' in transaction else '',
+                                'partner_id': stmt_partner,
+                                'narration': "\n".join(transaction['advis']) if 'advis' in transaction else '',
                                 'json_log': json.dumps(transaction, sort_keys=True, indent=4)
                             }
                             # Validate if starting and ending balance matches
                             if round(transaction['balance'], 2) == round(current_balance_amount + transaction['amount'], 2):
-                                running_balance = round(running_balance + transaction['amount'], 2)
-                                current_balance_amount = round(transaction['balance'], 2)
+                                running_balance = round(
+                                    running_balance + transaction['amount'], 2)
+                                current_balance_amount = round(
+                                    transaction['balance'], 2)
                             else:
-                                errors.append(_('The current account balance and balance for transaction do not match'))
-                                _logger.error('The transaction {transaction_id} has a balance of {transaction_balance}, which is not the same as the current balance of {current_balance}'.format(transaction_id=transaction['id'], transaction_balance=transaction['balance'], current_balance=current_balance_amount + transaction['amount']))
-                                break                                
-                            # TODO: Next we need to try and locate the partner on the transaction
+                                errors.append(
+                                    _('The current account balance and balance for transaction do not match'))
+                                _logger.error('The transaction {transaction_id} has a balance of {transaction_balance}, which is not the same as the current balance of {current_balance}'.format(
+                                    transaction_id=transaction['id'], transaction_balance=transaction['balance'], current_balance=current_balance_amount + transaction['amount']))
+                                break
+                            # TODO: Next we need to try and locate the partner
+                            # on the transaction
                             transactions.append(vals)
-                        current_balance_amount = round(current_balance_amount, 2)
+                        current_balance_amount = round(
+                            current_balance_amount, 2)
                         running_balance = round(running_balance, 2)
                         if not current_balance_amount == running_balance:
-                            _logger.warn('There is a difference between the reported ending balance and the balance computed. Reported ending balance as of last transaction: {ending}. Computed balance as of last transaction: {last}'.format(ending=current_balance_amount, last=running_balance))
-                            errors.append(_('There is a difference between the reported ending balance and the balance computed. Reported ending balance as of last transaction: %s. Computed balance as of last transaction: %s' % (current_balance_amount, running_balance)))
+                            _logger.warn('There is a difference between the reported ending balance and the balance computed. Reported ending balance as of last transaction: {ending}. Computed balance as of last transaction: {last}'.format(
+                                ending=current_balance_amount, last=running_balance))
+                            errors.append(_('There is a difference between the reported ending balance and the balance computed. Reported ending balance as of last transaction: %s. Computed balance as of last transaction: %s' % (
+                                current_balance_amount, running_balance)))
                         statement['transactions'] = transactions
                         statement['balance_end_real'] = current_balance_amount
                         bank_statement['statement'] = [statement]
                     else:
-                        _logger.warn('There are no transactions for journal {journal} in company {company} for period {from_date} - {to_date}'.format(journal=self.journal_id.name, company=self.company_id.display_name, from_date=from_date, to_date=to_date))
-                        errors.append(_('There are no transactions for period %s - %s' % (from_date, to_date)))
+                        _logger.warn('There are no transactions for journal {journal} in company {company} for period {from_date} - {to_date}'.format(
+                            journal=self.journal_id.name, company=self.company_id.display_name, from_date=from_date, to_date=to_date))
+                        errors.append(
+                            _('There are no transactions for period %s - %s' % (from_date, to_date)))
             else:
-                errors.append(_('The request ID of the returned bank statement does not match the request ID that we generated. Something is wrong and you might need to contact support if the issue persists'))
+                errors.append(
+                    _('The request ID of the returned bank statement does not match the request ID that we generated. Something is wrong and you might need to contact support if the issue persists'))
         else:
             errors.append(_('No bank statements have been returned'))
         self.request_status = 'success'
@@ -360,13 +398,15 @@ class BankIntegrationRequest(models.Model):
         next_import_date = datetime.datetime.today() - datetime.timedelta(days=1)
         bankintegration_last_entry_date_as_statement_date = self.company_id.bankintegration_last_entry_date_as_statement_date
         # Some users prefer to have the bank statement be on the same date as the last transaction of the statement
-        # This we therefore configure the system to handle by modifying the date where we import from
+        # This we therefore configure the system to handle by modifying the
+        # date where we import from
         if bankintegration_last_entry_date_as_statement_date:
             last_import_date = last_import_date + datetime.timedelta(days=1)
         bankintegration_extended_import_format = self.company_id.bankintegration_extended_import_format
         bankintegration_api_url = ACCOUNT_STATEMENT_API_URL + \
             str(self.request_id) + '&from=' + \
-            last_import_date.strftime('%Y-%m-%d') + '&to=' + next_import_date.strftime('%Y-%m-%d')
+            last_import_date.strftime(
+                '%Y-%m-%d') + '&to=' + next_import_date.strftime('%Y-%m-%d')
         if bankintegration_extended_import_format:
             bankintegration_api_url = bankintegration_api_url + '&type=Full'
         try:
@@ -401,36 +441,39 @@ class BankIntegrationRequest(models.Model):
                             if 'debtorMessage' in entry:
                                 advice_msg = entry['debtorMessage']
                         entry.update({'type': transaction_type})
-                        entry.update({'advis': [advice_msg] if advice_msg else []})
+                        entry.update(
+                            {'advis': [advice_msg] if advice_msg else []})
             elif response.status_code == 401:
-                error_msg = _('There was an authentication error when trying to get the bank statements. Please make sure that you bank account number and integration code are correct and try again')
+                error_msg = _(
+                    'There was an authentication error when trying to get the bank statements. Please make sure that you bank account number and integration code are correct and try again')
                 _logger.error(error_msg)
                 errors.append(error_msg)
             else:
-                error_msg = _('There was an error communicating with bankintegration.dk. Bankintegration.dk responded with error code %s' % response.status_code)
+                error_msg = _(
+                    'There was an error communicating with bankintegration.dk. Bankintegration.dk responded with error code %s' % response.status_code)
                 _logger.error(error_msg)
                 errors.append(error_msg)
         except Exception:
             tb = traceback.format_exc()
-            _logger.error('There was an error fetching bank statements from bankintegration.dk: {}'.format(tb))
-            errors.append(_('There was an error fetching bank statements from bankintegration.dk. Details have been saved in your Odoo serverlogs. Please contact support if the issue persists'))
+            _logger.error(
+                'There was an error fetching bank statements from bankintegration.dk: {}'.format(tb))
+            errors.append(
+                _('There was an error fetching bank statements from bankintegration.dk. Details have been saved in your Odoo serverlogs. Please contact support if the issue persists'))
         _logger.info(errors)
         return response_data, errors
-
 
     def cron_bankintegration_payment_status(self):
         for company in self.env['res.company'].search([]):
             # Validate if we should even process data for this company
             if not company.has_valid_bankintegration_config():
                 continue
-            # Validate if we can even process payments out of the payment journal configured on the company
+            # Validate if we can even process payments out of the payment
+            # journal configured on the company
             if not company.bankintegration_payment_journal_id.has_valid_bankintegration_config():
                 continue
             # Get the status of any payments that have not yet been processed
-            pending_requests = self.search([('company_id', '=', company.id), ('request_status', 'in', [PAYMENT_STATUS_CODE['1'], PAYMENT_STATUS_CODE['2'], PAYMENT_STATUS_CODE['4'], PAYMENT_STATUS_CODE['128']])])
-            if not pending_requests.ids:
-                _logger.warn('No payments to check')
-                continue
+            pending_requests = self.search([('company_id', '=', company.id), ('request_status', 'in', [PAYMENT_STATUS_CODE[
+                                           '1'], PAYMENT_STATUS_CODE['2'], PAYMENT_STATUS_CODE['4'], PAYMENT_STATUS_CODE['128']])])
             request = self.create({
                 'company_id': company.id
             })
@@ -439,7 +482,8 @@ class BankIntegrationRequest(models.Model):
             if auth_header:
                 request.update_payment_status(auth_header, pending_requests)
             else:
-                _logger.error('It was not possible to generate the Authentication header for communication with bankintegration.dk')
+                _logger.error(
+                    'It was not possible to generate the Authentication header for communication with bankintegration.dk')
 
     def get_payment_status_token(self):
         try:
@@ -447,7 +491,7 @@ class BankIntegrationRequest(models.Model):
             acc_number = self.company_id.bankintegration_payment_journal_id.get_bankintegration_acc_number()
             # Get integration code for the specific bank account
             bankintegration_integration_code = self.company_id.bankintegration_payment_journal_id.bankintegration_integration_code
-            
+
             auth_vals = OrderedDict([
                 ('token', sha256(str(bankintegration_integration_code).encode('utf-8')).hexdigest()),
                 ('custacc', acc_number),
@@ -476,20 +520,23 @@ class BankIntegrationRequest(models.Model):
                 ])
                 auth_obj = json.dumps(auth_dict)
                 auth_obj = auth_obj.replace(" ", "")
-                auth_header = base64.b64encode(auth_obj.encode('ascii')).decode()
+                auth_header = base64.b64encode(
+                    auth_obj.encode('ascii')).decode()
                 return auth_header
             else:
-                _logger.error('Authentication key for bankintegration.dk could not be generated for {company}'.format(company=self.company_id.display_name))
+                _logger.error('Authentication key for bankintegration.dk could not be generated for {company}'.format(
+                    company=self.company_id.display_name))
                 return False
         except Exception:
             tb = traceback.format_exc()
-            _logger.error('There was an error generating the Authentication token for bankintegration.dk for company {company}: {error}'.format(company=self.company_id.display_name, error=tb))
+            _logger.error('There was an error generating the Authentication token for bankintegration.dk for company {company}: {error}'.format(
+                company=self.company_id.display_name, error=tb))
 
     def update_payment_status(self, auth_header, pending_requests):
         self.ensure_one()
         pending_payment_ids = []
         for request in pending_requests:
-            for invoice in request.invoice_ids:
+            for invoice in request.move_ids:
                 pending_payment_ids.append(invoice.bankintegration_payment_id)
         vals = {
             'requestId': self.request_id,
@@ -515,13 +562,17 @@ class BankIntegrationRequest(models.Model):
                     for entry in entries:
                         self._update_invoice_payment_status(entry)
                 else:
-                    _logger.warn('There were no entries in the data returned from bankintegration.dk')
-                # Allow other modules to work with the returned data, we call this method
+                    _logger.warn(
+                        'There were no entries in the data returned from bankintegration.dk')
+                # Allow other modules to work with the returned data, we call
+                # this method
                 self._process_response_data(response.json())
             else:
-                _logger.error('The Request ID of the returned payment status data does not match the Request ID in the data that was sent to query the payment status')
+                _logger.error(
+                    'The Request ID of the returned payment status data does not match the Request ID in the data that was sent to query the payment status')
         else:
-            _logger.error('There was an error getting payment status from bankintegration.dk. Error code {code}'.format(code=response.status_code))
+            _logger.error('There was an error getting payment status from bankintegration.dk. Error code {code}'.format(
+                code=response.status_code))
             _logger.error(response.text)
 
     def _process_response_data(self, response_data):
@@ -529,37 +580,48 @@ class BankIntegrationRequest(models.Model):
         return response_data
 
     def _update_invoice_payment_status(self, status_update):
-        invoice = self.env['account.invoice'].search([('payment_id', '=', status_update['paymentId'])], limit=1, order='id desc')
+        invoice = self.env['account.move'].search(
+            [('bankintegration_payment_id', '=', status_update['paymentId'])], limit=1, order='id desc')
         if not invoice.id:
             # In case that we cannot find the payment ID, we might still be in a transaction where the payment Id is not yet committed
             # so we instead make the lookup based on the invoice ID
             payment_data = status_update['paymentId'].split('_')
-            # In case some old payment comes back, where it was made using oh_bankintegration 1.x version
+            # In case some old payment comes back, where it was made using
+            # oh_bankintegration 1.x version
             if len(payment_data) == 1:
                 try:
                     payment_data[0] = int(payment_data[0])
                 except:
-                    _logger.error('Could not convert paymentId {} to int. Giving up'.format(payment_data[0]))
+                    _logger.error(
+                        'Could not convert paymentId {} to int. Giving up'.format(payment_data[0]))
                     return False
-                invoice = self.env['account.invoice'].search([('id', '=', payment_data[0])], limit=1, order='id desc')
+                invoice = self.env['account.move'].search(
+                    [('id', '=', payment_data[0])], limit=1, order='id desc')
             # New way where are more descriptive paymentID is made
             else:
-                invoice = self.env['account.invoice'].search([('id', '=', payment_data[3])], limit=1, order='id desc')
+                invoice = self.env['account.move'].search(
+                    [('id', '=', payment_data[3])], limit=1, order='id desc')
             if not invoice.id:
-                _logger.error('The PaymentID {} was not found'.format(status_update['paymentId']))
+                _logger.error('The PaymentID {} was not found'.format(
+                    status_update['paymentId']))
                 return False
-        request = self.search([('request_id', '=', invoice.bankintegration_request_id)], limit=1)
+        request = self.search(
+            [('request_id', '=', invoice.bankintegration_request_id)], limit=1)
         if not request.id:
-            _logger.warn('No request with request ID {} was found. Skipping'.format(invoice.bankintegration_request_id))
-        request.write({'request_status': PAYMENT_STATUS_CODE[str(status_update['status'])]})
+            _logger.warn('No request with request ID {} was found. Skipping'.format(
+                invoice.bankintegration_request_id))
+        request.write({'request_status': PAYMENT_STATUS_CODE[
+                      str(status_update['status'])]})
         vals = {
-            'bankintegration_payment_status':PAYMENT_STATUS_CODE[str(status_update['status'])]
+            'bankintegration_payment_status': PAYMENT_STATUS_CODE[str(status_update['status'])]
         }
         if 'errors' in status_update:
             errors = status_update['errors']
-            vals['bankintegration_payment_error'] = "\n".join(["{code}: {text}".format(code=error['code'] if 'code' in error else '', text=error['text']) for error in errors])
+            vals['bankintegration_payment_error'] = "\n".join(["{code}: {text}".format(code=error[
+                                              'code'] if 'code' in error else '', text=error['text']) for error in errors])
         elif 'warnings' in status_update:
             warnings = status_update['warnings']
-            vals['bankintegration_payment_error'] = "\n".join(["{code}: {text}".format(code=warning['code'] if 'code' in warning else '', text=warning['text']) for warning in warnings])
+            vals['bankintegration_payment_error'] = "\n".join(["{code}: {text}".format(code=warning[
+                                              'code'] if 'code' in warning else '', text=warning['text']) for warning in warnings])
         invoice.write(vals)
         return True

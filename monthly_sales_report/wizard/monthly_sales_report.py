@@ -22,10 +22,10 @@ class MonthlySalesReport(models.TransientModel):
         table_date = workbook.add_format({'font_size': 12, 'num_format': 'dd-mm-yyyy'})
         table_acc = workbook.add_format({'font_size': 12, 'num_format': '#,##0.00'})
 
-        data = self.env['account.invoice'].search([('state', '!=', 'draft'),
+        data = self.env['account.move'].search([('state', '!=', 'draft'),
                                                    ('state', '!=', 'cancelled'),
                                                    ('currency_id', '=', self.currency_id.id),
-                                                   ('type', '=', 'out_invoice'),
+                                                   ('move_type', '=', 'out_invoice'),
                                                    ('date', '>=', self.date_from),
                                                    ('date', '<=', self.date_to)], order="date")
 
@@ -80,56 +80,55 @@ class MonthlySalesReport(models.TransientModel):
         for item in data.mapped('invoice_line_ids'):
             if item.product_id.default_code not in ['1099', '1098', '1097', '1096', '1095'] and item.product_id:
                 sheet.write(j, 0, '', table_body)
-                sheet.write(j, 1, item.invoice_id.origin, table_body)
+                sheet.write(j, 1, item.move_id.invoice_origin, table_body)
                 sheet.write(j, 2, item.product_id.x_studio_field_vdINR, table_body)
                 sheet.write(j, 3, '', table_body)
                 project_string = str(item.product_id.x_studio_field_vdINR)
                 project_codes = project_string.split('_', 1)
                 project_code = project_codes[0]
-                if item.invoice_id.partner_id.parent_id and item.invoice_id.partner_id.parent_id.country_id.name:
+                if item.move_id.partner_id.parent_id and item.move_id.partner_id.parent_id.country_id.name:
                     sheet.write(j, 4, project_code + ' ' +
-                                str(item.invoice_id.partner_id.parent_id.country_id.name), table_body)
-                elif item.invoice_id.partner_id.parent_id:
+                                str(item.move_id.partner_id.parent_id.country_id.name), table_body)
+                elif item.move_id.partner_id.parent_id:
                     sheet.write(j, 4, project_code, table_body)
-                elif item.invoice_id.partner_id.country_id.name:
+                elif item.move_id.partner_id.country_id.name:
                     sheet.write(j, 4, project_code + ' ' +
-                                str(item.invoice_id.partner_id.country_id.name), table_body)
+                                str(item.move_id.partner_id.country_id.name), table_body)
                 else:
                     sheet.write(j, 4, project_code, table_body)
                 sheet.write(j, 5, '', table_body)
                 sheet.write(j, 6, '', table_body)
-                if item.invoice_id.partner_id.mobile:
-                    sheet.write(j, 7, item.invoice_id.partner_id.mobile, table_body)
+                if item.move_id.partner_id.mobile:
+                    sheet.write(j, 7, item.move_id.partner_id.mobile, table_body)
                 else:
                     sheet.write(j, 7, '', table_body)
-                if item.invoice_id.partner_id.street2:
-                    sheet.write(j, 8, item.invoice_id.partner_id.street + ', ' + item.invoice_id.partner_id.street2,
+                if item.move_id.partner_id.street2:
+                    sheet.write(j, 8, item.move_id.partner_id.street + ', ' + item.move_id.partner_id.street2,
                                 table_body)
                 else:
-                    sheet.write(j, 8, item.invoice_id.partner_id.street, table_body)
-                sheet.write(j, 9, item.invoice_id.partner_id.zip, table_body)
-                sheet.write(j, 10, item.invoice_id.partner_id.city, table_body)
-                sheet.write(j, 11, item.invoice_id.partner_id.country_id.code, table_body)
+                    sheet.write(j, 8, item.move_id.partner_id.street, table_body)
+                sheet.write(j, 9, item.move_id.partner_id.zip, table_body)
+                sheet.write(j, 10, item.move_id.partner_id.city, table_body)
+                sheet.write(j, 11, item.move_id.partner_id.country_id.code, table_body)
                 sheet.write(j, 12, '', table_body)
                 sheet.write(j, 13, '', table_body)
-                if item.mapped('sale_line_ids'):
-                    sheet.write(j, 14, item.mapped('sale_line_ids')[0].order_id.confirmation_date.date(), table_date)
-                sheet.write(j, 15, item.invoice_id.partner_id.country_id.code, table_body)
-                if item.invoice_id.origin:
-                    shipment = self.env['stock.picking'].search([('origin', '=', item.invoice_id.origin)])
+                sheet.write(j, 14, item.move_id.invoice_date, table_date)
+                sheet.write(j, 15, item.move_id.partner_id.country_id.code, table_body)
+                if item.move_id.invoice_origin:
+                    shipment = self.env['stock.picking'].search([('origin', '=', item.move_id.invoice_origin)])
                     shipdates = []
                     for i in shipment:
-                        if i.date_done:
-                            shipdates.append(i.date_done.strftime("%d-%m-%Y"))
+                        if i.scheduled_date:
+                            shipdates.append(i.scheduled_date.strftime("%d-%m-%Y"))
                     shipdate = ",".join(shipdates)
                     sheet.write(j, 16, shipdate, table_body)
-                sheet.write(j, 17, item.invoice_id.currency_id.name, table_body)
-                sheet.write(j, 18, item.invoice_id.partner_shipping_id.name, table_body)
+                sheet.write(j, 17, item.move_id.currency_id.name, table_body)
+                sheet.write(j, 18, item.move_id.partner_shipping_id.name, table_body)
                 sheet.write(j, 19, '', table_body)
-                sheet.write(j, 20, item.invoice_id.partner_shipping_id.zip, table_body)
-                sheet.write(j, 21, item.invoice_id.partner_shipping_id.city, table_body)
-                sheet.write(j, 22, item.invoice_id.partner_shipping_id.country_id.code, table_body)
-                sheet.write(j, 23, item.invoice_id.date_invoice, table_date)
+                sheet.write(j, 20, item.move_id.partner_shipping_id.zip, table_body)
+                sheet.write(j, 21, item.move_id.partner_shipping_id.city, table_body)
+                sheet.write(j, 22, item.move_id.partner_shipping_id.country_id.code, table_body)
+                sheet.write(j, 23, item.move_id.invoice_date, table_date)
                 sheet.write(j, 24, item.price_subtotal, table_acc)
                 sheet.write(j, 25, '', table_body)
                 sheet.write(j, 26, item.product_id.default_code, table_body)
@@ -159,14 +158,14 @@ class MonthlySalesReport(models.TransientModel):
                 sheet.write(j, 39, '', table_body)
                 sheet.write(j, 40, '', table_body)
                 sheet.write(j, 41, '', table_body)
-                credit_note = self.env['account.invoice'].search([('origin', '=', item.invoice_id.number),
-                                                                  ('type', '=', 'out_refund')], limit=1)
-                if credit_note:
-                    sheet.write(j, 42, credit_note.number, table_body)
-                else:
-                    sheet.write(j, 42, '', table_body)
-
-                j += 1
+                # credit_note = self.env['account.move'].search([('invoice_origin', '=', item.move_id.number),
+                #                                                   ('move_type', '=', 'out_refund')], limit=1)
+                # if credit_note:
+                #     sheet.write(j, 42, credit_note.number, table_body)
+                # else:
+                #     sheet.write(j, 42, '', table_body)
+                #
+                # j += 1
 
         workbook.close()
 

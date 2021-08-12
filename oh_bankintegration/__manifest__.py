@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Odoo Bankintegration',
-    'version': '3.0.5',
+    'version': '3.0.12',
     'category': 'Accounting',
     'description': """
 Odoo Bankintegration.
@@ -15,7 +15,7 @@ This module uses the bankintegration.dk API to import bank statements into Odoo 
     'depends': ['base', 'base_vat', 'base_iban', 'account', 'account_bank_statement_import'],
     'data': [
         'views/account_bank_statement_line_views.xml',
-        'views/account_invoice_views.xml',
+        'views/account_move_views.xml',
         'views/account_journal_dashboard_view.xml',
         'views/account_journal_views.xml',
         'views/res_config_settings_views.xml',
