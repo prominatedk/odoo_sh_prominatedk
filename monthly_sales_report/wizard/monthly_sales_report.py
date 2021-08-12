@@ -45,9 +45,9 @@ class MonthlySalesReport(models.TransientModel):
         sheet.write('L1', 'CUSTOMER_COUNTRY', table_header)
         sheet.write('M1', 'CUSTOMER_COSTCENTER', table_header)
         sheet.write('N1', 'CUSTOMER_ORDERNUMBER', table_header)
-        sheet.write('O1', 'ORDER_DATE', table_header)
+        sheet.write('O1', 'ORDER_SHIPDATE', table_header)
         sheet.write('P1', 'ORDER_COUNTRY', table_header)
-        sheet.write('Q1', 'ORDER_SHIPDATE', table_header)
+        sheet.write('Q1', 'ORDER_DATE', table_header)
         sheet.write('R1', 'ORDER_CURRENCY', table_header)
         sheet.write('S1', 'DELIVERY_CUSTOMER', table_header)
         sheet.write('T1', 'DELIVERY_DEPARTMENT', table_header)
@@ -112,8 +112,6 @@ class MonthlySalesReport(models.TransientModel):
                 sheet.write(j, 11, item.move_id.partner_id.country_id.code, table_body)
                 sheet.write(j, 12, '', table_body)
                 sheet.write(j, 13, '', table_body)
-                sheet.write(j, 14, item.move_id.invoice_date, table_date)
-                sheet.write(j, 15, item.move_id.partner_id.country_id.code, table_body)
                 if item.move_id.invoice_origin:
                     shipment = self.env['stock.picking'].search([('origin', '=', item.move_id.invoice_origin)])
                     shipdates = []
@@ -121,7 +119,9 @@ class MonthlySalesReport(models.TransientModel):
                         if i.scheduled_date:
                             shipdates.append(i.scheduled_date.strftime("%d-%m-%Y"))
                     shipdate = ",".join(shipdates)
-                    sheet.write(j, 16, shipdate, table_body)
+                    sheet.write(j, 14, shipdate, table_body)
+                sheet.write(j, 15, item.move_id.partner_id.country_id.code, table_body)
+                sheet.write(j, 16, item.move_id.invoice_date, table_date)
                 sheet.write(j, 17, item.move_id.currency_id.name, table_body)
                 sheet.write(j, 18, item.move_id.partner_shipping_id.name, table_body)
                 sheet.write(j, 19, '', table_body)
