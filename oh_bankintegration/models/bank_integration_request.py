@@ -556,6 +556,7 @@ class BankIntegrationRequest(models.Model):
         )
         _logger.info(f"------------------ Response: ----------------\n{response}")
         self.response_text = response.text
+        _logger.info(f"Response Text: {self.response_text}")
         if response.status_code == 200:
             response_data = response.json()
             if response_data['requestId'] == self.request_id:
