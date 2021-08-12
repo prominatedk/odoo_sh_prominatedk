@@ -162,12 +162,12 @@ class MonthlySalesReport(models.TransientModel):
                 sheet.write(j, 39, '', table_body)
                 sheet.write(j, 40, '', table_body)
                 sheet.write(j, 41, '', table_body)
-                credit_note = self.env['account.move'].search([('invoice_origin', '=', item.move_id.number),
-                                                                  ('type', '=', 'out_refund')], limit=1)
-                if credit_note:
-                    sheet.write(j, 42, credit_note.number, table_body)
-                else:
-                    sheet.write(j, 42, '', table_body)
+                # credit_note = self.env['account.move'].search([('invoice_origin', '=', item.move_id.number),
+                #                                                   ('type', '=', 'out_refund')], limit=1)
+                # if credit_note:
+                #     sheet.write(j, 42, credit_note.number, table_body)
+                # else:
+                #     sheet.write(j, 42, '', table_body)
 
                 j += 1
 
