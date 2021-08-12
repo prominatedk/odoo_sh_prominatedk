@@ -165,7 +165,7 @@ class MonthlySalesReport(models.TransientModel):
                 # else:
                 #     sheet.write(j, 42, '', table_body)
                 #
-                # j += 1
+                j += 1
 
         workbook.close()
 
