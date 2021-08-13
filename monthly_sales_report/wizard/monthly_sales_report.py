@@ -81,7 +81,7 @@ class MonthlySalesReport(models.TransientModel):
         j = 1
 
         for item in data.mapped('invoice_line_ids'):
-            if item.product_id.default_code not in ['1099', '1098', '1097', '1096', '1095'] and item.product_id:
+            if item.product_id.default_code not in ['1099', '1098', '1097', '1096', '1095', '1093', '1099', '503', 'Environmental tax - Export'] and item.product_id:
                 sheet.write(j, 0, '', table_body)
                 sheet.write(j, 1, item.move_id.invoice_origin, table_body)
                 sheet.write(j, 2, item.product_id.x_studio_field_vdINR, table_body)
