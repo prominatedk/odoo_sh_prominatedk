@@ -6,7 +6,7 @@
     'author': "Nisus Solutions (Pvt) Ltd",
     'website': "http://www.nisus.lk",
     'category': 'Sales',
-    'version': '1.0.11',
+    'version': '1.0.13',
     'depends': ['sale', 'account'],
     'data': [
         'security/ir.model.access.csv',
