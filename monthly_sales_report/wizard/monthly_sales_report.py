@@ -106,8 +106,7 @@ class MonthlySalesReport(models.TransientModel):
                 else:
                     sheet.write(j, 7, '', table_body) # H
                 if item.move_id.partner_id.street2:
-                    sheet.write(j, 8, item.move_id.partner_id.street + ', ' + item.move_id.partner_id.street2, # I
-                                table_body)
+                    sheet.write(j, 8, item.move_id.partner_id.street + ', ' + item.move_id.partner_id.street2, table_body) # I
                 else:
                     sheet.write(j, 8, item.move_id.partner_id.street, table_body) # I
                 sheet.write(j, 9, item.move_id.partner_id.zip, table_body) # J
@@ -170,7 +169,8 @@ class MonthlySalesReport(models.TransientModel):
                 #     sheet.write(j, 42, '', table_body)
 
                 j += 1
-
+            else:
+                continue
         workbook.close()
 
         attach_id = self.env['monthly.sales.report.excel'].create({
