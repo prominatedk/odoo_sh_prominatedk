@@ -18,8 +18,8 @@ class StockPicking(models.Model):
                 move.product_id.action_update_webshop_stock(self.company_id)
         return res
 
-    def action_done(self):
-        super(StockPicking, self).action_done()
+    def _action_done(self):
+        super(StockPicking, self)._action_done()
         if self.api_order and self.sale_id.integration_code:
             self._send_order_shipped()
 
