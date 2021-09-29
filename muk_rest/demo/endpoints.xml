@@ -1,4 +1,5 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="utf-8"?>
+
 <!--
 
     Copyright (c) 2017-today MuK IT GmbH.
@@ -55,6 +56,18 @@
 	    <field name="domain_field_ids" eval="[(6, 0, [ref('base.field_res_partner__name')])]"/>
 	    <field name="docs_summary">All Companies</field>
 	    <field name="docs_description">Get a list of company names.</field>
+	    <field name="docs_parameters">[{
+	"name": "limit",
+	"in": "query",
+	"description": "Limit",
+	"schema": {"type": "integer"}
+}, {
+	"name": "offset",
+	"in": "query",
+	"description": "Offset",
+	"schema": {"type": "integer"}
+}]
+		</field>
 	    <field name="docs_default_response_200" eval="False"/>
 	    <field name="docs_responses">{
 	"200": {

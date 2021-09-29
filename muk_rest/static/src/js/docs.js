@@ -49,9 +49,9 @@ if(!$('.mk_docs').length) {
     return Promise.reject("DOM doesn't contain '.mk_docs'");
 }
 
-SwaggerUIBundle({
-    url: odoo.rest.apiBaseUrl + '/docs/api.json',
-    oauth2RedirectUrl: odoo.rest.serverBaseUrl + odoo.rest.apiBaseUrl + '/docs/oauth2/redirect',
+const swaggerUI = SwaggerUIBundle({
+    url: odoo.rest.serverBaseUrl + '/rest/docs/api.json',
+    oauth2RedirectUrl: odoo.rest.serverBaseUrl + '/rest/docs/oauth2/redirect',
     dom_id: '#swagger-ui',
     deepLinking: true,
     presets: [
@@ -68,6 +68,16 @@ SwaggerUIBundle({
         return result === 0 ? elem1.get('path').localeCompare(elem2.get('path')) : result;
     },
     tagsSorter: 'alpha',
+    requestInterceptor: (req) => {
+        req.headers[odoo.rest.databaseHeader] = odoo.rest.databaseName;
+        return req;
+    },
+});
+
+swaggerUI.initOAuth({
+    additionalQueryStringParams: {
+        [odoo.rest.databaseParam]: odoo.rest.databaseName,
+    },
 });
 	
 });

@@ -41,12 +41,8 @@
 ###################################################################################
 
 
-import logging
-
 from odoo import models, api, fields
-from odoo.addons.muk_rest.tools import common 
-
-_logger = logging.getLogger(__name__)
+from odoo.addons.muk_rest.tools import common
 
 
 class Request(models.Model):

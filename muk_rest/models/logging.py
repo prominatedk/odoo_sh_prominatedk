@@ -41,49 +41,56 @@
 ###################################################################################
 
 
-import datetime
-
-from odoo import models, fields
+from odoo import api, tools, fields, models
 
 
-class ResUsers(models.Model):
+class RESTLogging(models.Model):
     
-    _inherit = 'res.users'
+    _name = 'muk_rest.logging'
+    _description = 'REST Logs'
+    _order = 'create_date desc'
+    _rec_name = 'url'
 
     #----------------------------------------------------------
     # Database
     #----------------------------------------------------------
-    
-    oauth1_session_ids = fields.One2many(
-        comodel_name='muk_rest.access_token',
-        inverse_name='user_id',
-        domain="[('user_id', '=', uid)]",
-        string="OAuth1 Sessions"
+
+    user_id = fields.Many2one(
+        comodel_name='res.users',
+        string='User',
+    )
+
+    ip_address = fields.Char(
+        string="IP Address"
+    )
+
+    url = fields.Char(
+        string="URL"
+    )
+
+    method = fields.Char(
+        string="Method"
+    )
+
+    request = fields.Text(
+        string="Request"
+    )
+
+    status = fields.Char(
+        string="Status"
     )
     
-    oauth2_session_ids = fields.One2many(
-        comodel_name='muk_rest.bearer_token',
-        inverse_name='user_id',
-        domain="""[
-            '&', ('user_id', '=', uid), 
-            '|', ('expiration_date', '=', False), 
-            ('expiration_date', '>', datetime.datetime.utcnow())
-        ]""",
-        string="OAuth2 Sessions"
+    response = fields.Text(
+        string="Response"
     )
-    
+
     #----------------------------------------------------------
-    # Framework
+    # Autovacuum
     #----------------------------------------------------------
     
-    def __init__(self, pool, cr):
-        init_result = super(ResUsers, self).__init__(pool, cr)
-        access_oauth_fields = ['oauth1_session_ids', 'oauth2_session_ids']
-        readable_fields = list(self.SELF_READABLE_FIELDS)
-        writeable_fields = list(self.SELF_WRITEABLE_FIELDS)
-        readable_fields.extend(access_oauth_fields)
-        writeable_fields.extend(access_oauth_fields)
-        type(self).SELF_READABLE_FIELDS = readable_fields
-        type(self).SELF_WRITEABLE_FIELDS = writeable_fields
-        return init_result
-            
+    @api.autovacuum
+    def _autovacuum_logs(self):
+        limit_days = int(tools.config.get('rest_logging_autovacuum', 30))
+        limit_date = fields.Datetime.subtract(fields.Datetime.now(), days=limit_days)
+        self.search([('create_date', '<', limit_date)]).unlink()
+        

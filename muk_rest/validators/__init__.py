@@ -67,5 +67,3 @@ try:
     oauth2_provider = OAuth2Server(OAuth2RequestValidator())
 except ImportError:
     _logger.warning("The Python library oauthlib is not installed, OAuth of the REST API wont work.")
-    
-

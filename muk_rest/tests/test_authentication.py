@@ -131,7 +131,10 @@ class AuthenticationTestCase(RestfulCase):
             client_secret=self.oauth1_oob_client_secret, 
             callback_uri='oob'
         )
-        fetch_response = oauth.fetch_request_token(self.oauth1_request_token_url)
+        fetch_response = oauth.fetch_request_token(
+            self.oauth1_request_token_url,
+            headers={self.db_header: self.env.cr.dbname}
+        )
         resource_owner_key = fetch_response.get('oauth_token')
         resource_owner_secret = fetch_response.get('oauth_token_secret')
         self.assertTrue(resource_owner_key)
@@ -147,7 +150,10 @@ class AuthenticationTestCase(RestfulCase):
             resource_owner_secret=resource_owner_secret,
             verifier=verifier
         )
-        oauth_tokens = oauth.fetch_access_token(self.oauth1_access_token_url)
+        oauth_tokens = oauth.fetch_access_token(
+            self.oauth1_access_token_url,
+            headers={self.db_header: self.env.cr.dbname}
+        )
         resource_owner_key = oauth_tokens.get('oauth_token')
         resource_owner_secret = oauth_tokens.get('oauth_token_secret')
         self.assertTrue(resource_owner_key)
@@ -158,7 +164,10 @@ class AuthenticationTestCase(RestfulCase):
             resource_owner_key=resource_owner_key,
             resource_owner_secret=resource_owner_secret
         )
-        self.assertTrue(oauth.get(self.test_authentication_url))
+        self.assertTrue(oauth.get(
+            self.test_authentication_url,
+            headers={self.db_header: self.env.cr.dbname}
+        ))
      
     @skip_check_authentication()
     def test_oauth1_callback_authentication(self):
@@ -167,7 +176,10 @@ class AuthenticationTestCase(RestfulCase):
             client_secret=self.oauth1_callback_client_secret, 
             callback_uri=self.callback_url
         )
-        fetch_response = oauth.fetch_request_token(self.oauth1_request_token_url)
+        fetch_response = oauth.fetch_request_token(
+            self.oauth1_request_token_url,
+            headers={self.db_header: self.env.cr.dbname}
+        )
         resource_owner_key = fetch_response.get('oauth_token')
         resource_owner_secret = fetch_response.get('oauth_token_secret')
         self.assertTrue(resource_owner_key)
@@ -175,7 +187,7 @@ class AuthenticationTestCase(RestfulCase):
         self.assertTrue(self.url_open(oauth.authorization_url(self.oauth1_authorization_url)))
         data = {'oauth_token': resource_owner_key, 'login': self.login, 'password': self.password}
         authorization_url = self.url_prepare(self.oauth1_authorization_url)
-        response = self.opener.post(authorization_url, data=data, timeout=10, allow_redirects=False)
+        response = self.url_open(authorization_url, data=data, timeout=10, allow_redirects=False)
         callback = urllib.parse.urlparse(response.headers['Location'])
         verifier = urllib.parse.parse_qs(callback.query)['oauth_verifier'][0]
         self.assertTrue(verifier)
@@ -186,7 +198,10 @@ class AuthenticationTestCase(RestfulCase):
             resource_owner_secret=resource_owner_secret,
             verifier=verifier
         )
-        oauth_tokens = oauth.fetch_access_token(self.oauth1_access_token_url)
+        oauth_tokens = oauth.fetch_access_token(
+            self.oauth1_access_token_url,
+            headers={self.db_header: self.env.cr.dbname}
+        )
         resource_owner_key = oauth_tokens.get('oauth_token')
         resource_owner_secret = oauth_tokens.get('oauth_token_secret')
         self.assertTrue(resource_owner_key)
@@ -197,7 +212,10 @@ class AuthenticationTestCase(RestfulCase):
             resource_owner_key=resource_owner_key,
             resource_owner_secret=resource_owner_secret
         )
-        self.assertTrue(oauth.get(self.test_authentication_url))
+        self.assertTrue(oauth.get(
+            self.test_authentication_url,
+            headers={self.db_header: self.env.cr.dbname}
+        ))
   
     @skip_check_authentication()
     def test_oauth2_web_authentication(self):
@@ -207,6 +225,7 @@ class AuthenticationTestCase(RestfulCase):
         self.assertTrue(self.url_open(authorization_url))
         data = {
             'client_id': self.oauth2_web_client_key,
+            'client_secret': self.oauth2_web_client_secret,
             'login': self.login,
             'password': self.password, 
             'response_type': 'code',
@@ -215,10 +234,18 @@ class AuthenticationTestCase(RestfulCase):
             'scopes': []
         }
         authorization_url = self.url_prepare(self.oauth2_authorization_url)
-        response = self.opener.post(authorization_url, data=data, timeout=10, allow_redirects=False)
-        token = oauth.fetch_token(self.oauth2_access_token_url, authorization_response=response.headers['Location'])
+        response = self.url_open(authorization_url, data=data, timeout=10, allow_redirects=False)
+        token = oauth.fetch_token(
+            self.oauth2_access_token_url,
+            client_secret=self.oauth2_web_client_secret,
+            authorization_response=response.headers['Location'],
+            headers={self.db_header: self.env.cr.dbname},
+        )
         self.assertTrue(token)
-        self.assertTrue(oauth.get(self.test_authentication_url))
+        self.assertTrue(oauth.get(
+            self.test_authentication_url,
+            headers={self.db_header: self.env.cr.dbname}
+        ))
   
     @skip_check_authentication()
     def test_oauth2_mobile_authentication(self):
@@ -237,10 +264,13 @@ class AuthenticationTestCase(RestfulCase):
             'scopes': []
         }
         authorization_url = self.url_prepare(self.oauth2_authorization_url)
-        response = self.opener.post(authorization_url, data=data, timeout=10, allow_redirects=False)
+        response = self.url_open(authorization_url, data=data, timeout=10, allow_redirects=False)
         token = oauth.token_from_fragment(response.headers['Location'])
         self.assertTrue(token)
-        self.assertTrue(oauth.get(self.test_authentication_url))
+        self.assertTrue(oauth.get(
+            self.test_authentication_url,
+            headers={self.db_header: self.env.cr.dbname}
+        ))
  
     @skip_check_authentication()
     def test_oauth2_legacy_authentication(self):
@@ -249,6 +279,7 @@ class AuthenticationTestCase(RestfulCase):
         )
         oauth = requests_oauthlib.OAuth2Session(client=client)
         token = oauth.fetch_token(
+            headers={self.db_header: self.env.cr.dbname},
             token_url=self.oauth2_access_token_url,
             client_id=self.oauth2_legacy_client_key, 
             client_secret=self.oauth2_legacy_client_secret,
@@ -256,7 +287,10 @@ class AuthenticationTestCase(RestfulCase):
             password=self.password
         )
         self.assertTrue(token)
-        self.assertTrue(oauth.get(self.test_authentication_url))
+        self.assertTrue(oauth.get(
+            self.test_authentication_url,
+            headers={self.db_header: self.env.cr.dbname}
+        ))
  
     @skip_check_authentication()
     def test_oauth2_backend_authentication(self):
@@ -265,35 +299,67 @@ class AuthenticationTestCase(RestfulCase):
         )
         oauth = requests_oauthlib.OAuth2Session(client=client)
         token = oauth.fetch_token(
+            headers={self.db_header: self.env.cr.dbname},
             token_url=self.oauth2_access_token_url,
             client_id=self.oauth2_backend_client_key, 
-            client_secret=self.oauth2_backend_client_secret
+            client_secret=self.oauth2_backend_client_secret,
         )
         self.assertTrue(token)
-        self.assertTrue(oauth.get(self.test_authentication_url))
+        self.assertTrue(oauth.get(
+            self.test_authentication_url,
+            headers={self.db_header: self.env.cr.dbname}
+        ))
  
     @skip_check_authentication()
     def test_oauth2_refresh(self):
         client = oauthlib.oauth2.LegacyApplicationClient(client_id=self.oauth2_legacy_client_key)
         oauth = requests_oauthlib.OAuth2Session(client=client)
-        token = oauth.fetch_token(token_url=self.oauth2_access_token_url,
+        token = oauth.fetch_token(
+            headers={self.db_header: self.env.cr.dbname},
+            token_url=self.oauth2_access_token_url,
             client_id=self.oauth2_legacy_client_key, 
             client_secret=self.oauth2_legacy_client_secret,
-            username=self.login, password=self.password)
-        extra = {'client_id': self.oauth2_legacy_client_key, 'client_secret': self.oauth2_legacy_client_secret}
-        refresh_token = oauth.refresh_token(token_url=self.oauth2_access_token_url, **extra)
+            username=self.login,
+            password=self.password
+        )
+        extra = {
+            'client_id': self.oauth2_legacy_client_key,
+            'client_secret': self.oauth2_legacy_client_secret
+        }
+        refresh_token = oauth.refresh_token(
+            token_url=self.oauth2_access_token_url,
+            headers={self.db_header: self.env.cr.dbname},
+            **extra
+        )
         self.assertTrue(refresh_token)
-        self.assertTrue(oauth.get(self.test_authentication_url))
+        self.assertTrue(oauth.get(
+            self.test_authentication_url,
+            headers={self.db_header: self.env.cr.dbname}
+        ))
  
     @skip_check_authentication()
     def test_oauth2_revoke(self):
         client = oauthlib.oauth2.LegacyApplicationClient(client_id=self.oauth2_legacy_client_key)
         oauth = requests_oauthlib.OAuth2Session(client=client)
-        token = oauth.fetch_token(token_url=self.oauth2_access_token_url,
+        token = oauth.fetch_token(
+            headers={self.db_header: self.env.cr.dbname},
+            token_url=self.oauth2_access_token_url,
             client_id=self.oauth2_legacy_client_key, 
             client_secret=self.oauth2_legacy_client_secret,
-            username=self.login, password=self.password)
-        data = {'client_id': self.oauth2_legacy_client_key, 'token': token['access_token']}
-        self.assertTrue(oauth.post(self.oauth2_revoke_url, data=data))
-        self.assertFalse(oauth.get(self.test_authentication_url))
+            username=self.login,
+            password=self.password
+        )
+        data = {
+            'client_id': self.oauth2_legacy_client_key,
+            'token': token['access_token']
+        }
+        self.assertTrue(oauth.post(
+            self.oauth2_revoke_url,
+            data=data,
+            headers={self.db_header: self.env.cr.dbname}
+        ))
+        self.assertFalse(oauth.get(
+            self.test_authentication_url,
+            headers={self.db_header: self.env.cr.dbname}
+        ))
          

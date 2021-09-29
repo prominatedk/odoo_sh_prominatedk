@@ -75,6 +75,8 @@ class RestfulCase(common.HttpCase):
         self.client_key = CLIENT_KEY
         self.client_secret = CLIENT_SECRET
         self.callback_url = CALLBACK_URL
+        self.db_param = tools.config.get('rest_db_param', 'db')
+        self.db_header = tools.config.get('rest_db_header', 'DATABASE')
         self.test_authentication_url = self.url_prepare(TEST_AUTHENTICATION_URL)
         self.oauth1_request_token_url = self.url_prepare(OAUTH1_REQUEST_TOKEN_URL)
         self.oauth1_authorization_url = self.url_prepare(OAUTH1_AUTHORIZATION_URL)
@@ -179,6 +181,7 @@ class RestfulCase(common.HttpCase):
             client_id=self.test_client_key
         )
         oauth = requests_oauthlib.OAuth2Session(client=client)
+        oauth.headers.update({self.db_header: self.env.cr.dbname})
         token = oauth.fetch_token(
             token_url=self.oauth2_access_token_url,
             client_id=self.test_client_key, 
@@ -186,3 +189,13 @@ class RestfulCase(common.HttpCase):
             username=login, password=password
         )
         return oauth
+
+    def url_open(self, url, headers=None, *args, **kwargs):
+        if headers is None:
+            headers = {}
+        headers.update({
+            self.db_header: self.env.cr.dbname
+        })
+        return super(RestfulCase, self).url_open(
+            url, headers=headers, *args, **kwargs
+        )

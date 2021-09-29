@@ -42,16 +42,13 @@
 
 
 import os
-import re
-import logging
 
 from oauthlib.common import to_unicode
 from oauthlib.oauth1 import SIGNATURE_HMAC, RequestValidator
 
-from odoo import api, http, tools, SUPERUSER_ID
+from odoo import api, http, SUPERUSER_ID
 from odoo.tools.misc import consteq
 
-_logger = logging.getLogger(__name__)
 
 class OAuth1RequestValidator(RequestValidator):
     

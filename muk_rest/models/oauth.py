@@ -42,15 +42,12 @@
 
 
 import re
-import logging
 import datetime
 import textwrap
 
-from odoo import _, models, api, fields
+from odoo import models, fields
 from odoo.addons.muk_rest.tools.common import parse_value
 from odoo.addons.muk_rest.tools.http import build_route
-
-_logger = logging.getLogger(__name__)
 
 
 class OAuth(models.Model):
@@ -219,12 +216,17 @@ class OAuth(models.Model):
     # Actions
     #----------------------------------------------------------
     
+    def action_set_active(self):
+        self.write({'active': True})
+
+    def action_set_unactive(self):
+        self.write({'active': False})
+    
     def action_settings(self):
         self.ensure_one()
         action = {
             'name': _("Settings"),
             'type': 'ir.actions.act_window',
-            'view_type': 'form',
             'view_mode': 'form',
             'target': 'current',
         }

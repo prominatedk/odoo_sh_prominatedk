@@ -41,17 +41,19 @@
 ###################################################################################
 
 
-import io
 import json
 import requests
 import werkzeug
 
-from odoo import SUPERUSER_ID, _
+from odoo import _
+from odoo.tools import config
 from odoo.modules import get_resource_path
 from odoo.http import Controller, Response, request, route, send_file
-from odoo.addons.muk_rest.tools.http import build_route, make_json_response
-from odoo.addons.muk_rest.tools.common import BASE_URL, parse_value
+
+from odoo.addons.muk_rest.tools.http import make_json_response
+from odoo.addons.muk_rest.tools.common import parse_value
 from odoo.addons.muk_rest.tools import docs
+
 
 class DocsController(Controller):
     
@@ -76,7 +78,7 @@ class DocsController(Controller):
     #----------------------------------------------------------
     
     @route(
-        route=build_route(['/docs', '/docs/index.html']),
+        route=['/rest/docs', '/rest/docs/index.html'],
         methods=['GET'],
         type='http',
         auth='public',
@@ -86,11 +88,14 @@ class DocsController(Controller):
         if not template or not template.startswith('docs'):
             raise werkzeug.exceptions.BadRequest(_('Invalid template name.'))
         return request.render('muk_rest.{}'.format(template), {
-            'base_url': self._get_base_url(), 'api_url': BASE_URL
+            'db_header': config.get('rest_db_header', 'DATABASE'),
+            'db_param': config.get('rest_db_param', 'db'),
+            'base_url': self._get_base_url().strip('/'),
+            'db_name': request.env.cr.dbname,
         })
 
     @route(
-        route=build_route('/docs/api.json'),
+        route='/rest/docs/api.json',
         methods=['GET'],
         type='http',
         auth='public',
@@ -100,7 +105,7 @@ class DocsController(Controller):
         return make_json_response(self._get_api_docs())
 
     @route(
-        route=build_route('/docs/oauth2/redirect'), 
+        route='/rest/docs/oauth2/redirect',
         methods=['GET'],
         type='http',
         auth='none', 
@@ -112,10 +117,10 @@ class DocsController(Controller):
         ))
     
     @route(
-        route=build_route([
-            '/docs/client',
-            '/docs/client/<string:language>',
-        ]),
+        route=[
+            '/rest/docs/client',
+            '/rest/docs/client/<string:language>',
+        ],
         methods=['GET'],
         type='http',
         auth='public',

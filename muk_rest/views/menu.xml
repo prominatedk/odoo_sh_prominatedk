@@ -1,4 +1,5 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="utf-8"?>
+
 <!--
 
     Copyright (c) 2017-today MuK IT GmbH.
@@ -48,6 +49,11 @@
 		sequence="5"
 		groups="base.group_system"
 		parent="base.menu_administration" />
+
+	<menuitem id="cat_menu_rest_overview"
+		name="Overview"
+		sequence="15"
+		parent="main_menu_rest" />
 		
 	<menuitem id="cat_menu_rest_configuration" 
 		name="Configuration"

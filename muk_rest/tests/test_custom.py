@@ -143,13 +143,13 @@ class CustomTestCase(RestfulCase):
     @skip_check_authentication()
     def test_action(self):
         client = self.authenticate()
-        response = client.get(self.url_prepare(self.action_endpoint.route))
+        response = client.post(self.url_prepare(self.action_endpoint.route))
         self.assertTrue(response)
         self.assertTrue(response.json())
         
     @skip_check_authentication()
     def test_code(self):
         client = self.authenticate()
-        response = client.get(self.url_prepare(self.code_endpoint.route))
+        response = client.post(self.url_prepare(self.code_endpoint.route))
         self.assertTrue(response)
         self.assertTrue(response.json())

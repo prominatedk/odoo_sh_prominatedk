@@ -43,16 +43,14 @@
 
 import base64
 
-from odoo import http, release, _
-from odoo.http import request, Response
-from odoo.exceptions import AccessError, UserError
+from odoo import http
+from odoo.http import request
 from odoo.tools import misc, image_guess_size_from_field_name, image_process
-from odoo.tools.mimetypes import neuter_mimetype
 
 from odoo.addons.web.controllers import main
 from odoo.addons.muk_rest.tools.docs import api_doc
-from odoo.addons.muk_rest.tools.http import build_route, make_json_response
-from odoo.addons.muk_rest import tools
+from odoo.addons.muk_rest.tools.http import build_route
+from odoo.addons.muk_rest import core
 
 
 class FileController(http.Controller):
@@ -190,7 +188,7 @@ class FileController(http.Controller):
             },
             'file_response': {
                 'name': 'file_response',
-                'description': 'Return the Report as a File',
+                'description': 'Return the Response as a File',
                 'schema': {
                     'type': 'boolean'
                 }
@@ -224,7 +222,7 @@ class FileController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route([
             '/download',        
             '/download/<string:xmlid>',
@@ -256,7 +254,7 @@ class FileController(http.Controller):
             headers.append(('Content-Length', len(decoded_content)))
             return request.make_response(decoded_content, headers)
         header_values = dict(headers)
-        return make_json_response({
+        return request.make_json_response({
             'content': content,
             'filename': filename,
             'content_disposition': header_values.get('Content-Disposition'),
@@ -356,7 +354,7 @@ class FileController(http.Controller):
             },
             'file_response': {
                 'name': 'file_response',
-                'description': 'Return the Report as a File',
+                'description': 'Return the Response as a File',
                 'schema': {
                     'type': 'boolean'
                 }
@@ -390,7 +388,7 @@ class FileController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route([
             '/image',
             '/image/<string:xmlid>',
@@ -444,7 +442,7 @@ class FileController(http.Controller):
             response.status_code = status
             return response
         header_values = dict(headers)
-        return make_json_response({
+        return request.make_json_response({
             'content': content,
             'filename': filename,
             'content_disposition': header_values.get('Content-Disposition'),
@@ -507,7 +505,7 @@ class FileController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route([
             '/upload',        
             '/upload/<string:model>/<int:id>',
@@ -519,7 +517,7 @@ class FileController(http.Controller):
     def upload(self, model, id, field=None, **kw):
         files = request.httprequest.files.getlist('ufile')
         if field is not None and len(files) == 1:
-            return make_json_response(request.env[model].browse(int(id)).write({
+            return request.make_json_response(request.env[model].browse(int(id)).write({
                 field: base64.encodebytes(files[0].read())
             }))
         attachment_ids = []
@@ -531,4 +529,4 @@ class FileController(http.Controller):
                 'res_model': model,
                 'res_id': int(id),
             }).id)
-        return make_json_response(attachment_model.browse(attachment_ids).name_get())
+        return request.make_json_response(attachment_model.browse(attachment_ids).name_get())

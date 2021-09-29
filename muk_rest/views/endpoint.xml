@@ -1,4 +1,5 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="utf-8"?>
+
 <!--
 
     Copyright (c) 2017-today MuK IT GmbH.
@@ -65,13 +66,13 @@
 		<field name="name">muk_rest_endpoint.tree</field>
 		<field name="model">muk_rest.endpoint</field>
 		<field name="arch" type="xml">
-			<tree string="Endpoints" decoration-muted="(not active)">
+			<tree string="Endpoints" sample="1" decoration-muted="(not active)">
 				<field name="name"/>
                 <field name="method"/>
                 <field name="route"/>
                 <field name="model_id"/>
                 <field name="state"/>
-                <field name="active"/>
+                <field name="active" widget="boolean_toggle"/>
 			</tree>
 		</field>
 	</record>
@@ -115,6 +116,8 @@
 							<field name="protected" widget="boolean_toggle"/>
 							<field name="eval_sudo" widget="boolean_toggle"/>
 							<field name="wrap_response" widget="boolean_toggle"/>
+							<field name="logging" widget="boolean_toggle" attrs="{'invisible': [('show_logging', '=', False)]}" />
+							<field name="show_logging" invisible="1" />
 				        </group>
 			        </group>
 			        <notebook>
@@ -145,14 +148,17 @@
 	                                	<li><code>uid</code>, <code>user</code>: User on which the rule is triggered</li>
 	                                    <li><code>env</code>: Odoo Environment on which the rule is triggered</li>
 	                                    <li><code>model</code>: Odoo Model of the record on which the rule is triggered</li>
+	                                    <li><code>headers</code>: HTTP headers with which the endpoint was called.</li>
 	                                    <li><code>params</code>: HTTP parameters with which the endpoint was called.</li>
 		                                <li><code>b64encode</code>, <code>b64decode</code>: Base64 converter to encode and decode binary data</li>
-	                                    <li><code>json</code>, <code>time</code>, <code>datetime</code>, <code>dateutil</code>, <code>timezone</code>: useful Python libraries</li>
-	                                    <li><code>date_format</code>, <code>datetime_format</code>: server date and time formats</li>
+	                                    <li><code>json</code>, <code>time</code>, <code>datetime</code>, <code>dateutil</code>, <code>timezone</code>: Useful Python libraries</li>
+	                                    <li><code>date_format</code>, <code>datetime_format</code>: Server date and time formats</li>
+	                                    <li><code>string_to_date</code>, <code>date_to_string</code>, <code>string_to_datetime</code>, <code>datetime_to_string</code>: Utils to parse dates to the server format</li>
+	                                    <li><code>make_response</code>: Function to generate a json response <code>response = make_response({...})</code></li>
 	                                    <li><code>Response</code>: Response to use with <code>response = Response(...)</code></li>
 	                                    <li><code>responses</code>: Responses to use with <code>response = ...</code></li>
 	                                    <li><code>exceptions</code>: Exception to use with <code>raise</code></li>
-	                                    <li><code>logger.info(message)</code>: Python logging framework</li>
+	                                    <li><code>logger</code>: Python logging framework <code>logger.info(message)</code></li>
 	                                </ul>
 	                                <p>There a multiple ways to return a response:</p>
 	                                <ul>
@@ -217,7 +223,7 @@
 	    </field>
 	</record>
 
-	<menuitem id="menu_rest_endpoint" name="Endpoints" sequence="2"
-		parent="main_menu_rest" action="action_rest_endpoint" />
+	<menuitem id="menu_rest_endpoint" name="Endpoints" sequence="25"
+		parent="cat_menu_rest_configuration" action="action_rest_endpoint" />
 	
 </odoo>

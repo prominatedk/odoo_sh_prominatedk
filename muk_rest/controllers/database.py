@@ -43,27 +43,20 @@
 
 import os
 import re
-import ast
-import json
-import urllib
-import logging
 import tempfile
 import datetime
 
 from werkzeug import exceptions
 
-from odoo import http, release, service, _
+from odoo import http, service
 from odoo.http import request, Response
-from odoo.exceptions import AccessDenied
 from odoo.tools import misc, config
 from odoo.sql_db import db_connect
 
-from odoo.addons.muk_rest import tools
+from odoo.addons.muk_rest import core
 from odoo.addons.muk_rest.tools.docs import api_doc
+from odoo.addons.muk_rest.tools.http import build_route
 from odoo.addons.muk_rest.tools.common import DBNAME_PATTERN
-from odoo.addons.muk_rest.tools.http import build_route, make_json_response
-
-_logger = logging.getLogger(__name__)
 
 
 class DatabaseController(http.Controller):
@@ -130,13 +123,13 @@ class DatabaseController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route('/database/list'), 
         methods=['GET'],
     )
     def database_list(self, **kw):
         databases = http.db_list()
-        return make_json_response({
+        return request.make_json_response({
             'databases': databases, 
             'incompatible_databases': service.db.list_db_incompatible(databases)
         })
@@ -174,7 +167,7 @@ class DatabaseController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route([
             '/database/size',
             '/database/size/<string:database_name>',
@@ -192,7 +185,7 @@ class DatabaseController(http.Controller):
                         pg_size_pretty(pg_database_size('{dbname}'));
                 '''.format(dbname=database_name))
                 database_size = cursor.fetchone()
-        return make_json_response({
+        return request.make_json_response({
             'name': database_name, 
             'size': database_size[0], 
             'text': database_size[1]
@@ -271,9 +264,10 @@ class DatabaseController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route('/database/create'), 
         methods=['POST'],
+        disable_logging=True,
     )
     def database_create(self, database_name, admin_login, admin_password, master_password='admin', lang='en_US', **kw):
         if not re.match(DBNAME_PATTERN, database_name):
@@ -287,7 +281,7 @@ class DatabaseController(http.Controller):
             admin_login,
             kw.get('country_code', False)
         ])
-        return make_json_response(True)
+        return request.make_json_response(True)
     
     @api_doc(
         tags=['Database'], 
@@ -333,9 +327,10 @@ class DatabaseController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route('/database/duplicate'), 
         methods=['POST'],
+        disable_logging=True,
     )
     def database_duplicate(self, database_old, database_new, master_password='admin', **kw):
         if not re.match(DBNAME_PATTERN, database_new):
@@ -343,7 +338,7 @@ class DatabaseController(http.Controller):
         http.dispatch_rpc('db', 'duplicate_database', [
             master_password, database_old, database_new
         ])
-        return make_json_response(True)
+        return request.make_json_response(True)
     
     
     @api_doc(
@@ -382,14 +377,15 @@ class DatabaseController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route('/database/drop'), 
         methods=['POST'],
+        disable_logging=True,
     )
     def database_drop(self, database_name, master_password='admin', **kw):
         http.dispatch_rpc('db','drop', [master_password, database_name])
         request._cr = None
-        return make_json_response(True)
+        return request.make_json_response(True)
 
     #----------------------------------------------------------
     # Backup & Restore
@@ -439,9 +435,10 @@ class DatabaseController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route('/database/backup'), 
         methods=['POST'],
+        disable_logging=True,
     )
     @service.db.check_db_management_enabled
     def database_backup(self, database_name, master_password='admin', backup_format='zip', **kw):
@@ -516,9 +513,10 @@ class DatabaseController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route('/database/restore'), 
         methods=['POST'],
+        disable_logging=True,
     )
     @service.db.check_db_management_enabled
     def restore(self, backup_file, database_name, master_password='admin', copy=False, **kw):
@@ -527,7 +525,7 @@ class DatabaseController(http.Controller):
             with tempfile.NamedTemporaryFile(delete=False) as file:
                 backup_file.save(file)
             service.db.restore_db(database_name, file.name, misc.str2bool(copy))
-            return make_json_response(True)
+            return request.make_json_response(True)
         except Exception:
             raise
         finally:

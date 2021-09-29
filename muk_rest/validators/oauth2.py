@@ -41,8 +41,6 @@
 ###################################################################################
 
 
-import re
-import logging
 import datetime
 
 from oauthlib.oauth2 import RequestValidator
@@ -54,7 +52,6 @@ from odoo.tools.misc import consteq
 from odoo.addons.muk_rest.tools import security
 from odoo.addons.muk_rest.tools.http import build_route
 
-_logger = logging.getLogger(__name__)
 
 class OAuth2RequestValidator(RequestValidator):
     
@@ -179,10 +176,9 @@ class OAuth2RequestValidator(RequestValidator):
         self._ensure_request_client(request, request.client_id)
         if not request.client:
             return False
-        return not (
-            request.client_secret is not None and
-            not consteq(request.client.client_secret, request.client_secret)
-        )
+        if not request.client.client_secret:
+            return True
+        return request.client_secret and consteq(request.client.client_secret, request.client_secret)
 
     def authenticate_client_id(self, client_id, request, *args, **kwargs):
         request = self._ensure_client_parameters(request)

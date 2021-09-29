@@ -46,13 +46,11 @@ import ast
 import json
 import random
 import passlib
-import functools
 import traceback
 
 from string import ascii_letters, digits
 
-from odoo import conf, tools, registry, modules, api, SUPERUSER_ID
-from odoo.addons.muk_rest import exceptions
+from odoo import tools
 
 VERSION = '1'
 BASE_URL = '/api/v{}'.format(VERSION)
@@ -122,6 +120,8 @@ def monkey_patch(cls):
 def parse_value(value, default=None, raise_exception=False):
     if not value:
         return default
+    if isinstance(value, (list, dict)):
+        return value
     exception = None
     try:
         try:
@@ -157,6 +157,7 @@ def parse_domain(domain):
         parsed_domain.append(item)
     return parsed_domain
 
+
 def parse_exception(exc):
     modul = type(exc).__module__
     name = type(exc).__name__
@@ -168,7 +169,9 @@ def parse_exception(exc):
         'code': getattr(exc, 'code', 500),
     }
     if tools.config.get('rest_debug', True):
-        trace_text = ''.join(traceback.format_tb(exc.__traceback__))
+        trace_text = ''.join(traceback.format_exception(
+            exc.__class__, exc, exc.__traceback__)
+        )
         error['traceback'] = trace_text.splitlines()
     return error
 

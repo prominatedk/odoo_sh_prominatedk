@@ -41,22 +41,14 @@
 ###################################################################################
 
 
-import re
-import json
-import base64
-import urllib
-import werkzeug
+from odoo import http, release, service
+from odoo.http import request
+from odoo.tools import config
 
-from odoo import http, release, service, _
-from odoo.http import request, Response
-from odoo.models import check_method_name
-from odoo.tools.image import image_data_uri
-from odoo.tools import misc, config
-
-from odoo.addons.muk_rest import tools
+from odoo.addons.muk_rest import core
 from odoo.addons.muk_rest.tools.docs import api_doc
 from odoo.addons.muk_rest.tools.common import VERSION
-from odoo.addons.muk_rest.tools.http import build_route, make_json_response
+from odoo.addons.muk_rest.tools.http import build_route
 
 
 class ServerController(http.Controller):
@@ -111,12 +103,12 @@ class ServerController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route('/'), 
         methods=['GET']
     )
     def version(self, **kw): 
-        return make_json_response({
+        return request.make_json_response({
             'server_version': release.version,
             'server_version_info': release.version_info,
             'server_serie': release.serie,
@@ -150,12 +142,12 @@ class ServerController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route('/languages'), 
         methods=['GET']
     )
     def languages(self):
-        return make_json_response([
+        return request.make_json_response([
             (lang[0], lang[1].split('/')[0].strip()) 
             for lang in service.db.exp_list_lang()
         ])
@@ -187,12 +179,12 @@ class ServerController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route('/countries'), 
         methods=['GET']
     )
     def countries(self):
-        return make_json_response(service.db.exp_list_countries())
+        return request.make_json_response(service.db.exp_list_countries())
     
     @api_doc(
         tags=['Server'], 
@@ -218,13 +210,13 @@ class ServerController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route('/database'), 
         methods=['GET'],
         ensure_db=True,
     )
     def database(self, **kw): 
-        return make_json_response({'database': request.db})
+        return request.make_json_response({'database': request.db})
     
     #----------------------------------------------------------
     # Security
@@ -266,12 +258,13 @@ class ServerController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route('/change_master_password'), 
         methods=['POST'],
+        disable_logging=True,
     )
     @service.db.check_db_management_enabled
     def change_password(self, password_new, password_old='admin' , **kw):
         http.dispatch_rpc('db', 'change_admin_password', [password_old, password_new])
-        return make_json_response(True)
+        return request.make_json_response(True)
     

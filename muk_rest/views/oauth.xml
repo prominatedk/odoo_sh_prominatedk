@@ -1,4 +1,5 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="utf-8"?>
+
 <!--
 
     Copyright (c) 2017-today MuK IT GmbH.
@@ -263,7 +264,7 @@
 		<field name="target">new</field>
 	</record>
 	
-	<menuitem id="menu_rest_oauth" name="Dashboard" sequence="1"
-		parent="main_menu_rest" action="action_rest_oauth" />
+	<menuitem id="menu_rest_oauth" name="Dashboard" sequence="5"
+		parent="cat_menu_rest_overview" action="action_rest_oauth" />
 	
 </odoo>

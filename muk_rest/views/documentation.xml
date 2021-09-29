@@ -1,4 +1,5 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="utf-8"?>
+
 <!--
 
     Copyright (c) 2017-today MuK IT GmbH.
@@ -83,7 +84,7 @@
 	
 	<record id="action_rest_endpoints" model="ir.actions.act_url">
     	<field name="name">API</field>
-		<field name="url">/api/v1/docs?template=docs_standalone</field>
+		<field name="url">/rest/docs?template=docs_standalone</field>
 		<field name="target">new</field>
 	</record>	
 
@@ -93,12 +94,6 @@
 		<field name="view_mode">form</field>
 		<field name="target">new</field>
 	</record>
-
-	<record id="action_rest_examples" model="ir.actions.act_url">
-    	<field name="name">Examples</field>
-		<field name="url">https://mukit.at/r/aoz</field>
-		<field name="target">new</field>
-	</record>	
 		
 	<menuitem id="menu_rest_endpoints" 
 		name="Endpoints"
@@ -111,11 +106,5 @@
 		parent="cat_menu_rest_documentation" 
 		action="action_rest_client_generator" 
 		sequence="5" />	
-		
-	<menuitem id="menu_rest_examples" 
-		name="Examples"
-		parent="cat_menu_rest_documentation" 
-		action="action_rest_examples" />	
-		sequence="10" 
 		
 </odoo>

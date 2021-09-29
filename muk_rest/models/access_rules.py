@@ -42,13 +42,9 @@
 
 
 import json
-import logging
 
 from odoo import conf, models, api, fields, _
 from odoo.exceptions import ValidationError
-from odoo.addons.muk_rest.tools.common import parse_value
-
-_logger = logging.getLogger(__name__)
 
 
 class AccessRule(models.Model):

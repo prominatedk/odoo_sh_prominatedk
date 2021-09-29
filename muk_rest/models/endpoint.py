@@ -41,7 +41,6 @@
 ###################################################################################
 
 
-import json
 import base64
 import logging
 import dateutil
@@ -52,7 +51,7 @@ from werkzeug import exceptions
 
 from odoo import tools, models, api, fields, _
 from odoo.http import request, Response
-from odoo.exceptions import ValidationError, Warning
+from odoo.exceptions import ValidationError
 from odoo.tools import DEFAULT_SERVER_DATE_FORMAT
 from odoo.tools import DEFAULT_SERVER_DATETIME_FORMAT
 from odoo.tools.safe_eval import safe_eval, test_python_expr
@@ -62,7 +61,6 @@ from odoo.addons.muk_rest.tools import common, docs
 from odoo.addons.muk_rest.tools.http import make_json_response
 from odoo.addons.muk_rest.tools.safe_eval import responses, exceptions
 
-_logger = logging.getLogger(__name__)
 
 class Endpoint(models.Model):
     
@@ -213,6 +211,16 @@ class Endpoint(models.Model):
             # Enter Python code here...
         """)
     )
+    
+    logging = fields.Boolean(
+        string="Logging",
+        default=True,
+    )
+    
+    show_logging = fields.Boolean(
+        compute='_compute_show_logging',
+        string="Show Logging",
+    )
 
     docs_summary = fields.Char(
         string="Summary"
@@ -342,12 +350,15 @@ class Endpoint(models.Model):
         for record in self:
             record.url = '{}{}'.format(server_url, record.route)
     
+    def _compute_show_logging(self):
+        self.update({'show_logging': tools.config.get('rest_logging', True)})
+        
     #----------------------------------------------------------
     # Helper
     #----------------------------------------------------------
     
     @api.model
-    def _get_eval_context(self, params, model):
+    def _get_eval_context(self, headers, params, model):
         return {
             'time': time,
             'datetime': datetime,
@@ -356,6 +367,13 @@ class Endpoint(models.Model):
             'json': tools.safe_eval.json,
             'b64encode': base64.b64encode,
             'b64decode': base64.b64decode,
+            'date_format': DEFAULT_SERVER_DATE_FORMAT,
+            'datetime_format': DEFAULT_SERVER_DATETIME_FORMAT,
+            'string_to_date': fields.Date.to_date,
+            'date_to_string': fields.Date.to_string,
+            'string_to_datetime': fields.Datetime.to_datetime,
+            'datetime_to_string': fields.Datetime.to_string,
+            'make_response': make_json_response,
             'responses': responses,
             'exceptions': exceptions,
             'Response': Response,
@@ -363,31 +381,43 @@ class Endpoint(models.Model):
             'user': model.env.user,
             'env': model.env,
             'model': model,
+            'headers': headers,
             'params': params,
-            'logger': logging.getLogger('%s (%s)'.format(
-                __name__, self.name)
+            'logger': logging.getLogger(
+                '%s (%s)'.format(__name__, self.name)
             ),
         }
         
-    def _evaluate_domain(self, params, user):
+    def _evaluate_domain(self, headers, params, user):
         model_with_user = self.env[self.model_id.model].with_user(user)
         model = model_with_user.sudo() if self.eval_sudo else model_with_user   
         fields = self.domain_field_ids.mapped('name') or None
         domain = safe_eval(self.domain or '[]', {
             'datetime': datetime, 'uid': user.id,
         })
-        result = model.search_read(domain, fields=fields)
+        limit = params.get('limit', None)
+        offset = params.get('offset', None)
+        result = model.search_read(
+            domain,
+            fields=fields,
+            limit=limit and int(limit) or None,
+            offset=offset and int(offset) or None,
+
+        )
         if self.wrap_response:
             return make_json_response({
                 'endpoint': self.route,
                 'model': model._name,
                 'domain': domain,
                 'fields': fields,
+                'limit': limit and int(limit) or None,
+                'offset': offset and int(offset) or None,
                 'result': result,
+                'count': model.search_count(domain),
             })
         return make_json_response(result)
         
-    def _evaluate_action(self, params, user):
+    def _evaluate_action(self, headers, params, user):
         active_id = common.parse_value(params.get('id'))
         active_ids = common.parse_value(params.get('ids'), [])
         model_with_user = self.env[self.model_id.model].with_user(user)
@@ -404,12 +434,11 @@ class Endpoint(models.Model):
                 'result': result,
             })
         return make_json_response(result)
-    
         
-    def _evaluate_code(self, params, user):
+    def _evaluate_code(self, headers, params, user):
         model_with_user = self.env[self.model_id.model].with_user(user)
         model = model_with_user.sudo() if self.eval_sudo else model_with_user
-        eval_context = self._get_eval_context(params, model)
+        eval_context = self._get_eval_context(headers, params, model)
         safe_eval(self.code.strip(), eval_context, mode="exec", nocopy=True)   
         if eval_context.get('result', False):
             return make_json_response({
@@ -486,9 +515,9 @@ class Endpoint(models.Model):
             custom_component.update(common.parse_value(endpoint.docs_components, {}))
         return custom_paths, custom_component
 
-    def evaluate(self, params, user):
+    def evaluate(self, headers, params, user):
         self.ensure_one()
         if hasattr(self, '_evaluate_{}'.format(self.state)):
-            return getattr(self, '_evaluate_{}'.format(self.state))(params, user)
+            return getattr(self, '_evaluate_{}'.format(self.state))(headers, params, user)
         return exceptions.BadRequest('Invalid endpoint!')
         

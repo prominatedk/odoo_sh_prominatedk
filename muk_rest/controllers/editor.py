@@ -43,7 +43,6 @@
 
 from odoo.http import Controller, route, send_file
 from odoo.modules import get_resource_path
-from odoo.tools.misc import file_open
 
 
 class EditorController(Controller):

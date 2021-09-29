@@ -98,10 +98,13 @@ class RulesTestCase(RestfulCase):
     def test_oauth_valid(self):
         client = oauthlib.oauth2.LegacyApplicationClient(client_id=self.oauth_settings_client_key)
         oauth = requests_oauthlib.OAuth2Session(client=client)
-        token = oauth.fetch_token(token_url=self.oauth2_access_token_url,
+        oauth.headers.update({self.db_header: self.env.cr.dbname})
+        token = oauth.fetch_token(
+            token_url=self.oauth2_access_token_url,
             client_id=self.oauth_settings_client_key, 
             client_secret=self.oauth_settings_client_secret,
-            username=self.login, password=self.password
+            username=self.login,
+            password=self.password
         )
         self.assertTrue(oauth.get(self.search_url, data={'model': 'res.partner'}))
         
@@ -109,10 +112,13 @@ class RulesTestCase(RestfulCase):
     def test_oauth_invalid(self):
         client = oauthlib.oauth2.LegacyApplicationClient(client_id=self.oauth_settings_client_key)
         oauth = requests_oauthlib.OAuth2Session(client=client)
-        token = oauth.fetch_token(token_url=self.oauth2_access_token_url,
+        oauth.headers.update({self.db_header: self.env.cr.dbname})
+        token = oauth.fetch_token(
+            token_url=self.oauth2_access_token_url,
             client_id=self.oauth_settings_client_key, 
             client_secret=self.oauth_settings_client_secret,
-            username=self.login, password=self.password
+            username=self.login,
+            password=self.password
         )
         self.assertFalse(oauth.get(self.search_url, data={'model': 'res.lang'}))
         
@@ -120,10 +126,13 @@ class RulesTestCase(RestfulCase):
     def test_oauth_generic_rule(self):
         client = oauthlib.oauth2.LegacyApplicationClient(client_id=self.oauth_settings_client_key)
         oauth = requests_oauthlib.OAuth2Session(client=client)
-        token = oauth.fetch_token(token_url=self.oauth2_access_token_url,
+        oauth.headers.update({self.db_header: self.env.cr.dbname})
+        token = oauth.fetch_token(
+            token_url=self.oauth2_access_token_url,
             client_id=self.oauth_settings_client_key, 
             client_secret=self.oauth_settings_client_secret,
-            username=self.login, password=self.password
+            username=self.login,
+            password=self.password
         )
         self.assertTrue(oauth.get(self.xmlid_url, data={'xmlid': 'base.main_company'}))
         self.assertFalse(oauth.get(self.field_names_url, data={'model': 'res.users'}))
