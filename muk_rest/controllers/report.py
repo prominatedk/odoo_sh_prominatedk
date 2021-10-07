@@ -45,13 +45,13 @@ import base64
 
 from werkzeug import exceptions
 
-from odoo import http, release, _
-from odoo.http import request, Response
+from odoo import http
+from odoo.http import request
 from odoo.tools import misc, safe_eval
 
-from odoo.addons.muk_rest import tools
+from odoo.addons.muk_rest import tools, core
 from odoo.addons.muk_rest.tools.docs import api_doc
-from odoo.addons.muk_rest.tools.http import build_route, make_json_response
+from odoo.addons.muk_rest.tools.http import build_route
 
 
 class ReportController(http.Controller):
@@ -141,7 +141,7 @@ class ReportController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route([
             '/reports',
             '/reports/<string:name>',
@@ -160,7 +160,7 @@ class ReportController(http.Controller):
         result = request.env['ir.actions.report'].search_read(
             domain, ['name', 'model', 'report_name']
         )
-        return make_json_response(result)
+        return request.make_json_response(result)
 
     @api_doc(
         tags=['Report'], 
@@ -256,7 +256,7 @@ class ReportController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route([
             '/report',
             '/report/<string:report>',
@@ -303,7 +303,7 @@ class ReportController(http.Controller):
                 ('Content-Disposition', http.content_disposition(filename)),
             ]
             return request.make_response(data, headers)
-        return make_json_response({
+        return request.make_json_response({
             'content': base64.b64encode(data),
             'content_type': content_type,
             'content_length': len(data),

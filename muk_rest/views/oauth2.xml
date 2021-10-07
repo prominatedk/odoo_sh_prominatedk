@@ -1,4 +1,5 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="utf-8"?>
+
 <!--
 
     Copyright (c) 2017-today MuK IT GmbH.
@@ -102,7 +103,7 @@
 	    </field>
 	</record>
 
-	<menuitem id="menu_rest_oauth2" name="OAuth2" sequence="5"
+	<menuitem id="menu_rest_oauth2" name="OAuth2" sequence="15"
 		parent="cat_menu_rest_configuration" action="action_rest_oauth2" />
 	
 </odoo>

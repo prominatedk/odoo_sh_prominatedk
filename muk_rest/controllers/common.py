@@ -41,22 +41,15 @@
 ###################################################################################
 
 
-import re
-import json
-import base64
-import urllib
 import werkzeug
 
-from odoo import http, release, _
-from odoo.http import request, Response
-from odoo.models import check_method_name
+from odoo import http
+from odoo.http import request
 from odoo.tools.image import image_data_uri
-from odoo.tools import misc, config
 
-from odoo.addons.muk_rest import tools
+from odoo.addons.muk_rest import core
 from odoo.addons.muk_rest.tools.docs import api_doc
-from odoo.addons.muk_rest.tools.common import VERSION
-from odoo.addons.muk_rest.tools.http import build_route, make_json_response
+from odoo.addons.muk_rest.tools.http import build_route
 
 
 class CommonController(http.Controller):
@@ -206,10 +199,11 @@ class CommonController(http.Controller):
     #----------------------------------------------------------
     # Utility
     #----------------------------------------------------------
-    
-    @tools.http.rest_route(
-        build_route('/<path:path>'),
-        rest_access_hidden=True
+
+    @core.http.rest_route(
+        routes=build_route('/<path:path>'),
+        rest_access_hidden=True,
+        disable_logging=True,
     )
     def catch(self, **kw):
         return werkzeug.exceptions.NotFound()
@@ -242,13 +236,15 @@ class CommonController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route('/modules'), 
         methods=['GET'],
         protected=True,
     )
     def modules(self):
-        return make_json_response(request.env['ir.module.module']._installed())
+        return request.make_json_response(
+            request.env['ir.module.module']._installed()
+        )
         
     @api_doc(
         tags=['Common'], 
@@ -284,7 +280,7 @@ class CommonController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route([
             '/xmlid',
             '/xmlid/<string:xmlid>',
@@ -294,7 +290,9 @@ class CommonController(http.Controller):
     )
     def xmlid(self, xmlid, **kw):
         record = request.env.ref(xmlid)
-        return make_json_response({'model': record._name, 'id': record.id})
+        return request.make_json_response({
+            'model': record._name, 'id': record.id
+        })
     
     #----------------------------------------------------------
     # Session
@@ -322,13 +320,13 @@ class CommonController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route('/user'), 
         methods=['GET'],
         protected=True,
     )
     def user(self, **kw):
-        return make_json_response({
+        return request.make_json_response({
             'uid': request.session and request.session.uid, 
             'name': request.env.user and request.env.user.name
         })
@@ -371,7 +369,7 @@ class CommonController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route('/userinfo'), 
         methods=['GET'],
         protected=True,
@@ -379,7 +377,7 @@ class CommonController(http.Controller):
     def userinfo(self, **kw):
         user = request.env.user
         uid = request.session.uid
-        return make_json_response({
+        return request.make_json_response({
             'sub': uid,
             'name': user.name,
             'locale': user.lang,
@@ -423,7 +421,7 @@ class CommonController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route('/company'), 
         methods=['GET'],
         protected=True,
@@ -440,7 +438,7 @@ class CommonController(http.Controller):
             user_company_information['allowed_companies'] = [
                 (comp.id, comp.name) for comp in user.company_ids
             ]
-        return make_json_response(user_company_information)
+        return request.make_json_response(user_company_information)
 
     @api_doc(
         tags=['Common'], 
@@ -470,10 +468,10 @@ class CommonController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route('/session'), 
         methods=['GET'],
         protected=True,
     )
     def session(self, **kw):
-        return make_json_response(request.env['ir.http'].session_info())
+        return request.make_json_response(request.env['ir.http'].session_info())

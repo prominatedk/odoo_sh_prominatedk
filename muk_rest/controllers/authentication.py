@@ -41,24 +41,16 @@
 ###################################################################################
 
 
-import re
-import json
 import urllib
-import logging
-import functools
 
-from werkzeug import exceptions, utils
+from werkzeug import exceptions
 
-from odoo import _, http, api, registry, SUPERUSER_ID
+from odoo import http, api, SUPERUSER_ID, _
 from odoo.http import request, Response
 from odoo.exceptions import AccessDenied
-from odoo.modules import get_resource_path
-from odoo.tools import misc, config
 
-from odoo.addons.muk_rest import validators, tools
-from odoo.addons.muk_rest.tools.http import build_route, make_json_response
-
-_logger = logging.getLogger(__name__)
+from odoo.addons.muk_rest import validators, tools, core
+from odoo.addons.muk_rest.tools.http import build_route
 
 
 class AuthenticationController(http.Controller):
@@ -130,38 +122,30 @@ class AuthenticationController(http.Controller):
     # OAuth 1.0
     #----------------------------------------------------------
  
-    @http.route(
-        route=build_route('/authentication/oauth1/initiate'),
+    @core.http.rest_route(
+        routes=build_route('/authentication/oauth1/initiate'),
         methods=['GET', 'POST'],
-        save_session=False,
-        type='http',
-        auth='none', 
-        csrf=False, 
+        rest_access_hidden=True,
+        disable_logging=True,
+        ensure_db=True
     )
-    @tools.security.handle_error
-    @tools.http.ensure_database
-    @tools.http.ensure_rest_module
     def oauth1_initiate(self, **kw):
         self._check_active_oauth1()
         headers, body, status = self.oauth1.create_request_token_response(
             uri=tools.http.clean_query_params(request.httprequest.url, clean_db=True),
             http_method=request.httprequest.method,
             body=request.httprequest.form,
-            headers=request.httprequest.headers
+            headers=dict(request.httprequest.headers.to_wsgi_list())
         )
         return Response(response=body, headers=headers, status=status) 
 
-    @http.route(
-        route=build_route('/authentication/oauth1/authorize'),
+    @core.http.rest_route(
+        routes=build_route('/authentication/oauth1/authorize'),
         methods=['GET', 'POST'],
-        save_session=False,
-        type='http',
-        auth='none', 
-        csrf=False, 
+        rest_access_hidden=True,
+        disable_logging=True,
+        ensure_db=True
     )
-    @tools.security.handle_error
-    @tools.http.ensure_database
-    @tools.http.ensure_rest_module
     def oauth1_authorize(self, **kw):
         self._check_active_oauth1()
         if request.httprequest.method.upper() == 'POST':
@@ -177,13 +161,15 @@ class AuthenticationController(http.Controller):
                     uri=tools.http.clean_query_params(request.httprequest.url, clean_db=True),
                     http_method=request.httprequest.method,
                     body=request.httprequest.form,
-                    headers=request.httprequest.headers,
+                    headers=dict(request.httprequest.headers.to_wsgi_list()),
                     realms=realms or [],
                     credentials={'user': uid}
                 )
                 if status == 200:
                     verifier = str(urllib.parse.parse_qs(body)['oauth_verifier'][0])
-                    return make_json_response({'oauth_token': token, 'oauth_verifier': verifier})
+                    return request.make_json_response({
+                        'oauth_token': token, 'oauth_verifier': verifier
+                    })
                 return Response(body, status=status, headers=headers)
             except AccessDenied:
                 values = self._oauth1_information(token, realms)
@@ -194,30 +180,26 @@ class AuthenticationController(http.Controller):
             uri=request.httprequest.url,
             http_method=request.httprequest.method,
             body=request.httprequest.form,
-            headers=request.httprequest.headers
+            headers=dict(request.httprequest.headers.to_wsgi_list())
         )
         resource_owner_key = credentials.get('resource_owner_key', False)
         values = self._oauth1_information(resource_owner_key, realms)
         return request.render('muk_rest.authorize_oauth1', values)
 
-    @http.route(
-        route=build_route('/authentication/oauth1/token'),
+    @core.http.rest_route(
+        routes=build_route('/authentication/oauth1/token'),
         methods=['GET', 'POST'],
-        save_session=False,
-        type='http',
-        auth='none', 
-        csrf=False, 
+        rest_access_hidden=True,
+        disable_logging=True,
+        ensure_db=True
     )
-    @tools.security.handle_error
-    @tools.http.ensure_database
-    @tools.http.ensure_rest_module
     def oauth1_token(self, **kw):
         self._check_active_oauth1()
         headers, body, status = self.oauth1.create_access_token_response(
             uri=tools.http.clean_query_params(request.httprequest.url, clean_db=True),
             http_method=request.httprequest.method,
             body=request.httprequest.form,
-            headers=request.httprequest.headers
+            headers=dict(request.httprequest.headers.to_wsgi_list())
         )
         return Response(response=body, headers=headers, status=status) 
     
@@ -225,17 +207,13 @@ class AuthenticationController(http.Controller):
     # OAuth 2.0
     #----------------------------------------------------------
 
-    @http.route(
-        route=build_route('/authentication/oauth2/authorize'),
+    @core.http.rest_route(
+        routes=build_route('/authentication/oauth2/authorize'),
         methods=['GET', 'POST'],
-        save_session=False,
-        type='http',
-        auth='none', 
-        csrf=False, 
+        rest_access_hidden=True,
+        disable_logging=True,
+        ensure_db=True
     )
-    @tools.security.handle_error
-    @tools.http.ensure_database
-    @tools.http.ensure_rest_module
     def oauth2_authorize(self, **kw):
         self._check_active_oauth2()
         if request.httprequest.method.upper() == 'POST':
@@ -251,7 +229,7 @@ class AuthenticationController(http.Controller):
                     uri=tools.http.clean_query_params(request.httprequest.url, clean_db=True),
                     http_method=request.httprequest.method,
                     body=request.httprequest.form,
-                    headers=request.httprequest.headers,
+                    headers=dict(request.httprequest.headers.to_wsgi_list()),
                     scopes=scopes or [],
                     credentials={'user': uid}
                 )
@@ -273,7 +251,7 @@ class AuthenticationController(http.Controller):
             uri=request.httprequest.url,
             http_method=request.httprequest.method,
             body=request.httprequest.form,
-            headers=request.httprequest.headers
+            headers=dict(request.httprequest.headers.to_wsgi_list())
         )
         values = self._oauth2_information(
             credentials.get('client_id', False), 
@@ -284,44 +262,36 @@ class AuthenticationController(http.Controller):
         )
         return request.render('muk_rest.authorize_oauth2', values)  
 
-    @http.route(
-        route=build_route('/authentication/oauth2/token'),
+    @core.http.rest_route(
+        routes=build_route('/authentication/oauth2/token'),
         methods=['GET', 'POST'],
-        save_session=False,
-        type='http',
-        auth='none', 
-        csrf=False, 
+        rest_access_hidden=True,
+        disable_logging=True,
+        ensure_db=True
     )
-    @tools.security.handle_error
-    @tools.http.ensure_database
-    @tools.http.ensure_rest_module
     def oauth2_token(self, **kw):
         self._check_active_oauth2()
         headers, body, status = self.oauth2.create_token_response(
             uri=tools.http.clean_query_params(request.httprequest.url, clean_db=True),
             http_method=request.httprequest.method,
             body=request.httprequest.form,
-            headers=request.httprequest.headers
+            headers=dict(request.httprequest.headers.to_wsgi_list())
         )
         return Response(response=body, headers=headers, status=status) 
      
-    @http.route(
-        route=build_route('/authentication/oauth2/revoke'),
+    @core.http.rest_route(
+        routes=build_route('/authentication/oauth2/revoke'),
         methods=['GET', 'POST'],
-        save_session=False,
-        type='http',
-        auth='none', 
-        csrf=False, 
+        rest_access_hidden=True,
+        disable_logging=True,
+        ensure_db=True
     )
-    @tools.security.handle_error
-    @tools.http.ensure_database
-    @tools.http.ensure_rest_module
     def oauth2_revoke(self, **kw):
         self._check_active_oauth2()
         headers, body, status = self.oauth2.create_revocation_response(
             uri=tools.http.clean_query_params(request.httprequest.url, clean_db=True),
             http_method=request.httprequest.method,
             body=request.httprequest.form,
-            headers=request.httprequest.headers
+            headers=dict(request.httprequest.headers.to_wsgi_list())
         )
         return Response(response=body, headers=headers, status=status) 

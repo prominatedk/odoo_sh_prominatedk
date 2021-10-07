@@ -43,13 +43,13 @@
 
 import collections
 
-from odoo import http, release, _
-from odoo.http import request, Response
+from odoo import http
+from odoo.http import request
 from odoo.exceptions import AccessError, UserError
 
-from odoo.addons.muk_rest import tools
+from odoo.addons.muk_rest import tools, core
 from odoo.addons.muk_rest.tools.docs import api_doc
-from odoo.addons.muk_rest.tools.http import build_route, make_json_response
+from odoo.addons.muk_rest.tools.http import build_route
 
 
 class SecurityController(http.Controller):
@@ -120,7 +120,7 @@ class SecurityController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route([
             '/access/rights',
             '/access/rights/<string:model>',
@@ -131,10 +131,10 @@ class SecurityController(http.Controller):
     )
     def access_rights(self, model, operation='read', **kw):
         try:
-            return make_json_response(request.env[model].check_access_rights(operation))
+            return request.make_json_response(request.env[model].check_access_rights(operation))
         except (AccessError, UserError):
             pass
-        return make_json_response(False)
+        return request.make_json_response(False)
 
     @api_doc(
         tags=['Security'], 
@@ -184,7 +184,7 @@ class SecurityController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route([
             '/access/rules',
             '/access/rules/<string:model>',
@@ -196,10 +196,12 @@ class SecurityController(http.Controller):
     def access_rules(self, model, ids, operation='read', **kw):
         ids = tools.common.parse_ids(ids)
         try:
-            return make_json_response(request.env[model].browse(ids).check_access_rule(operation) is None)
+            return request.make_json_response(
+                request.env[model].browse(ids).check_access_rule(operation) is None
+            )
         except (AccessError, UserError):
             pass
-        return make_json_response(False)
+        return request.make_json_response(False)
      
     @api_doc(
         tags=['Security'], 
@@ -249,7 +251,7 @@ class SecurityController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route([
             '/access/fields',
             '/access/fields/<string:model>',
@@ -260,12 +262,12 @@ class SecurityController(http.Controller):
     )
     def access_fields(self, model, operation='read', fields=None, **kw):
         try:
-            return make_json_response(request.env[model].check_field_access_rights(
+            return request.make_json_response(request.env[model].check_field_access_rights(
                 operation, fields=tools.common.parse_value(fields)
             ))
         except (AccessError, UserError):
             pass
-        return make_json_response(False)
+        return request.make_json_response(False)
     
     @api_doc(
         tags=['Security'], 
@@ -327,7 +329,7 @@ class SecurityController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route([
             '/access',
             '/access/<string:model>',
@@ -343,10 +345,10 @@ class SecurityController(http.Controller):
             rights = request.env[model].check_access_rights(operation)
             rules = request.env[model].browse(ids).check_access_rule(operation) is None
             fields = request.env[model].check_field_access_rights(operation, fields=fields)
-            return make_json_response(rights and rules and bool(fields))
+            return request.make_json_response(rights and rules and bool(fields))
         except (AccessError, UserError):
             pass
-        return make_json_response(False)
+        return request.make_json_response(False)
     
     @api_doc(
         tags=['Security'], 
@@ -374,7 +376,7 @@ class SecurityController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route('/groups'), 
         methods=['GET'],
         protected=True,
@@ -397,7 +399,7 @@ class SecurityController(http.Controller):
             )
         for rec in groups_data:
             rec['xmlid'] = xmlids.get(rec['id'], [''])[0]
-        return make_json_response(groups_data)
+        return request.make_json_response(groups_data)
  
     @api_doc(
         tags=['Security'], 
@@ -428,11 +430,11 @@ class SecurityController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route('/has_group'), 
         methods=['GET'],
         protected=True,
     )
     def access_has_group(self, group, **kw):
-        return make_json_response(request.env.user.has_group(group))
+        return request.make_json_response(request.env.user.has_group(group))
     

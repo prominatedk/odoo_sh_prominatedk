@@ -106,7 +106,7 @@ def verify_oauth1_request(routing, params, realms=None, raise_exception=False):
             uri=tools.http.clean_query_params(http.request.httprequest.url, clean_db=True),
             http_method=http.request.httprequest.method,
             body=http.request.httprequest.form,
-            headers=http.request.httprequest.headers,
+            headers=dict(http.request.httprequest.headers.to_wsgi_list()),
             realms=realms or []
         )
         access_token = request and request.access_token or None
@@ -128,7 +128,7 @@ def verify_oauth2_request(routing, params, scopes=None, raise_exception=False):
             uri=tools.http.clean_query_params(http.request.httprequest.url, clean_db=True),
             http_method=http.request.httprequest.method,
             body=http.request.httprequest.form,
-            headers=http.request.httprequest.headers,
+            headers=dict(http.request.httprequest.headers.to_wsgi_list()),
             scopes=scopes or []
         )
         if not valid or not (request and request.access_token):

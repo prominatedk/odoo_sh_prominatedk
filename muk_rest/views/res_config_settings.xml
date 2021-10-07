@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+
 <!--
 
     Copyright (c) 2017-today MuK IT GmbH.
@@ -40,6 +41,7 @@
     DEALINGS IN THE SOFTWARE.
 
 -->
+
 <odoo>
 
     <record id="res_config_settings_view_form" model="ir.ui.view">
@@ -48,7 +50,7 @@
         <field name="priority" eval="0"/>
         <field name="inherit_id" ref="base.res_config_settings_view_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//div[@id='iap_portal']" position="before">
+            <xpath expr="//div[@id='user_default_rights']" position="after">
                 <div id="rest_api">
                     <h2>API</h2>
                     <div class='row mt16 o_settings_container' name="rest_api_container">
@@ -70,7 +72,6 @@
                             <div class="o_setting_right_pane">
                                 <span class="o_form_label">
                                     OAuth 2.0
-                                    <a href="https://mukit.at/r/aoz" title="Documentation" class="o_doc_link" target="_blank"/>
                                 </span>
                                 <div class="text-muted">
                                     Set the configruation values for the bearer token.

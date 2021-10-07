@@ -42,7 +42,6 @@
 
 
 import re
-import json
 import inspect
 import functools
 import werkzeug
@@ -51,7 +50,7 @@ import textwrap
 from inspect import Parameter
 from collections import defaultdict
 
-from odoo import conf, tools, modules, _
+from odoo import conf, tools
 from odoo.http import request, controllers_per_module
 from odoo.addons.muk_rest.tools.http import build_route
 from odoo.addons.muk_rest.tools import common
@@ -251,10 +250,6 @@ def generate_docs(server_url):
             'contact': {
                 'name': 'MuK IT',
                 'url': 'https://www.mukit.at',
-            },
-            'externalDocs': {
-                'description': 'Examples',
-                'url': 'https://mukit.at/r/aoz',
             },
         },
         'servers': [{

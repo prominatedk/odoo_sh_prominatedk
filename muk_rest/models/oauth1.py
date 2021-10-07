@@ -41,14 +41,10 @@
 ###################################################################################
 
 
-import logging
-
-from odoo import _, models, api, fields
+from odoo import models, api, fields
 from odoo.exceptions import ValidationError
 
 from odoo.addons.muk_rest.tools import common
-
-_logger = logging.getLogger(__name__)
 
 
 class OAuth1(models.Model):

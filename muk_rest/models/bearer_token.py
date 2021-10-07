@@ -41,13 +41,8 @@
 ###################################################################################
 
 
-import logging
-import datetime
-
-from odoo import _, models, api, fields, SUPERUSER_ID
-from odoo.addons.muk_rest.tools import common 
-
-_logger = logging.getLogger(__name__)
+from odoo import models, api, fields
+from odoo.addons.muk_rest.tools import common
     
     
 class BearerToken(models.Model):

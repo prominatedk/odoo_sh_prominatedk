@@ -41,22 +41,14 @@
 ###################################################################################
 
 
-import re
-import json
-import base64
-import urllib
-import werkzeug
-
-from odoo import http, release, service, _
-from odoo.http import request, Response
+from odoo import http
+from odoo.http import request
 from odoo.models import check_method_name
-from odoo.tools.image import image_data_uri
-from odoo.tools import misc, config
+from odoo.tools import misc
 
-from odoo.addons.muk_rest import tools
+from odoo.addons.muk_rest import tools, core
 from odoo.addons.muk_rest.tools.docs import api_doc
-from odoo.addons.muk_rest.tools.common import VERSION
-from odoo.addons.muk_rest.tools.http import build_route, make_json_response
+from odoo.addons.muk_rest.tools.http import build_route
 
 
 class ModelController(http.Controller):
@@ -146,21 +138,21 @@ class ModelController(http.Controller):
         },
         default_responses=['200', '400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route([
             '/call',
             '/call/<string:model>',
             '/call/<string:model>/<string:method>',
         ]), 
         methods=['POST'],
-        protected=True,
+        protected=True
     )
     def call(self, model, method, ids=None, args=None, kwargs=None, **kw):
         check_method_name(method)
         args = tools.common.parse_value(args, []) 
         kwargs = tools.common.parse_value(kwargs, {})
         records = request.env[model].browse(tools.common.parse_ids(ids))
-        return make_json_response(getattr(records, method)(*args, **kwargs))
+        return request.make_json_response(getattr(records, method)(*args, **kwargs))
 
     #----------------------------------------------------------
     # Search / Read
@@ -236,7 +228,7 @@ class ModelController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route([
             '/search',
             '/search/<string:model>',
@@ -247,7 +239,7 @@ class ModelController(http.Controller):
         methods=['GET'],
         protected=True,
     )
-    def search(self, model, domain=None, count=False, limit=80, offset=0, order=None, **kw):
+    def search(self, model, domain=None, count=False, limit=None, offset=0, order=None, **kw):
         domain = tools.common.parse_domain(domain)
         count = count and misc.str2bool(count) or None
         limit = limit and int(limit) or None
@@ -255,8 +247,8 @@ class ModelController(http.Controller):
         model = request.env[model].with_context(prefetch_fields=False)
         result = model.search(domain, offset=offset, limit=limit, order=order, count=count)
         if not count:
-            return make_json_response(result.ids)
-        return make_json_response(result)
+            return request.make_json_response(result.ids)
+        return request.make_json_response(result)
             
     @api_doc(
         tags=['Model'], 
@@ -301,7 +293,7 @@ class ModelController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route([
             '/name',
             '/name/<string:model>',
@@ -310,7 +302,7 @@ class ModelController(http.Controller):
         protected=True,
     )
     def name(self, model, ids, **kw):
-        return make_json_response(request.env[model].browse(
+        return request.make_json_response(request.env[model].browse(
             tools.common.parse_ids(ids)
         ).name_get())
 
@@ -373,7 +365,7 @@ class ModelController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route([
             '/read',
             '/read/<string:model>',
@@ -382,7 +374,7 @@ class ModelController(http.Controller):
         protected=True,
     )
     def read(self, model, ids, fields=None, **kw):
-        return make_json_response(request.env[model].browse(
+        return request.make_json_response(request.env[model].browse(
             tools.common.parse_ids(ids)
         ).read(tools.common.parse_value(fields)))
 
@@ -465,7 +457,7 @@ class ModelController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route([
             '/search_read',
             '/search_read/<string:model>',
@@ -476,12 +468,12 @@ class ModelController(http.Controller):
         methods=['GET'],
         protected=True,
     )
-    def search_read(self, model, domain=None, fields=None, limit=80, offset=0, order=None, **kw):
+    def search_read(self, model, domain=None, fields=None, limit=None, offset=0, order=None, **kw):
         domain = tools.common.parse_domain(domain)
         fields = tools.common.parse_value(fields)
         limit = limit and int(limit) or None
         offset = offset and int(offset) or None
-        return make_json_response(request.env[model].search_read(
+        return request.make_json_response(request.env[model].search_read(
             domain, fields=fields, offset=offset, limit=limit, order=order
         ))
 
@@ -593,7 +585,7 @@ class ModelController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route([
             '/read_group',
             '/read_group/<string:model>',
@@ -611,7 +603,7 @@ class ModelController(http.Controller):
         limit = limit and int(limit) or None
         offset = offset and int(offset) or None
         lazy = misc.str2bool(lazy)
-        return make_json_response(request.env[model].read_group(
+        return request.make_json_response(request.env[model].read_group(
             domain, fields, groupby=groupby, offset=offset, 
             limit=limit, orderby=orderby, lazy=lazy
         ))
@@ -662,7 +654,7 @@ class ModelController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route([
             '/create',
             '/create/<string:model>',
@@ -671,7 +663,7 @@ class ModelController(http.Controller):
         protected=True,
     )
     def create(self, model, values=None, **kw):
-        return make_json_response(request.env[model].create(
+        return request.make_json_response(request.env[model].create(
             tools.common.parse_value(values, {})
         ).ids)
 
@@ -730,7 +722,7 @@ class ModelController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route([
             '/write',
             '/write/<string:model>',
@@ -741,7 +733,7 @@ class ModelController(http.Controller):
     def write(self, model, ids=None, values=None, **kw):
         records = request.env[model].browse(tools.common.parse_ids(ids))
         records.write(tools.common.parse_value(values, {}))
-        return make_json_response(records.ids)
+        return request.make_json_response(records.ids)
 
     @api_doc(
         tags=['Model'], 
@@ -785,7 +777,7 @@ class ModelController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route([
             '/unlink',
             '/unlink/<string:model>',
@@ -794,6 +786,6 @@ class ModelController(http.Controller):
         protected=True,
     )
     def unlink(self, model, ids=None, **kw):
-        return make_json_response(request.env[model].browse(
+        return request.make_json_response(request.env[model].browse(
             tools.common.parse_ids(ids)
         ).unlink())

@@ -53,5 +53,6 @@ from . import request_token
 from . import access_token
 from . import authorization_code
 from . import bearer_token
+from . import logging
 from . import res_users
 from . import res_config_settings

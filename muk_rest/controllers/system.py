@@ -41,23 +41,15 @@
 ###################################################################################
 
 
-import re
-import json
-import base64
-import urllib
 import inspect
-import werkzeug
 
-from odoo import http, release, service, _
-from odoo.http import request, Response
+from odoo import http
+from odoo.http import request
 from odoo.models import regex_private
-from odoo.tools.image import image_data_uri
-from odoo.tools import misc, config
 
-from odoo.addons.muk_rest import tools
+from odoo.addons.muk_rest import tools, core
 from odoo.addons.muk_rest.tools.docs import api_doc
-from odoo.addons.muk_rest.tools.common import VERSION
-from odoo.addons.muk_rest.tools.http import build_route, make_json_response
+from odoo.addons.muk_rest.tools.http import build_route
 
 
 class SystemController(http.Controller):
@@ -168,13 +160,13 @@ class SystemController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route('/model_names'), 
         methods=['GET'],
         protected=True,
     )
     def model_names(self, **kw):
-        return make_json_response(list(request.registry.models.keys()))
+        return request.make_json_response(list(request.registry.models.keys()))
     
     @api_doc(
         tags=['System'], 
@@ -202,7 +194,7 @@ class SystemController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route('/models'), 
         methods=['GET'],
         protected=True,
@@ -218,7 +210,9 @@ class SystemController(http.Controller):
                 'transient': model._transient,
             }
         
-        return make_json_response([get_info(request.env[name]) for name in names])
+        return request.make_json_response(
+            [get_info(request.env[name]) for name in names]
+        )
     
     @api_doc(
         tags=['System'], 
@@ -252,7 +246,7 @@ class SystemController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route([
             '/field_names',
             '/field_names/<string:model>',
@@ -261,7 +255,7 @@ class SystemController(http.Controller):
         protected=True,
     )
     def field_names(self, model, **kw):
-        return make_json_response(request.env[model].fields_get_keys())
+        return request.make_json_response(request.env[model].fields_get_keys())
     
     
     @api_doc(
@@ -340,7 +334,7 @@ class SystemController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route([
             '/fields',
             '/fields/<string:model>',
@@ -354,7 +348,7 @@ class SystemController(http.Controller):
         
         fields = tools.common.parse_value(fields)
         attributes = tools.common.parse_value(attributes)
-        return make_json_response(request.env[model].fields_get(
+        return request.make_json_response(request.env[model].fields_get(
             allfields=fields, attributes=attributes
         ))
     
@@ -390,7 +384,7 @@ class SystemController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route([
             '/function_names',
             '/function_names/<string:model>',
@@ -402,7 +396,7 @@ class SystemController(http.Controller):
         functions = inspect.getmembers(
             request.registry[model], inspect.isfunction
         )
-        return make_json_response([
+        return request.make_json_response([
             name for name, _ in functions
             if not regex_private.match(name)
         ])
@@ -460,7 +454,7 @@ class SystemController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route([
             '/functions',
             '/functions/<string:model>',
@@ -486,7 +480,7 @@ class SystemController(http.Controller):
                         if name not in ['cls', 'self']
                     ]
                 }
-        return make_json_response(function_data)
+        return request.make_json_response(function_data)
 
     @api_doc(
         tags=['System'], 
@@ -541,7 +535,7 @@ class SystemController(http.Controller):
         },
         default_responses=['400', '401', '500'],
     )
-    @tools.http.rest_route(
+    @core.http.rest_route(
         routes=build_route([
             '/metadata',
             '/metadata/<string:model>',
@@ -550,7 +544,7 @@ class SystemController(http.Controller):
         protected=True,
     )
     def metadata(self, model, ids, **kw):
-        return make_json_response(request.env[model].browse(
+        return request.make_json_response(request.env[model].browse(
             tools.common.parse_ids(ids)
         ).get_metadata())
         

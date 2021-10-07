@@ -1,3 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+
 <!--
 
     Copyright (c) 2017-today MuK IT GmbH.
@@ -39,6 +41,7 @@
     DEALINGS IN THE SOFTWARE.
 
 -->
+
 <templates id="template" xml:space="preserve">
 
 	<t t-name="muk_rest.DocsMenu">
@@ -49,7 +52,7 @@
            	<div class="mk_rest_sidebar border-left">
            		<iframe 
            			class="w-100 h-100 border-0" 
-           			src="api/v1/docs?template=docs_frame" 
+           			src="rest/docs?template=docs_frame"
            			loading="lazy" 
            		/>
            	</div>
