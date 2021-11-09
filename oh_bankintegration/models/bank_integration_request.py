@@ -477,20 +477,23 @@ class BankIntegrationRequest(models.Model):
             request = self.create({
                 'company_id': company.id
             })
-            request.set_request_id()
-            auth_header = request.get_payment_status_token()
-            if auth_header:
-                request.update_payment_status(auth_header, pending_requests)
-            else:
-                _logger.error(
-                    'It was not possible to generate the Authentication header for communication with bankintegration.dk')
 
-    def get_payment_status_token(self):
+            for journal in self.env['account.journal'].search([('type', '=', 'bank'), ('company_id', '=', self.env.company.id)]):
+                request.set_request_id()
+                auth_header = request.get_payment_status_token(journal.get_bankintegration_acc_number(), journal.bankintegration_integration_code)
+                
+                if auth_header:
+                    request.update_payment_status(auth_header, pending_requests)
+                else:
+                    _logger.error(
+                        'It was not possible to generate the Authentication header for communication with bankintegration.dk')
+
+    def get_payment_status_token(self, acc_number, bankintegration_integration_code):
         try:
             # Get value to use as account number from journal
-            acc_number = self.company_id.bankintegration_payment_journal_id.get_bankintegration_acc_number()
-            # Get integration code for the specific bank account
-            bankintegration_integration_code = self.company_id.bankintegration_payment_journal_id.bankintegration_integration_code
+            # acc_number = self.company_id.bankintegration_payment_journal_id.get_bankintegration_acc_number()
+            # # Get integration code for the specific bank account
+            # bankintegration_integration_code = self.company_id.bankintegration_payment_journal_id.bankintegration_integration_code
 
             auth_vals = OrderedDict([
                 ('token', sha256(str(bankintegration_integration_code).encode('utf-8')).hexdigest()),
