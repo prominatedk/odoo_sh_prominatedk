@@ -5,3 +5,4 @@ from . import product_primecargo_shipping
 from . import res_country
 from . import product_product
 from . import product_template
+from . import stock_picking
