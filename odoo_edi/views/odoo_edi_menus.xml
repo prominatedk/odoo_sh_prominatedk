@@ -1,0 +1,3 @@
+<odoo>
+    <menuitem id="menu_technical_odoo_edi" name="FlexEDI" parent="base.menu_custom"/>
+</odoo>

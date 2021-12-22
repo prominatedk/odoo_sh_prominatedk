@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="inherited_view_company_form" model="ir.ui.view">
+            <field name="name">inherited_view_company_form</field>
+            <field name="model">res.company</field>
+            <field name="inherit_id" ref="odoo_edi.inherited_view_company_form" />
+            <field name="arch" type="xml">
+                <xpath expr="//page[@name='odoo_edi']" position="inside">
+                    <group>
+                        <group>
+                            <field name="zinc_wms_auto_create_missing_partner"/>
+                            <field name="zinc_wms_origin_identity"/>
+                            <field name="zinc_wms_document_key"/>
+                        </group>
+                    </group>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

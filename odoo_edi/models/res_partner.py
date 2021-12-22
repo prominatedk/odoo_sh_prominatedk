@@ -2,15 +2,17 @@
 from odoo import models, fields, api
 
 class ResPartner(models.Model):
-    _name = 'res.partner'
     _inherit = 'res.partner'
-    _description = 'Partner'
+    
     gln = fields.Char(string='GLN number', help='GLN identification number of the partner. This can also be called the EAN identifier/number')
 
     odoo_edi_send_enable = fields.Boolean(
         string='Enable EDI communication with this partner',
         help='Enabling this option allows you to choose which documents to exchange with partners using EDI'
     )
+
+    # TODO: Add a field for mapping an Odoo model to a EDI format
+    flexedi_document_format_mapping_ids = fields.One2many('flexedi.document.format.partner', 'partner_id')
 
     @api.model
     def create(self, values):
@@ -19,3 +21,11 @@ class ResPartner(models.Model):
 
         record = super(ResPartner, self).create(values)
         return record
+
+    def get_format_for_model(self, model):
+        self.ensure_one()
+        document_formats = self.flexedi_document_format_mapping_ids.filtered(lambda f: f.model == model)
+        if len(document_formats) > 0:
+            return document_formats[0].flexedi_document_format_id
+        else:
+            return False

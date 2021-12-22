@@ -13,6 +13,14 @@
                         <group name="odoo_edi_enabled">
                             <field name="odoo_edi_send_enable"/>
                         </group>
+                        <group string="Document Formats" name="flexedi_format_mapping" attrs="{ 'invisible': [('odoo_edi_send_enable', '=', False)] }">
+                            <field name="flexedi_document_format_mapping_ids">
+                                <tree editable="bottom">
+                                    <field name="model"/>
+                                    <field name="flexedi_document_format_id" t-options="{ 'no_create': True }"/>
+                                </tree>
+                            </field>
+                        </group>
                     </page>
                     <page string="EDI" name="odoo_edi_disabled" attrs="{'invisible': ['|',('is_company','=',True),('parent_id','=',False)]}">
                         <div>

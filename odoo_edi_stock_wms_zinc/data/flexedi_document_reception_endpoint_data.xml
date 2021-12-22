@@ -1,0 +1,24 @@
+<odoo>
+    <data>
+        <record id="zinc_wms_warehouse_orders" model="flexedi.document.reception.endpoint">
+            <field name="name">Zinc Sale Orders</field>
+            <field name="code">zinc_wms_warehouse_orders</field>
+            <field name="endpoint">zinc-wms/orders/queue/</field>
+        </record>
+        <!-- <record id="zinc_wms_order_status" model="flexedi.document.reception.endpoint">
+            <field name="name">Zinc Incoming Delivery Confirmation</field>
+            <field name="code">zinc_wms_order_status</field>
+            <field name="endpoint">zinc-wms/order-status/queue/</field>
+        </record> -->
+        <record id="zinc_wms_shipment_notice" model="flexedi.document.reception.endpoint">
+            <field name="name">Zinc Incoming Shipment Notice</field>
+            <field name="code">zinc_wms_shipment_notice</field>
+            <field name="endpoint">zinc-wms/shipments/queue/</field>
+        </record>
+        <record id="zinc_wms_stock_correction" model="flexedi.document.reception.endpoint">
+            <field name="name">Zinc Incoming Stock Correction</field>
+            <field name="code">zinc_wms_stock_correction</field>
+            <field name="endpoint">zinc-wms/stock-corrections/queue/</field>
+        </record>
+    </data>
+</odoo>
