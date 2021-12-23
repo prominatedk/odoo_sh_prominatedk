@@ -4,3 +4,4 @@ class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
     flexedi_zinc_wms_order_ids = fields.One2many('flexedi.document.wms.zinc.order', 'sale_order_id')
+    zinc_wms_order_number = fields.Char(string='Integration Code')

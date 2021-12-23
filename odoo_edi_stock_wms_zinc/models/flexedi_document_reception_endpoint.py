@@ -115,6 +115,7 @@ class FlexediDocumentReceptionEndpoint(models.Model):
             'company_id': company.id,
             'date_order': datetime.datetime.strptime(document['order_date'], '%Y-%m-%dT%H:%M:%S%z').replace(tzinfo=None),
             'commitment_date': document['delivery_date'],
+            'zinc_wms_order_number': document['supplier_order_number'] or False,
             'order_line': [(0, 0, self._get_sale_order_line_from_zinc_wms_order_line(company, line)) for line in document['lines']]
         })
         sale_order = self.env['sale.order'].create(sale_order_vals)
