@@ -1,0 +1,59 @@
+<odoo>
+    <data>
+        <record id="flexedi_document_wms_picking_view_form" model="ir.ui.view">
+            <field name="name">flexedi.document.wms.picking.form.view</field>
+            <field name="model">flexedi.document.wms.picking</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <group>
+                            <group name="flexedi_document_identification" string="Document identification">
+                                <field name="edi_uuid" readonly="1"/>
+                                <field name="edi_id" readonly="1"/>
+                                <field name="document_format_id" readonly="1"/>
+                            </group>
+                            <group name="flexedi_document_information" string="Information">
+                                <field name="picking_id" readonly="1"/>
+                                <field name="partner_id" readonly="1"/>
+                                <field name="company_id" readonly="1" groups="base.group_multi_company"/>
+                                <field name="blocking_level" readonly="1"/>
+                            </group>
+                        </group>
+                        <group name="flexedi_errors" string="Errors" attrs="{ 'invisible': [('error', '=', False)] }">
+                            <field name="error" nolabel="1" readonly="1"/>
+                        </group>
+                        <group name="flexedi_debugging_data" string="Technical information" groups="base.group_no_one">
+                            <field name="request_data" readonly="1" />
+                            <field name="response_data" readonly="1" />
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+        <record id="flexedi_document_wms_picking_view_tree" model="ir.ui.view">
+            <field name="name">flexedi.document.wms.picking.tree.view</field>
+            <field name="model">flexedi.document.wms.picking</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <tree decoration-danger="state in ['failed_vans', 'failed_internal']" decoration-success="state in ['sent', 'validated']" decoration-info="state in ['pending']">
+                    <field name="create_date"/>
+                    <field name="document_format_id"/>
+                    <field name="edi_uuid"/>
+                    <field name="state"/>
+                </tree>
+            </field>
+        </record>
+        <record id="action_open_flexedi_document_wms_picking_tree" model="ir.actions.act_window">
+            <field name="name">Stock Pickings</field>
+            <field name="res_model">flexedi.document.wms.picking</field>
+            <field name="view_mode">tree,form</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_empty_folder">
+                    There are no documents created yet.
+                </p>
+            </field>
+        </record>
+        <menuitem id="menu_flexedi_document_wms_picking" parent="odoo_edi.menu_technical_odoo_edi" action="action_open_flexedi_document_wms_picking_tree"/>
+    </data>
+</odoo>

@@ -1,0 +1,48 @@
+<odoo>
+    <data>
+        <record id="flexedi_document_format_view_form" model="ir.ui.view">
+            <field name="name">flexedi.document.format.form.view</field>
+            <field name="model">flexedi.document.format</field>
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+                <form string="Format">
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="name"/>
+                                <field name="code"/>
+                                <field name="type"/>
+                                <field name="edi_network"/>
+                                <field name="requires_vat"/>
+                                <field name="requires_gln"/>
+                            </group>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+        <record id="flexedi_document_format_view_tree" model="ir.ui.view">
+            <field name="name">flexedi.document.format.tree.view</field>
+            <field name="model">flexedi.document.format</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <tree>
+                    <field name="name"/>
+                    <field name="code"/>
+                    <field name="type"/>
+                </tree>
+            </field>
+        </record>
+        <record id="action_open_flexedi_document_format_tree" model="ir.actions.act_window">
+            <field name="name">Document Formats</field>
+            <field name="res_model">flexedi.document.format</field>
+            <field name="view_mode">tree,form</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_empty_folder">
+                    There are no document formats created. Please install one or more modules that implement a documnt format in order to have them listed here
+                </p>
+            </field>
+        </record>
+        <menuitem id="menu_flexedi_document_format" parent="odoo_edi.menu_technical_odoo_edi" action="action_open_flexedi_document_format_tree"/>
+    </data>
+</odoo>

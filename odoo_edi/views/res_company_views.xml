@@ -6,15 +6,28 @@
             <field name="model">res.company</field>
             <field name="inherit_id" ref="base.view_company_form" />
             <field name="arch" type="xml">
+                <xpath expr="//field[@name='company_registry']" position="after">
+                    <field name="gln"/>
+                </xpath>
                 <xpath expr="//notebook" position="inside">
                     <page name="odoo_edi" string="FlexEDI">
-                        <group name="odoo_edi_config">
-                            <group name="odoo_edi_base_config" string="Communication">
-                                <field name="odoo_edi_token" password="True"/>
+                        <group>
+                            <group string="Authentication" name="odoo_edi_authentication">
                                 <field name="edi_mode"/>
+                                <field name="odoo_edi_token"/>
                                 <field name="edi_registration"/>
-                                <field name="gln" attrs="{ 'invisible': [('edi_mode', '!=', 'gln')] }"/>
                             </group>
+                            <group>
+                            
+                            </group>
+                        </group>
+                        <group string="Units of Measure" name="odoo_edi_uom">
+                            <field name="flexedi_uom_mapping_ids" nolabel="1">
+                                <tree editable="bottom">
+                                    <field name="uom_id"/>
+                                    <field name="edi_uom_id"/>
+                                </tree>
+                            </field>
                         </group>
                     </page>
                 </xpath>
