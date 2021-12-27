@@ -1,0 +1,15 @@
+<odoo>
+    <data>
+        <record id="api_product_stock_update" model="ir.cron">
+            <field name="name">Update API Stock Quantity</field>
+            <field name="model_id" ref="product.model_product_product"/>
+            <field name="active">False</field>
+            <field name="state">code</field>
+            <field name="code">model.action_update_webshop_stock_all()</field>
+            <field name="interval_number">12</field>
+            <field name="interval_type">months</field>
+            <field name="numbercall">1</field>
+            <field name="doall" eval="False"/>
+        </record>
+    </data>
+</odoo>

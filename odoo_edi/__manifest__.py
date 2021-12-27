@@ -18,8 +18,8 @@
     # Check https://github.com/odoo/odoo/blob/master/odoo/addons/base/module/module_data.xml
     # for the full list
     'category': 'Specific Industry Applications',
-    'version': '4.0.0',
-    'license': 'OPL-1',
+    'version': '3.0.7',
+    'license': 'LGPL-3',
 
     # any module necessary for this one to work correctly
     'depends': ['base', 'base_setup', 'product'],
@@ -27,19 +27,19 @@
     # always loaded
     'data': [
         'security/ir.model.access.csv',
-        'views/odoo_edi_menus.xml',
         'views/res_company_views.xml',
         'views/res_config_settings_views.xml',
-        'views/uom_uom_views.xml',
+        'views/uom_uom_form_view.xml',
         'views/res_partner_views.xml',
-        'views/flexedi_document_reception_endpoint_views.xml',
-        'views/flexedi_document_status_endpoint_views.xml',
-        'views/flexedi_document_format_views.xml',
         'data/odoo_edi_product_uom_data.xml',
+        'data/odoo_edi_endpoints.xml',
+        'data/uom_uom_data.xml',
         'data/odoo_edi_tax_scheme_data.xml',
         'data/odoo_edi_tax_category_data.xml',
-        'data/ir_cron_data.xml',
     ],
 
-    'post_init_hook': '_post_install_hook_map_uom'
+    # only loaded in demonstration mode
+    'demo': [
+        'demo/demo.xml',
+    ],
 }

@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_primecargo_wms_masterdata,odoo_edi_primecargo_wms.product_primecargo_wms_masterdata,odoo_edi_primecargo_wms.model_product_primecargo_wms_masterdata,stock.group_stock_user,1,1,1,1
+access_product_primecargo_shipping,odoo_edi_primecargo_wms.product_primecargo_shipping,odoo_edi_primecargo_wms.model_product_primecargo_shipping,stock.group_stock_user,1,1,1,1

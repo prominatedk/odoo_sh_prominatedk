@@ -1,0 +1,58 @@
+<odoo>
+    <data>
+        <record id="stock_picking_form_view_inherit" model="ir.ui.view">
+            <field name="name">stock.picking.form.view.inherit</field>
+            <field name="model">stock.picking</field>
+            <field name="inherit_id" ref="stock.view_picking_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='origin']" position="after">
+                    <field name="primecargo_shipping_product_id" attrs="{ 'invisible': [('picking_type_code', '!=', 'outgoing')], 'readonly': [('state', 'in', ['done', 'cancel'])] }"/>
+                    <field name="primecargo_order_hold" attrs="{ 'invisible': [('picking_type_code', '!=', 'outgoing')], 'readonly': [('state', 'in', ['done', 'cancel'])] }"/>
+                    <field name="edi_document_status" invisible="1"/>
+                    <field name="edi_document_id" invisible="1"/>
+                    <field name="picking_type_code" invisible="1"/>
+                    <field name="primecargo_valid" invisible="1"/>
+                </xpath>
+                <xpath expr="//notebook" position="inside">
+                    <page name="odoo_edi_stock_picking" string="EDI">
+                        <group>
+                            <group>
+                                <field name="primecargo_valid"/>
+                                <field name="edi_document_id"/>
+                                <field name="edi_document_guid"/>
+                            </group>
+                            <group>
+                                <field name="edi_document_status"/>
+                                <field name="edi_document_status_message"/>
+                            </group>
+                        </group>
+                    </page>
+                </xpath>
+                <xpath expr="//button[@name='action_toggle_is_locked']" position="before">
+                    <button name="action_send_primecargo"
+                        type="object" string="Send to PrimeCargo" attrs="{'invisible': ['|', ('primecargo_valid', '=', False),('edi_document_status', 'not in', [False, 'failed_internal', 'failed_vans'])]}"/>
+                </xpath>
+                <xpath expr="//sheet" position="before">
+                    <div class="alert alert-warning" role="alert" style="margin-bottom:0px;" attrs="{'invisible': ['|','|','|',('primecargo_valid', '!=', True),('edi_document_id', '!=', False),('picking_type_code', 'not in', ['incoming', 'outgoing']),('edi_document_status', '!=', 'pending')]}">
+                        This document can be sent with PrimeCargo
+                    </div>
+                    <div class="alert alert-warning" role="alert" style="margin-bottom:0px;" attrs="{'invisible': ['|','|','|',('primecargo_valid', '!=', True),('edi_document_id', '=', True),('picking_type_code', 'not in', ['incoming', 'outgoing']),('edi_document_status', '!=', 'pending')]}">
+                        This document is pending transfer to PrimeCargo
+                    </div>
+                    <div class="alert alert-info" role="alert" style="margin-bottom:0px;" attrs="{'invisible': ['|','|','|',('primecargo_valid', '!=', True),('edi_document_id', '=', False),('picking_type_code', 'not in', ['incoming', 'outgoing']),('edi_document_status', '!=', 'sent')]}">
+                        This document has been sent to PrimeCargo and is awaiting validation
+                    </div>
+                    <div class="alert alert-success" role="alert" style="margin-bottom:0px;" attrs="{'invisible': ['|','|','|',('primecargo_valid', '!=', True),('edi_document_id', '=', False),('picking_type_code', 'not in', ['incoming', 'outgoing']),('edi_document_status', '!=', 'validated')]}">
+                        This document has been validated with PrimeCargo
+                    </div>
+                    <div class="alert alert-success" role="alert" style="margin-bottom:0px;" attrs="{'invisible': ['|','|','|',('primecargo_valid', '!=', True),('edi_document_id', '=', False),('picking_type_code', 'not in', ['incoming', 'outgoing']),('edi_document_status', 'not in', ['recieved', 'processed'])]}">
+                        This document has been processed with PrimeCargo
+                    </div>
+                    <div class="alert alert-danger" role="alert" style="margin-bottom:0px;" attrs="{'invisible': ['|','|',('primecargo_valid', '!=', True),('picking_type_code', 'not in', ['incoming', 'outgoing']),('edi_document_status', 'not in', ['failed_vans', 'failed_internal'])]}">
+                        This document encountered errors when sending to PrimeCargo
+                    </div>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>
