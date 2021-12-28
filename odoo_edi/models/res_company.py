@@ -11,6 +11,8 @@ class ResCompany(models.Model):
     edi_registration = fields.Selection(string="EDI Registration", selection=[('vat', 'CVR'), ('gln', 'GLN/EAN')], default='vat')
 
     flexedi_uom_mapping_ids = fields.One2many('flexedi.uom.mapping', 'company_id')
+
+    flexedi_notification_subscription_ids = fields.One2many('flexedi.notification.subscription', 'company_id')
     
     def is_valid_for_flexedi(self):
         """

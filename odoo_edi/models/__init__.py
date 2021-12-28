@@ -12,3 +12,5 @@ from . import odoo_edi_tax_scheme
 from . import odoo_edi_tax_category
 from . import flexedi_document_reception_endpoint
 from . import flexedi_document_status_endpoint
+from . import flexedi_notification_subscription
+from . import res_users

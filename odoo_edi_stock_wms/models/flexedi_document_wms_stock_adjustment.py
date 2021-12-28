@@ -6,3 +6,7 @@ class FlexediDocumentWmsStockAdjustment(models.Model):
     _description = 'Inventory Adjustment (FlexEDI)'
 
     product_id = fields.Many2one('product.product')
+
+    def source_document_object(self):
+        self.ensure_one()
+        return self.product_id

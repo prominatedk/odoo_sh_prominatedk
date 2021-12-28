@@ -13,5 +13,9 @@ class FlexediDocumentWmsProduct(models.Model):
     def _get_endpoint_for_sending(self):
         return 'wms/products/'
 
+    def source_document_object(self):
+        self.ensure_one()
+        return self.product_id
+
     def generate_document(self):
         pass

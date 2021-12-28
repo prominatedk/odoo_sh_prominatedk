@@ -13,6 +13,7 @@ TEST_API_ROOT = "https://manage.test.flexedi.dk/api/"
 
 class FlexediDocument(models.AbstractModel):
     _name = 'flexedi.document'
+    _inherit = ['mail.thread']
     _description = 'FlexEDI Document'
     _order = 'create_date desc'
 
@@ -63,6 +64,45 @@ class FlexediDocument(models.AbstractModel):
             headers[key] = kwargs[key]
 
         return headers
+
+    @api.model
+    def _get_notification_subscriber_ids(self, company_id, notification_type):
+        """
+        Returns a list of IDs from res.partner for the users that are subscribed to notifications on the given model
+        company_id is expected to be a singleton recordset of res.company
+        notification_type is all, error or warning
+        """
+        if type(company_id) == int:
+            company_id = self.env['res.company'].browse(company_id)
+
+        if notification_type not in ['error', 'warning', 'info']:
+            return False
+
+        partner_ids = company_id.flexedi_notification_subscription_ids.filtered_domain(['|', ('model_id.model', '=', self._name), ('model_id', '=', False), ('subscription_type', 'in', ['all', notification_type])]).mapped('user_id.partner_id.id')
+
+        return partner_ids or False
+
+    def source_document_object(self):
+        """
+        Returns the specific singleton recordset that created this object
+        """
+        self.ensure_one()
+        return False
+
+    def send_notification_to_subscribers(self, notification_type, message):
+        self.ensure_one()
+        partner_ids = self._get_notification_subscriber_ids(self.company_id, notification_type)
+        if not partner_ids:
+            return False
+
+        source_document = self.source_document_object()
+        if not source_document:
+            return False
+
+        if not hasattr(source_document, 'message_post'):
+            return False
+
+        source_document.message_post(message_type='notification', partner_ids=partner_ids, body=message)
 
     state = fields.Selection(selection=_get_document_states, required=True, index=True, default='pending', ondelete='cascade')
     error = fields.Html(string='Document Error', help='The last error message that was returned from FlexEDI')
@@ -124,6 +164,12 @@ class FlexediDocument(models.AbstractModel):
                             'state': 'failed_internal',
                             'blocking_level': 'error'
                         })
+                    if document.blocking_level == 'error':
+                        document.send_notification_to_subscribers('error', _('One or more errors came during processing of the document:<br/>\n%s' % (document.error,)))
+                    elif document.blocking_level == 'warning':
+                        document.send_notification_to_subscribers('warning', _('One or more warnings came during processing of the document, but the document was still processed:<br/>\n%s' % (document.error,)))
+                    else:
+                        document.send_notification_to_subscribers('info', _('The document %s was sent' % (document.source_document_object().name or '',)))
         except OperationalError as e:
             if e.pgcode == '55P03':
                 _logger.error('Another transaction is already having a lock on these documents. Cannot continue')
@@ -205,11 +251,13 @@ class FlexediDocument(models.AbstractModel):
                         'state': 'failed_internal',
                         'error': record.error + "<br/>\n".join(errors)
                     })
+                    record.send_notification_to_subscribers('error', _('One or more errors came during processing of the document:<br/>\n%s' % (record.error,)))
                 else:
                     record.write({
                         'response_data': json.dumps(data, sort_keys=True, indent=4),
                         'state': 'failed_internal'
                     })
+                    record.send_notification_to_subscribers('error', _('We tried to send your document %s, but it failed with API error code %s' % (record.source_document_object().name or '', result.status_code)))
 
     def update_document_state(self, state):
         self.ensure_one()

@@ -115,6 +115,7 @@ class FlexediDocumentReceptionEndpoint(models.Model):
             'company_id': company.id,
             'date_order': datetime.datetime.strptime(document['order_date'], '%Y-%m-%dT%H:%M:%S%z').replace(tzinfo=None),
             'commitment_date': document['delivery_date'],
+            'warehouse_id': company.zinc_wms_default_warehouse_id.id or False,
             'zinc_wms_order_number': document['supplier_order_number'] or False,
             'order_line': [(0, 0, self._get_sale_order_line_from_zinc_wms_order_line(company, line)) for line in document['lines']]
         })
@@ -212,11 +213,21 @@ class FlexediDocumentReceptionEndpoint(models.Model):
                 _logger.error('Picking is waiting')
                 picking.message_post(type='notification', body=_('This picking cannot be automatically validated, since it is a waiting state, possibly due to mismatched inventory between Odoo and the WMS system'))
             elif picking.state in ready_states:
+                # Set all moves to have processed quantities matching the initial demand
+                # NOTE: This will cause negative quantities if an order is confirmed from WMS before the relevant purchase is validated
+                for move in picking.move_ids:
+                    move.write({
+                        'move_line_ids': [(0, 0, {
+                            'product_id': move.product_id.id,
+                            'product_uom_id': move.product_uom.id,
+                            'qty_done': move.product_uom_qty,
+                            'location_id': picking.location_id.id,
+                            'location_dest_id': picking.location_dest_id.id,
+                            'picking_id': picking.id
+                        })]
+                    })
                 picking_done = picking.button_validate()
                 if 'type' in picking_done:
-                    if 'res_model' in picking_done:
-                        if picking_done['res_model'] == 'stock.immediate.transfer':
-                            _logger.error(picking_done)
                     # We have been given an action, which means that one or more moves are not finished
                     _logger.warning('One or more moves are not finished and therefore we cannot validate the picking {}'.format(picking.name))
                     picking.message_post(body=_('One or more moves are not finished and therefore we cannot validate the picking %s' % (picking.name,)))

@@ -16,5 +16,9 @@ class FlexediDocumentWmsPicking(models.Model):
     def _get_document_endpoint(self):
         return 'wms/pickings/%s' % (self.edi_id,)
 
+    def source_document_object(self):
+        self.ensure_one()
+        return self.picking_id
+
     def generate_document(self):
         pass

@@ -7,7 +7,7 @@
             <field name="inherit_id" ref="odoo_edi.inherited_view_company_form" />
             <field name="arch" type="xml">
                 <xpath expr="//page[@name='odoo_edi']" position="inside">
-                    <group>
+                    <group name="odoo_edi_stock_wms" string="Warehouse Management Integrations">
                         <group>
                             <field name="flexedi_wms_autovalidate_done"/>
                         </group>
