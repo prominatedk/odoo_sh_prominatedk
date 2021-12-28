@@ -1,0 +1,36 @@
+<odoo>
+    <data>
+        <record id="flexedi_document_format_primecargo_wms_product" model="flexedi.document.format">
+            <field name="name">Product (PrimeCargo WMS)</field>
+            <field name="code">primecargo_wms</field>
+            <field name="type">product</field>
+            <field name="edi_network">primecargo_wms</field>
+            <field name="requires_gln" eval="False"/>
+            <field name="requires_vat" eval="False"/>
+        </record>
+        <record id="flexedi_document_format_primecargo_wms_picking_out" model="flexedi.document.format">
+            <field name="name">Picking Operation: Delivery (PrimeCargo WMS)</field>
+            <field name="code">primecargo_wms</field>
+            <field name="type">picking_out</field>
+            <field name="edi_network">primecargo_wms</field>
+            <field name="requires_gln" eval="False"/>
+            <field name="requires_vat" eval="False"/>
+        </record>
+        <record id="flexedi_document_format_primecargo_wms_picking_in" model="flexedi.document.format">
+            <field name="name">Picking Operation: Receipts (PrimeCargo WMS)</field>
+            <field name="code">primecargo_wms</field>
+            <field name="type">picking_in</field>
+            <field name="edi_network">primecargo_wms</field>
+            <field name="requires_gln" eval="False"/>
+            <field name="requires_vat" eval="False"/>
+        </record>
+        <record id="flexedi_document_format_primecargo_wms_stock_correction" model="flexedi.document.format">
+            <field name="name">Inventory Adjustment (PrimeCargo WMS)</field>
+            <field name="code">primecargo_wms</field>
+            <field name="type">stock_correction</field>
+            <field name="edi_network">primecargo_wms</field>
+            <field name="requires_gln" eval="False"/>
+            <field name="requires_vat" eval="False"/>
+        </record>
+    </data>
+</odoo>

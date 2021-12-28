@@ -1,0 +1,13 @@
+<odoo>
+    <record id="inherit_view_picking_type_form" model="ir.ui.view">
+        <field name="name">Operation Types: FlexEDI WMS</field>
+        <field name="model">stock.picking.type</field>
+        <field name="inherit_id" ref="stock.view_picking_type_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='warehouse_id']" position="after">
+                <field name="use_flexedi" widget="boolean_toggle"/>
+                <field name="flexedi_document_format_id" attrs="{ 'invisible': [('use_flexedi', '=', False)] }" options="{ 'no_create': True }"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

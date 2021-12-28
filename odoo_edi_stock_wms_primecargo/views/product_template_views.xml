@@ -1,0 +1,22 @@
+<odoo>
+    <data>
+        <record id="inherited_product_form_view" model="ir.ui.view">
+            <field name="name">product.form.view.inherit</field>
+            <field name="model">product.template</field>
+            <field name="inherit_id" ref="product.product_template_form_view"/>
+            <field name="arch" type="xml">
+                <xpath expr="//header" position="inside">
+                    <button type="object" name="action_use_in_primecargo_wms" string="Enable in PrimeCargo WMS" attrs="{ 'invisible': [('template_in_primecargo_wms', '=', True)] }"/>
+                </xpath>
+                <xpath expr="//group[@name='packaging']" position="before">
+                    <group name="primecargo_inventory" string="PrimeCargo">
+                        <group>
+                            <field name="template_in_primecargo_wms"/>
+                            <field name="primecargo_customs_description"/>
+                        </group>
+                    </group>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

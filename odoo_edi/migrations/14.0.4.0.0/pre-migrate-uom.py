@@ -1,0 +1,1 @@
+# TODO: Build migration script to rename odoo_edi.product.uom to flexedi.uom.uom

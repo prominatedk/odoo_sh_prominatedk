@@ -1,0 +1,30 @@
+<odoo>
+    <record id="inherit_view_picking_form" model="ir.ui.view">
+        <field name="name">stock.picking.form.wms.flexedi</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <field name="flexedi_can_send_wms_document" invisible="1"/>
+                <field name="is_using_flexedi_wms" invisible="1"/>
+                <field name="flexedi_wms_picking_status" invisible="1"/>
+                <button type="object" name="action_flexedi_send_to_wms" string="Send to warehouse (EDI)" attrs="{ 'invisible': ['|', '|', ('state', 'in', ['draft', 'done', 'cancel', 'waiting']), ('is_using_flexedi_wms', '=', True), ('flexedi_can_send_wms_document', '=', False)] }"/>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page name="flexedi_wms_documents" string="FlexEDI" attrs="{ 'invisible': [('flexedi_wms_picking_ids', '=', [])] }">
+                    <group name="flexedi_wms_document_list" string="Documents">
+                        <field name="flexedi_wms_picking_ids" nolabel="1">
+                            <tree create="0" edit="0" delete="0" decoration-danger="state in ['failed_vans', 'failed_internal']" decoration-success="state in ['sent', 'validated']" decoration-info="state in ['pending']">
+                                <field name="create_date" readonly="1"/>
+                                <field name="document_format_id" readonly="1"/>
+                                <field name="edi_uuid" readonly="1"/>
+                                <field name="state" readonly="1"/>
+                                <button name="action_retry" type="object" string="Retry" icon="fa-repeat" states="failed_internal,failed_vans"/>
+                            </tree>
+                        </field>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,14 @@
+<odoo>
+    <data>
+        <record id="odoo_edi_send_primecargo_agreement" model="ir.cron">
+            <field name="name">PrimeCargo: Update Credentials</field>
+            <field name="model_id" ref="odoo_edi_stock_wms_primecargo.model_res_company"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_update_primecargo_credentials()</field>
+            <field name="interval_number">60</field>
+            <field name="interval_type">minutes</field>
+            <field name="numbercall">-1</field>
+            <field name="doall" eval="False"/>
+        </record>
+    </data>
+</odoo>
