@@ -1,0 +1,1 @@
+from . import flexedi_document_reception_endpoint
