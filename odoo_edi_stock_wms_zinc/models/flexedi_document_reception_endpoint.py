@@ -69,6 +69,12 @@ class FlexediDocumentReceptionEndpoint(models.Model):
                     'error': recieved_edi_document.error or '' + '<p>Unable to locate partner to invoice: {}<br/>Sales order will created with default invoice address of the ordering partner</p>'.format(document['billing_name']),
                 })
                 partner_invoice_id = partner_id.address_get(['invoice'])['invoice']
+        else:
+            recieved_edi_document.write({
+                'blocking_level': 'warning',
+                'error': recieved_edi_document.error or '' + '<p>Unable to locate partner to invoice: {}<br/>Sales order will created with default invoice address of the ordering partner</p>'.format(document['billing_name']),
+            })
+            partner_invoice_id = partner_id.address_get(['invoice'])['invoice']
 
         line_errors = []
         for line in document['lines']:
