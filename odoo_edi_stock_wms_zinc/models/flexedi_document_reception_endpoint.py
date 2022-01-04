@@ -116,7 +116,7 @@ class FlexediDocumentReceptionEndpoint(models.Model):
         sale_order_vals = self.env['sale.order'].default_get([])
         sale_order_vals.update({
             'partner_id': partner_id.id,
-            'partner_invoice_id': partner_invoice_id.id,
+            'partner_invoice_id': partner_invoice_id if type(partner_invoice_id) == int else partner_invoice_id.id,
             'pricelist_id': pricelist_id.id,
             'company_id': company.id,
             'date_order': datetime.datetime.strptime(document['order_date'], '%Y-%m-%dT%H:%M:%S%z').replace(tzinfo=None),
