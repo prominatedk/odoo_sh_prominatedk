@@ -39,3 +39,9 @@ class ProductTemplate(models.Model):
         if not self.warehouse_inner_pack_qty:
             return qty
         return qty / self.warehouse_inner_pack_qty
+
+    def _convert_from_warehouse_pack(self, qty):
+        self.ensure_one()
+        if not self.warehouse_inner_pack_qty:
+            return qty
+        return qty * self.warehouse_inner_pack_qty
