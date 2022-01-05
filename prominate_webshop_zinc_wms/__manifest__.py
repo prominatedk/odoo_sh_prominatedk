@@ -2,7 +2,7 @@
     "name": "Customized order data for Zinc WMS",
     "summary": "Customizes certain parts of the way we handle data from WMS",
     "description": "Customizes various parts of Odoo where there is a difference in what is used in Odoo and what is used in the WMS",
-    "version": "1.1.0",
+    "version": "1.1.2",
     "category": "E-Commerce",
     "author": "VK Data ApS",
     "website": "https://vkdata.dk",
