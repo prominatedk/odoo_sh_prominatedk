@@ -175,6 +175,7 @@ class FlexediDocumentReceptionEndpoint(models.Model):
             'partner_invoice_id': partner_invoice_id if type(partner_invoice_id) == int else partner_invoice_id.id,
             'partner_shipping_id': partner_shipping_id if type(partner_shipping_id) == int else partner_shipping_id.id,
             'pricelist_id': pricelist_id.id,
+            'payment_term_id': partner_id.property_payment_term_id and partner_id.property_payment_term_id.id or False,
             'company_id': company.id,
             'date_order': datetime.datetime.strptime(document['order_date'], '%Y-%m-%dT%H:%M:%S%z').replace(tzinfo=None),
             'commitment_date': document['delivery_date'],
@@ -183,6 +184,9 @@ class FlexediDocumentReceptionEndpoint(models.Model):
             'order_line': [(0, 0, self._get_sale_order_line_from_zinc_wms_order_line(company, line)) for line in document['lines']]
         })
         sale_order = self.env['sale.order'].create(sale_order_vals)
+
+        # Set fiscal position
+        sale_order.onchange_partner_shipping_id()
 
         sale_order.message_post(body='Sales Order was created automatically using order data recieved from EDI', message_type='notification')
 
