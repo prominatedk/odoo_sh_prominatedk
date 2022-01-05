@@ -27,7 +27,7 @@ class FlexediDocumentReceptionEndpoint(models.Model):
         if not partner_id.exists():
             if company.zinc_wms_auto_create_missing_partner:
                 partner_id = self.env['res.partner'].create({
-                    'name': document['contact_name'],
+                    'name': document['contact_name'] or document['contact_email'],
                     'email': document['contact_email'] # Might not be entirely correct, but is needed to send invoices or other messages from Odoo
                 })
                 recieved_edi_document.write({

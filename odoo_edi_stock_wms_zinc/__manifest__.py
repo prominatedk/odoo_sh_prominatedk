@@ -2,7 +2,7 @@
     "name": "Zinc WMS via FlexEDI",
     "summary": "Integrates Zinc WMS (Warehouse Management System) with Odoo inventory",
     "description": "Integrates Zinc Germany WMS (Warehouse Management System) with Odoo inventory. Integration is based on cXML specification version 1.2.050",
-    "version": "2.2.0",
+    "version": "2.2.1",
     "category": "Warehouse",
     "author": "VK Data ApS",
     "website": "https://vkdata.dk",
