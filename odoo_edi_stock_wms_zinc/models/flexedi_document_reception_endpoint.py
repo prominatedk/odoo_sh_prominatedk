@@ -46,8 +46,23 @@ class FlexediDocumentReceptionEndpoint(models.Model):
         })
 
         if 'billing_vat' in document:
-            partner_invoice_id = self.env['res.partner'].search([('vat', '=', document['billing_vat'])], limit=1) # As per cXML specification, this should point to the actual company
-            if not partner_invoice_id.exists():
+            if document['billing_vat']:
+                partner_invoice_id = self.env['res.partner'].search([('vat', '=', document['billing_vat'])], limit=1) # As per cXML specification, this should point to the actual company
+                if not partner_invoice_id.exists():
+                    partner_invoice_id_is_placeholder = True
+                    if not company.zinc_wms_order_placeholder_contact.id:
+                        partner_invoice_id = partner_id.address_get(['invoice'])['invoice']
+                        recieved_edi_document.write({
+                            'blocking_level': 'warning',
+                            'error': recieved_edi_document.error or '' + '<p>Unable to set placeholder for partner to invoice: {}<br/>Sales order will created with ordering partners default invoice contact and recieved partner to invoice will be logged on the order</p>'.format(document['billing_name']),
+                        })
+                    else:
+                        partner_invoice_id = company.zinc_wms_order_placeholder_contact
+                        recieved_edi_document.write({
+                            'blocking_level': 'warning',
+                            'error': recieved_edi_document.error or '' + '<p>Unable to locate partner to invoice: {}<br/>Sales order will created with placeholder contact as invoice address</p>'.format(document['billing_name']),
+                        })
+            else:
                 partner_invoice_id_is_placeholder = True
                 if not company.zinc_wms_order_placeholder_contact.id:
                     partner_invoice_id = partner_id.address_get(['invoice'])['invoice']
@@ -77,9 +92,22 @@ class FlexediDocumentReceptionEndpoint(models.Model):
                 })
 
         if 'delivery_vat' in document:
-            partner_shipping_id = self.env['res.partner'].search([('vat', '=', document['delivery_vat'])], limit=1)
-            if not partner_shipping_id.exists():
-                partner_shipping_id_is_placeholder = True
+            if document['delivery_vat']:
+                partner_shipping_id = self.env['res.partner'].search([('vat', '=', document['delivery_vat'])], limit=1)
+                if not partner_shipping_id.exists():
+                    partner_shipping_id_is_placeholder = True
+                    if not company.zinc_wms_order_placeholder_contact.id:
+                        recieved_edi_document.write({
+                            'blocking_level': 'warning',
+                            'error': recieved_edi_document.error or '' + '<p>Unable to set placeholder for shipping address: {}<br/>Sales order will created with ordering partners default shipping contact and recieved shipping address will be logged on the order</p>'.format(document['billing_name']),
+                        })
+                    else:
+                        partner_shipping_id = company.zinc_wms_order_placeholder_contact
+                        recieved_edi_document.write({
+                            'blocking_level': 'warning',
+                            'error': recieved_edi_document.error or '' + '<p>Unable to locate shipping address: {}<br/>Sales order will created with placeholder contact as shipping address</p>'.format(document['billing_name']),
+                        })
+            else:
                 if not company.zinc_wms_order_placeholder_contact.id:
                     recieved_edi_document.write({
                         'blocking_level': 'warning',
