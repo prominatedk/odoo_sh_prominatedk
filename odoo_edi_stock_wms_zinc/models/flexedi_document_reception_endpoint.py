@@ -195,7 +195,7 @@ class FlexediDocumentReceptionEndpoint(models.Model):
         </p>
         """.format(
             name=document['delivery_name'],
-            deliver_to=document['bill_to'] + ' ' + (document['bill_to2'] or ''),
+            deliver_to=document['delivery_to'] + ' ' + (document['delivery_to2'] or ''),
             street=document['delivery_street'],
             zip=document['delivery_zip'],
             city=document['delivery_city'],
