@@ -14,7 +14,8 @@ class FlexediDocumentReceptionEndpoint(models.Model):
 
         if not product._convert_from_warehouse_pack(res['product_uom_qty']) == res['product_uom_qty']:
             res.update({
-                'product_uom_qty': product._convert_from_warehouse_pack(res['product_uom_qty'])
+                'product_uom_qty': product._convert_from_warehouse_pack(res['product_uom_qty']),
+                'price_unit': line['unit_price'] / product.product_tmpl_id.warehouse_inner_pack_qty,
             })
         
         return res
