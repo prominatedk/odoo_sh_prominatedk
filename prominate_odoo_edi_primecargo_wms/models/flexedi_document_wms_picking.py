@@ -7,8 +7,8 @@ class FlexediDocumentWmsPicking(models.Model):
     def _generate_primecargo_sale_line(self, line):
         res = super()._generate_primecargo_sale_line(line)
 
-        res['variant_area2'] = line.product_id.product_tmpl_id.primecargo_outer_pack_qty
-        res['variant_area1'] = line.product_id.product_tmpl_id.primecargo_inner_pack_qty
+        res['variant_area2'] = line.product_id.product_tmpl_id.warehouse_outer_pack_qty
+        res['variant_area1'] = line.product_id.product_tmpl_id.warehouse_inner_pack_qty
         res['use_fifo'] = False
 
         return res
@@ -16,8 +16,8 @@ class FlexediDocumentWmsPicking(models.Model):
     def _generate_primecargo_purchase_line(self, line):
         res = super()._generate_primecargo_purchase_line(line)
 
-        res['variant_area2'] = line.product_id.product_tmpl_id.primecargo_outer_pack_qty
-        res['variant_area1'] = line.product_id.product_tmpl_id.primecargo_inner_pack_qty
+        res['variant_area2'] = line.product_id.product_tmpl_id.warehouse_outer_pack_qty
+        res['variant_area1'] = line.product_id.product_tmpl_id.warehouse_inner_pack_qty
         res['use_fifo'] = False
 
         return res
