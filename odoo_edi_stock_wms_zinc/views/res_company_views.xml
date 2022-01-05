@@ -13,6 +13,7 @@
                             <field name="zinc_wms_origin_identity"/>
                             <field name="zinc_wms_document_key"/>
                             <field name="zinc_wms_default_warehouse_id"/>
+                            <field name="zinc_wms_order_placeholder_contact"/>
                         </group>
                     </group>
                 </xpath>
