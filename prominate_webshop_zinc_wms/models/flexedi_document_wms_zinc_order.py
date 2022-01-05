@@ -6,7 +6,7 @@ class FlexediDocumentWmsZincOrder(models.Model):
     def _document_post_reception_hook(self, document):
         super()._document_post_reception_hook(document)
         if 'shipping_cost' in document:
-            if not 'shipping_carrier_sku' in document:
+            if not 'shipping_carrier_sku' in document and document['shipping_carrier_sku']:
                 shipping_note = 'Shipping services cannot be added to the order as there is no defintion of what shipping provider was used. Below is the information that was recieved through EDI:<br/><br/>'
                 if 'shipping_carrier_scac' in document:
                     shipping_note += 'SCAC Code: {}<br/>'.format(document['shipping_carrier_scac'])
