@@ -181,7 +181,7 @@ class FlexediDocumentReceptionEndpoint(models.Model):
             'commitment_date': document['delivery_date'],
             'warehouse_id': company.zinc_wms_default_warehouse_id.id or False,
             'zinc_wms_order_number': document['supplier_order_number'] or False,
-            'order_line': [(0, 0, self._get_sale_order_line_from_zinc_wms_order_line(company, line)) for line in document['lines']]
+            'order_line': [(0, 0, self._get_sale_order_line_from_zinc_wms_order_line(company, line)) for line in document['lines']],
             'note': document['comment'] or ''
         })
         sale_order = self.env['sale.order'].create(sale_order_vals)
