@@ -182,11 +182,14 @@ class FlexediDocumentReceptionEndpoint(models.Model):
             'warehouse_id': company.zinc_wms_default_warehouse_id.id or False,
             'zinc_wms_order_number': document['supplier_order_number'] or False,
             'order_line': [(0, 0, self._get_sale_order_line_from_zinc_wms_order_line(company, line)) for line in document['lines']]
+            'note': document['comment'] or ''
         })
         sale_order = self.env['sale.order'].create(sale_order_vals)
 
-        # Set fiscal position
+        # Set fiscal position and other values based on shipping address
         sale_order.onchange_partner_shipping_id()
+        # Since there is a chance that the fiscal position has changed, we also need to recompute line taxes
+        sale_order._compute_tax_id()
 
         sale_order.message_post(body='Sales Order was created automatically using order data recieved from EDI', message_type='notification')
 
@@ -235,6 +238,14 @@ class FlexediDocumentReceptionEndpoint(models.Model):
             country=document['delivery_country_name'] + ' (' + document['delivery_country_code'] + ')',
             vat_id=document['delivery_vat']
         ), message_type='notification')
+
+        if document['comment']:
+            sale_order.message_post(body="""
+            <p>
+                Order Notes from EDI:
+                {note}
+            </p>
+            """.format(note=document['comment'].replace('\n', '<br/>')), message_type='notification')
 
         # Confirm the sale order
         sale_order.action_confirm()
