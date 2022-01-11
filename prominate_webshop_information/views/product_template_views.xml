@@ -4,19 +4,21 @@
         <field name="model">product.template</field>
         <field name="inherit_id" ref="product.product_template_form_view"/>
         <field name="arch" type="xml">
-            <xpath expr="//group[@name='packaging']" position="after">
-                <group>
-                    <group string="Webshop Information from Warehouse">
-                        <field name="webshop_shipping_code"/>
-                        <field name="webshop_price"/>
-                        <field name="webshop_weight"/>
-                        <field name="virtual_available_quotation"/>
+            <xpath expr="//notebook" position="inside">
+                <page name="prominate_webshop_integration" string="Webshop Integration">
+                    <group>
+                        <group string="Webshop Information from Warehouse">
+                            <field name="webshop_shipping_code"/>
+                            <field name="webshop_price"/>
+                            <field name="webshop_weight"/>
+                            <field name="virtual_available_quotation"/>
+                        </group>
+                        <group string="Warehouse Packaging">
+                            <field name="warehouse_inner_pack_qty"/>
+                            <field name="warehouse_outer_pack_qty"/>
+                        </group>
                     </group>
-                    <group string="Warehouse Packaging">
-                        <field name="warehouse_inner_pack_qty"/>
-                        <field name="warehouse_outer_pack_qty"/>
-                    </group>
-                </group>
+                </page>
             </xpath>
         </field>
     </record>

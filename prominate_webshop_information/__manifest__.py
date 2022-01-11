@@ -2,7 +2,7 @@
     "name": "Prominate Webshop Information",
     "summary": "Adds relevant fields for data to/from external webshop",
     "description": "This module handles information to be shared between Odoo and the webshop",
-    "version": "1.1.1",
+    "version": "1.1.2",
     "category": "E-Commerce",
     "author": "VK Data ApS",
     "website": "https://vkdata.dk",
