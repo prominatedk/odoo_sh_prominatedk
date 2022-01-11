@@ -14,6 +14,7 @@
                         <field name="warehouse_outer_pack_qty"/>
                     </group>
                 </group>
+            </xpath>
             <xpath expr="//notebook" position="inside">
                 <page name="prominate_webshop_integration" string="Webshop Integration">
                     <group>
