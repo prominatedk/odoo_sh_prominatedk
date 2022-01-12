@@ -7,9 +7,6 @@
             <xpath expr="//group[@name='packaging']" position="after">
                 <group>
                     <group string="Webshop Information from Warehouse">
-                        <field name="webshop_shipping_code"/>
-                        <field name="webshop_price"/>
-                        <field name="webshop_weight"/>
                         <field name="virtual_available_quotation"/>
                     </group>
                     <group string="Warehouse Packaging">
@@ -17,6 +14,17 @@
                         <field name="warehouse_outer_pack_qty"/>
                     </group>
                 </group>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page name="prominate_webshop_integration" string="Webshop Integration">
+                    <group>
+                        <group string="Webshop Information from Warehouse">
+                            <field name="webshop_shipping_code"/>
+                            <field name="webshop_price"/>
+                            <field name="webshop_weight"/>
+                        </group>
+                    </group>
+                </page>
             </xpath>
         </field>
     </record>

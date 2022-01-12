@@ -24,6 +24,8 @@ class FlexediDocumentReceptionEndpoint(models.Model):
                     return False
                 # Allow any other modules to hook into the data. Unless the hook commits the current transaction, it is commited after processing the next document
                 result._document_post_reception_hook(document)
+                # We have to force a commit at this point to make sure that data added in the postprocessing hook is also persisted.
+                self.env.cr.commit()
         else:
             _logger.error('Attempted to process document reception, but it was not possible to call the required application logic to handle the document')
             _logger.debug('Could not process document, as method %s does not exist on model %s' % (reception_method_name,self._name))

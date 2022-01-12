@@ -175,14 +175,21 @@ class FlexediDocumentReceptionEndpoint(models.Model):
             'partner_invoice_id': partner_invoice_id if type(partner_invoice_id) == int else partner_invoice_id.id,
             'partner_shipping_id': partner_shipping_id if type(partner_shipping_id) == int else partner_shipping_id.id,
             'pricelist_id': pricelist_id.id,
+            'payment_term_id': partner_id.property_payment_term_id and partner_id.property_payment_term_id.id or False,
             'company_id': company.id,
             'date_order': datetime.datetime.strptime(document['order_date'], '%Y-%m-%dT%H:%M:%S%z').replace(tzinfo=None),
             'commitment_date': document['delivery_date'],
             'warehouse_id': company.zinc_wms_default_warehouse_id.id or False,
             'zinc_wms_order_number': document['supplier_order_number'] or False,
-            'order_line': [(0, 0, self._get_sale_order_line_from_zinc_wms_order_line(company, line)) for line in document['lines']]
+            'order_line': [(0, 0, self._get_sale_order_line_from_zinc_wms_order_line(company, line)) for line in document['lines']],
+            'note': document['comment'] or ''
         })
         sale_order = self.env['sale.order'].create(sale_order_vals)
+
+        # Set fiscal position and other values based on shipping address
+        sale_order.onchange_partner_shipping_id()
+        # Since there is a chance that the fiscal position has changed, we also need to recompute line taxes
+        sale_order._compute_tax_id()
 
         sale_order.message_post(body='Sales Order was created automatically using order data recieved from EDI', message_type='notification')
 
@@ -231,6 +238,14 @@ class FlexediDocumentReceptionEndpoint(models.Model):
             country=document['delivery_country_name'] + ' (' + document['delivery_country_code'] + ')',
             vat_id=document['delivery_vat']
         ), message_type='notification')
+
+        if document['comment']:
+            sale_order.message_post(body="""
+            <p>
+                Order Notes from EDI:
+                {note}
+            </p>
+            """.format(note=document['comment'].replace('\n', '<br/>')), message_type='notification')
 
         # Confirm the sale order
         sale_order.action_confirm()

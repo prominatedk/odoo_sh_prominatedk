@@ -18,7 +18,7 @@
     # Check https://github.com/odoo/odoo/blob/master/odoo/addons/base/module/module_data.xml
     # for the full list
     'category': 'Specific Industry Applications',
-    'version': '4.0.0',
+    'version': '4.0.1',
     'license': 'OPL-1',
 
     # any module necessary for this one to work correctly
