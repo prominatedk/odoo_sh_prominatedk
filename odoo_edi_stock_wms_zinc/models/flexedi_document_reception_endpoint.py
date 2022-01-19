@@ -271,9 +271,6 @@ class FlexediDocumentReceptionEndpoint(models.Model):
 
         # Queue StatusUpdateRequest for sending
         status_update.send_document()
-        # Manual requeue of the document as status updates are not automatically sent
-        if status_update.edi_id:
-            status_update._requeue_document()
 
         recieved_edi_document.update_document_state('processed')
 
