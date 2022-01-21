@@ -338,7 +338,7 @@ class FlexediDocumentReceptionEndpoint(models.Model):
             elif picking.state in ready_states:
                 # Set all moves to have processed quantities matching the initial demand
                 # NOTE: This will cause negative quantities if an order is confirmed from WMS before the relevant purchase is validated
-                for move in picking.move_ids:
+                for move in picking.move_ids_without_package:
                     move.write({
                         'move_line_ids': [(0, 0, {
                             'product_id': move.product_id.id,
