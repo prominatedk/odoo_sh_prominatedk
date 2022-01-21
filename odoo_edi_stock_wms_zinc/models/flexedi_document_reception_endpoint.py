@@ -350,7 +350,7 @@ class FlexediDocumentReceptionEndpoint(models.Model):
                         })]
                     })
                 picking_done = picking.button_validate()
-                if 'type' in picking_done:
+                if type(picking_done) == dict and 'type' in picking_done:
                     # We have been given an action, which means that one or more moves are not finished
                     _logger.warning('One or more moves are not finished and therefore we cannot validate the picking {}'.format(picking.name))
                     picking.message_post(body=_('One or more moves are not finished and therefore we cannot validate the picking %s' % (picking.name,)))
