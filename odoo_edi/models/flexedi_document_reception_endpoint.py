@@ -13,8 +13,6 @@ class FlexediDocumentReceptionEndpoint(models.Model):
     def process_documents_to_recieve(self, company, documents):
         self.ensure_one()
         reception_method_name = '_recieve_%s_document' % (self.code,)
-        _logger.error(documents)
-        _logger.error(reception_method_name)
         if hasattr(self, reception_method_name):
             reception_method = getattr(self, reception_method_name)
             for document in documents:
