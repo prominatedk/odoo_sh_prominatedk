@@ -16,7 +16,7 @@ class AccountFiscalPosition(models.Model):
             ('auto_apply','=', True),
             ('vat_required', '=', vat_required),
             ('origin_country_id', '=', origin_country_id),
-            ('company_id', 'in', [self.env.user.company_id, False])
+            ('company_id', 'in', [self.env.user.company_id.id, False])
         ]
         null_state_domain = state_domain = [('state_ids', '=', False)]
         null_zip_domain = zip_domain = [('zip_from', '=', False), ('zip_to', '=', False)]
