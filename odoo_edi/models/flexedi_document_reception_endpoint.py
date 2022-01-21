@@ -14,10 +14,12 @@ class FlexediDocumentReceptionEndpoint(models.Model):
         self.ensure_one()
         reception_method_name = '_recieve_%s_document' % (self.code,)
         _logger.error(documents)
+        _logger.error(reception_method_name)
         if hasattr(self, reception_method_name):
             reception_method = getattr(self, reception_method_name)
             for document in documents:
                 result = reception_method(company, document)
+                _logger.error(result)
                 # We have to force a commit at this point to make sure that external data and internal data matches after processing each document
                 self.env.cr.commit()
                 if not result:
