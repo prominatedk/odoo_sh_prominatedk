@@ -2,9 +2,9 @@
     <data>
         <template id="external_layout_standard" inherit_id="web.external_layout_standard">
             <xpath expr="//li[@t-if='company.vat']" position="replace">
-                <li t-if="o.env.context.get('vat')" class="list-inline-item d-inline">
+                <li t-if="o.env.context.get('vat_country')" class="list-inline-item d-inline">
                     <span> 
-                        VAT: <t t-esc="o.env.context.get('vat')"/>
+                        <t t-esc="o.env.context.get('vat_country').vat_label or 'Tax ID'"/>: <t t-esc="o.env.context.get('vat_country').vat_number"/>
                     </span>
                 </li>
             </xpath>
