@@ -4,7 +4,7 @@
             <xpath expr="//li[@t-if='company.vat']" position="replace">
                 <li t-if="o.env.context.get('vat')">
                     <span> 
-                        <t t-esc="o.env.context.get('vat')"/>
+                        VAT: <t t-esc="o.env.context.get('vat')"/>
                     </span>
                 </li>
             </xpath>
