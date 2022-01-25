@@ -10,7 +10,7 @@
                             </t>
                         </t>
                     </t>
-                <t t-set="o" t-value="o.with_context(lang=lang, vat_country=vat_number)"/>
+                <t t-set="o" t-value="o.with_context(lang=lang, vat_country=vat_country)"/>
             </xpath>
         </template>
     </data>

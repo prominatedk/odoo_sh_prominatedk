@@ -1,7 +1,7 @@
 {
     'name': "Country Vat Number",
     'summary': 'Vat no. per country',
-    'version': '1.0.3',
+    'version': '1.0.4',
     'author': 'VK Data ApS',
     'category': 'Accounting',
     'description':'This module allows you to set a company vat no. for each country.',
