@@ -1,0 +1,13 @@
+<odoo>
+    <data>
+        <template id="external_layout_standard" inherit_id="web.external_layout_standard">
+            <xpath expr="//li[@t-if='company.vat']" position="replace">
+                <li t-if="o.env.context.get('vat')">
+                    <span> 
+                        <t t-esc="o.env.context.get('vat')"/>
+                    </span>
+                </li>
+            </xpath>
+        </template>
+    </data>
+</odoo>

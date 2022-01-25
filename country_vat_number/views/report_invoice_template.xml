@@ -1,0 +1,18 @@
+<odoo>
+    <data>
+        <template id="ekrag_report_invoice_template" inherit_id="account.report_invoice_document">
+            <xpath expr="//t[@t-set='o']" position="replace">
+                <t t-set="vat_number" t-value=""/>
+                    <t t-foreach="o.invoice_line_ids" t-as="line">
+                        <t t-foreach="line.tax_ids" t-as="tax">
+                            <t t-if="tax.tax_country_id and tax.tax_country_id.vat_number">
+                                <t t-set="vat_number" t-value="tax.tax_country_id.vat_number"/>
+                            </t>
+                        </t>
+                    </t>
+                <t t-set="o" t-value="o.with_context(lang=lang, vat=vat_number)"/>
+            </xpath>
+        </template>
+    </data>
+</odoo>
+
