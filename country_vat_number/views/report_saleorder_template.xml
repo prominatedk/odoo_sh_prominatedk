@@ -1,0 +1,17 @@
+<odoo>
+    <data>
+        <template id="report_saleorder_template_inherit" inherit_id="sale.report_saleorder_document">
+            <xpath expr="//t[@t-set='doc']" position="replace">
+                <t t-set="vat_country" t-value=""/>
+                    <t t-foreach="doc.order_line" t-as="line">
+                        <t t-foreach="line.tax_id" t-as="tax">
+                            <t t-if="tax.tax_country_id and tax.tax_country_id.vat_number">
+                                <t t-set="vat_country" t-value="tax.tax_country_id"/>
+                            </t>
+                        </t>
+                    </t>
+                <t t-set="doc" t-value="doc.with_context(lang=lang, vat_country=vat_country)"/>
+            </xpath>
+        </template>
+    </data>
+</odoo>
