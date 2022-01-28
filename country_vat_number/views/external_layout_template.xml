@@ -1,6 +1,6 @@
 <odoo>
     <data>
-        <template id="external_layout_standard" inherit_id="web.external_layout_standard">
+        <template id="external_layout_standard_inherit" inherit_id="web.external_layout_standard">
             <xpath expr="//li[@t-if='company.vat']" position="replace">
                 <li t-if="o.env.context.get('vat_country')" class="list-inline-item d-inline">
                     <span> 
