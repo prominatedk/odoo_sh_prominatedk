@@ -1,7 +1,7 @@
 {
     'name': "Country Vat Number",
     'summary': 'Vat no. per country',
-    'version': '1.0.5',
+    'version': '1.0.6',
     'author': 'VK Data ApS',
     'category': 'Accounting',
     'description':'This module allows you to set a company vat no. for each country.',
@@ -11,7 +11,7 @@
     'data': [
         'views/account_tax_view.xml',
         'views/external_layout_template.xml',
-        'views/report_saleorder_views.xml',
+        'views/report_saleorder_template.xml',
         'views/report_invoice_template.xml',
         'views/res_country_view.xml',
         ]
