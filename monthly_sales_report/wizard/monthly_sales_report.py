@@ -84,9 +84,9 @@ class MonthlySalesReport(models.TransientModel):
             if item.product_id.default_code not in ['1099', '1098', '1097', '1096', '1095', '1093', '1099', '503', 'Environmental tax - Export'] and item.product_id:
                 sheet.write(j, 0, '', table_body) #C
                 sheet.write(j, 1, item.move_id.invoice_origin, table_body) # B
-                sheet.write(j, 2, item.product_id.x_studio_field_vdINR, table_body) #C
+                sheet.write(j, 2, item.product_id.x_studio_field_vdINR or '', table_body) #C
                 sheet.write(j, 3, '', table_body) #D
-                project_string = str(item.product_id.x_studio_field_vdINR)
+                project_string = str(item.product_id.x_studio_field_vdINR or '')
                 project_codes = project_string.split('_', 1)
                 project_code = project_codes[0]
                 if item.move_id.partner_id.parent_id and item.move_id.partner_id.parent_id.country_id.name: # E
@@ -160,7 +160,8 @@ class MonthlySalesReport(models.TransientModel):
                 sheet.write(j, 38, '', table_body)
                 sheet.write(j, 39, '', table_body)
                 sheet.write(j, 40, '', table_body)
-                sheet.write(j, 41, '', table_body)
+                # sheet.write(j, 41, '', table_body)
+                sheet.write(j, 41, item.product_id.x_studio_field_Wjmsr or '', table_body)
                 # credit_note = self.env['account.move'].search([('invoice_origin', '=', item.move_id.number),
                 #                                                   ('type', '=', 'out_refund')], limit=1)
                 # if credit_note:
