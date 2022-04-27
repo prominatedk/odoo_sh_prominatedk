@@ -300,6 +300,7 @@ class FlexediDocumentReceptionEndpoint(models.Model):
             'origin_document_edi_id': document['order'],
             'document_format_id': self.env.ref('odoo_edi_stock_wms_zinc.flexedi_document_format_zinc_wms_shipment_notice').id
         })
+        _logger.info(document)
 
         edi_sale_order = self.env['flexedi.document.wms.zinc.order'].search([('edi_id', '=', recieved_edi_document.origin_document_edi_id), ('document_format_id', '=', self.env.ref('odoo_edi_stock_wms_zinc.flexedi_document_format_zinc_wms_order').id)], limit=1)
         if not edi_sale_order.exists():
