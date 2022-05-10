@@ -15,9 +15,6 @@ class IntrastatReport(models.AbstractModel):
             {'name': _('Value'), 'class': 'number'},
             {'name': _('Fiscal Position')},
         ]
-    # def _get_columns_name(self, options):
-    #     res = super(IntrastatReport)._get_columns_name(options)
-    #     res += {'name': _('Fiscal Position')}
 
     @api.model
     def _prepare_query(self, options):
@@ -73,24 +70,20 @@ class IntrastatReport(models.AbstractModel):
         # Aggregate total amount for each partner.
         # Take care of the multi-currencies.
         for vals in query_res:
-            _logger.info(vals['partner_name'])
-            if vals['partner_name'] not in partners_values:
-                # if vals['fiscal_position'] not in 
-                # if vals['fiscal_position'] not in partners_values[vals['partner_name']['fiscal_position']]:
-                partners_values[vals['partner_name']] = {
+            name = f"{vals['partner_name']} - {vals['fiscal_position']}"
+            if name not in partners_values:
+                partners_values[name] = {
                     'value': vals['total_balance'],
                     'partner_id': vals['partner_id'],
                     'partner_name': vals['partner_name'],
                     'partner_vat': vals['partner_vat'],
                     'country_code': vals['country_code'],
-                    'fiscal_position': vals['fiscal_position']
+                    'fiscal_position': vals['fiscal_position'] if vals['fiscal_position'] else 'None'
                 }
             else:
-                partners_values[vals['partner_name']]['value'] += vals['total_balance']
+                partners_values[name]['value'] += vals['total_balance']
             total_value += vals['total_balance']
             
-            _logger.info(partners_values[vals['partner_name']])
-
         lines = [self._create_sales_report_line(options, partners_values[partner_name]) for partner_name in sorted(partners_values)]
 
         # Create total line
@@ -102,6 +95,7 @@ class IntrastatReport(models.AbstractModel):
             'columns': [{'name': v} for v in [self.format_value(total_value)]],
             'colspan': 3,
         })
+        _logger.info(lines)
         return lines
 
     @api.model
