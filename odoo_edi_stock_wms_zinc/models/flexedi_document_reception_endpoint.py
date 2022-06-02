@@ -23,12 +23,12 @@ class FlexediDocumentReceptionEndpoint(models.Model):
         shipping_not_found = False
 
         # Validate the existence of all data
-        partner_id = self.env['res.partner'].search([('email', '=', document['contact_email'])], limit=1)
+        partner_id = self.env['res.partner'].search([('email', '=ilike', document['contact_email'])], limit=1)
         if not partner_id.exists():
             if company.zinc_wms_auto_create_missing_partner:
                 partner_id = self.env['res.partner'].create({
                     'name': document['contact_name'] or document['contact_email'],
-                    'email': document['contact_email'] # Might not be entirely correct, but is needed to send invoices or other messages from Odoo
+                    'email': str(document['contact_email']).lower() # Might not be entirely correct, but is needed to send invoices or other messages from Odoo
                 })
                 recieved_edi_document.write({
                     'blocking_level': 'warning',
@@ -300,7 +300,6 @@ class FlexediDocumentReceptionEndpoint(models.Model):
             'origin_document_edi_id': document['order'],
             'document_format_id': self.env.ref('odoo_edi_stock_wms_zinc.flexedi_document_format_zinc_wms_shipment_notice').id
         })
-        _logger.info(document)
 
         edi_sale_order = self.env['flexedi.document.wms.zinc.order'].search([('edi_id', '=', recieved_edi_document.origin_document_edi_id), ('document_format_id', '=', self.env.ref('odoo_edi_stock_wms_zinc.flexedi_document_format_zinc_wms_order').id)], limit=1)
         if not edi_sale_order.exists():
