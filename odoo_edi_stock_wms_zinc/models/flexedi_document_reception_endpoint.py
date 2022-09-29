@@ -248,8 +248,8 @@ class FlexediDocumentReceptionEndpoint(models.Model):
             """.format(note=document['comment'].replace('\n', '<br/>')), message_type='notification')
 
         # Confirm the sale order
-        sale_order.action_confirm()
         _logger.info(sale_order)
+        sale_order.action_confirm()
 
         # Update EDI document status
         recieved_edi_document.write({
