@@ -249,6 +249,7 @@ class FlexediDocumentReceptionEndpoint(models.Model):
 
         # Confirm the sale order
         sale_order.action_confirm()
+        _logger.info(sale_order)
 
         # Update EDI document status
         recieved_edi_document.write({
